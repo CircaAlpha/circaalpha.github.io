@@ -1970,7 +1970,107 @@ const Platform = (() => {
     initAds();                                            // consent → SDK → preload (native only)
   }
 
-  return { isNative, os, storage, haptics, app, showRewardedAd, showInterstitialAd, purchase, loadPrices, onPurchaseUpdate, adPrivacyOptions, restorePurchases, prices: billing.prices, notify, init };
+  return { isNative, os, storage, haptics, app, showRewardedAd, showInterstitialAd, purchase, loadPrices, onPurchaseUpdate, adPrivacyOptions, restorePurchases, prices: billing.prices, notify, isTestBuild: testWeb, init };
+})();
+
+</script>
+<script>
+/* ==============================================================
+   SECURE — protects money & knots against cheating.
+     1. In memory: balances are never stored as plain numbers, so
+        memory-scanner "hack" apps can't find and change them.
+     2. On disk: the whole save is encrypted and signed
+        (SHA-256 counter-mode stream cipher + HMAC-SHA256 tag).
+        An edited or copied-in save fails the signature check and the
+        player's money & knots are reset to the start amounts.
+   Format of a saved game:  "SSK1." + base64url( nonce[12] | ciphertext | tag[16] )
+     encKey = HMAC-SHA256(KEY, "sardinia-enc"),  macKey = HMAC-SHA256(KEY, "sardinia-mac")
+     keystream block i = SHA-256( encKey | nonce | i as 4-byte big-endian )
+     tag = first 16 bytes of HMAC-SHA256( macKey, "SSK1" | nonce | ciphertext )
+   KEY is split in two arrays below (KEY = A xor B). See SECURITY.md.
+   Honest limit: everything runs on the phone, so a determined expert can
+   still dig the key out of the app. This stops casual save-editing and
+   memory hacks; real certainty needs a server (possible later).
+================================================================ */
+const Secure = (() => {
+  const A = [159, 231, 116, 222, 104, 144, 102, 55, 147, 149, 229, 181, 74, 87, 128, 243, 105, 104, 98, 141, 148, 38, 2, 21, 15, 154, 132, 217, 92, 53, 42, 127];
+  const B = [210, 120, 55, 27, 140, 244, 148, 73, 122, 30, 19, 92, 76, 215, 71, 77, 180, 55, 168, 156, 189, 239, 22, 131, 99, 226, 248, 23, 85, 244, 79, 43];
+  const KEY = new Uint8Array(A.map((v, i) => v ^ B[i]));
+  const te = new TextEncoder(), td = new TextDecoder();
+
+  /* ---- SHA-256 (synchronous, so saving on app-close always completes) ---- */
+  const K = new Uint32Array([0x428a2f98,0x71374491,0xb5c0fbcf,0xe9b5dba5,0x3956c25b,0x59f111f1,0x923f82a4,0xab1c5ed5,0xd807aa98,0x12835b01,0x243185be,0x550c7dc3,0x72be5d74,0x80deb1fe,0x9bdc06a7,0xc19bf174,0xe49b69c1,0xefbe4786,0x0fc19dc6,0x240ca1cc,0x2de92c6f,0x4a7484aa,0x5cb0a9dc,0x76f988da,0x983e5152,0xa831c66d,0xb00327c8,0xbf597fc7,0xc6e00bf3,0xd5a79147,0x06ca6351,0x14292967,0x27b70a85,0x2e1b2138,0x4d2c6dfc,0x53380d13,0x650a7354,0x766a0abb,0x81c2c92e,0x92722c85,0xa2bfe8a1,0xa81a664b,0xc24b8b70,0xc76c51a3,0xd192e819,0xd6990624,0xf40e3585,0x106aa070,0x19a4c116,0x1e376c08,0x2748774c,0x34b0bcb5,0x391c0cb3,0x4ed8aa4a,0x5b9cca4f,0x682e6ff3,0x748f82ee,0x78a5636f,0x84c87814,0x8cc70208,0x90befffa,0xa4506ceb,0xbef9a3f7,0xc67178f2]);
+  function sha256(bytes) {
+    const l = bytes.length, nb = ((l + 9 + 63) >> 6) << 6, m = new Uint8Array(nb); m.set(bytes); m[l] = 0x80;
+    const dv = new DataView(m.buffer); dv.setUint32(nb - 4, (l * 8) >>> 0); dv.setUint32(nb - 8, Math.floor(l / 0x20000000));
+    const H = new Uint32Array([0x6a09e667,0xbb67ae85,0x3c6ef372,0xa54ff53a,0x510e527f,0x9b05688c,0x1f83d9ab,0x5be0cd19]), W = new Uint32Array(64);
+    for (let o = 0; o < nb; o += 64) {
+      for (let i = 0; i < 16; i++) W[i] = dv.getUint32(o + i * 4);
+      for (let i = 16; i < 64; i++) { const a = W[i - 15], b = W[i - 2]; W[i] = (((a >>> 7) | (a << 25)) ^ ((a >>> 18) | (a << 14)) ^ (a >>> 3)) + W[i - 7] + (((b >>> 17) | (b << 15)) ^ ((b >>> 19) | (b << 13)) ^ (b >>> 10)) + W[i - 16]; }
+      let [a, b, c, d, e, f, g, h] = H;
+      for (let i = 0; i < 64; i++) {
+        const t1 = (h + (((e >>> 6) | (e << 26)) ^ ((e >>> 11) | (e << 21)) ^ ((e >>> 25) | (e << 7))) + ((e & f) ^ (~e & g)) + K[i] + W[i]) >>> 0;
+        const t2 = ((((a >>> 2) | (a << 30)) ^ ((a >>> 13) | (a << 19)) ^ ((a >>> 22) | (a << 10))) + ((a & b) ^ (a & c) ^ (b & c))) >>> 0;
+        h = g; g = f; f = e; e = (d + t1) >>> 0; d = c; c = b; b = a; a = (t1 + t2) >>> 0;
+      }
+      H[0] += a; H[1] += b; H[2] += c; H[3] += d; H[4] += e; H[5] += f; H[6] += g; H[7] += h;
+    }
+    const out = new Uint8Array(32), odv = new DataView(out.buffer); for (let i = 0; i < 8; i++) odv.setUint32(i * 4, H[i]); return out;
+  }
+  const cat = (...parts) => { const n = parts.reduce((s, p) => s + p.length, 0), o = new Uint8Array(n); let k = 0; for (const p of parts) { o.set(p, k); k += p.length; } return o; };
+  function hmac(key, msg) {
+    if (key.length > 64) key = sha256(key);
+    const k = new Uint8Array(64); k.set(key); const ip = k.map(v => v ^ 0x36), op = k.map(v => v ^ 0x5c);
+    return sha256(cat(op, sha256(cat(ip, msg))));
+  }
+  const ENC = hmac(KEY, te.encode('sardinia-enc')), MAC = hmac(KEY, te.encode('sardinia-mac'));
+  function stream(nonce, len) {
+    const out = new Uint8Array(len), ctr = new Uint8Array(4);
+    for (let i = 0, off = 0; off < len; i++, off += 32) { new DataView(ctr.buffer).setUint32(0, i); out.set(sha256(cat(ENC, nonce, ctr)).subarray(0, Math.min(32, len - off)), off); }
+    return out;
+  }
+  const b64u = u8 => { let s = ''; for (let i = 0; i < u8.length; i += 0x8000) s += String.fromCharCode.apply(null, u8.subarray(i, i + 0x8000)); return btoa(s).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, ''); };
+  const unb64u = str => { const s = atob(str.replace(/-/g, '+').replace(/_/g, '/')); const u = new Uint8Array(s.length); for (let i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; };
+  function rnd(n) { const u = new Uint8Array(n); (self.crypto || window.crypto).getRandomValues(u); return u; }
+
+  /** Encrypt + sign a string. */
+  function seal(text) {
+    const pt = te.encode(text), nonce = rnd(12), ks = stream(nonce, pt.length), ct = pt.map((v, i) => v ^ ks[i]);
+    const tag = hmac(MAC, cat(te.encode('SSK1'), nonce, ct)).subarray(0, 16);
+    return 'SSK1.' + b64u(cat(nonce, ct, tag));
+  }
+  /** Decrypt. Returns { text, ok } — ok=false means the file was edited (text is still readable). null if not our format. */
+  function open(token) {
+    if (typeof token !== 'string' || !token.startsWith('SSK1.')) return null;
+    try {
+      const all = unb64u(token.slice(5)); if (all.length < 28) return null;
+      const nonce = all.subarray(0, 12), ct = all.subarray(12, all.length - 16), tag = all.subarray(all.length - 16);
+      const want = hmac(MAC, cat(te.encode('SSK1'), nonce, ct)).subarray(0, 16);
+      let diff = 0; for (let i = 0; i < 16; i++) diff |= want[i] ^ tag[i];
+      const ks = stream(nonce, ct.length);
+      return { text: td.decode(ct.map((v, i) => v ^ ks[i])), ok: diff === 0 };
+    } catch (e) { return null; }
+  }
+
+  /* ---- Protected number: kept masked in memory + a check value ---- */
+  function num(initial) {
+    let mask = 0, x = 0, chk = 0, lg = 0, lgMask = 0;
+    const mix = v => (Math.imul(v ^ 0x5bd1e995, 0x27d4eb2d) ^ mask) >>> 0;
+    const api = {
+      get() {
+        const v = (x ^ mask) >>> 0;
+        if (mix(v) !== chk) { const back = (lg ^ lgMask) >>> 0; api.tampered = true; api.set(back); return back; }   // memory was poked: roll back
+        return v;
+      },
+      set(v) {
+        v = Math.max(0, Math.min(2000000000, Math.round(+v || 0)));
+        mask = (Math.random() * 0x100000000) >>> 0; x = (v ^ mask) >>> 0; chk = mix(v); lgMask = (Math.random() * 0x100000000) >>> 0; lg = (v ^ lgMask) >>> 0;
+      },
+      tampered: false,
+    };
+    api.set(initial); return api;
+  }
+  return { seal, open, num, sha256, hmac, _selftest: () => { const t = seal('{"a":1}'); const o = open(t); return o && o.ok && o.text === '{"a":1}'; } };
 })();
 
 </script>
@@ -2021,9 +2121,10 @@ const settings = { music: 0.7, sfx: 0.8, quality: 'high', shake: true, fx: true,
 /* ==============================================================
    WALLET API
 ================================================================ */
+const _cash = Secure.num(CONFIG.start.money), _knots = Secure.num(CONFIG.start.knots);   // masked in memory (secure.js)
 const Wallet = {
-  money: CONFIG.start.money,
-  knots: CONFIG.start.knots,
+  get money() { return _cash.get(); },  set money(v) { _cash.set(v); },
+  get knots() { return _knots.get(); }, set knots(v) { _knots.set(v); },
   /** Add euros. countAsEarnings=true adds it to the lifetime-earned stat. */
   earn(amount, countAsEarnings) {
     amount = Math.round(amount); if (!(amount > 0)) return;
@@ -2090,7 +2191,14 @@ const Save = {
   },
   /** Debounced save — call as often as you like. */
   queue() { clearTimeout(this._timer); this._timer = setTimeout(() => this.write(), 400); },
-  write() { clearTimeout(this._timer); return Platform.storage.set(SAVE_KEY, JSON.stringify(this.snapshot())); },
+  /* Saves are encrypted + signed (secure.js). A marker remembers that this
+     device has encrypted saves, so a plain hand-written save is refused. */
+  write() {
+    clearTimeout(this._timer);
+    try { localStorage.setItem(SAVE_KEY + '_m', '1'); } catch (e) {}
+    Platform.storage.set(SAVE_KEY + '_m', '1');
+    return Platform.storage.set(SAVE_KEY, Secure.seal(JSON.stringify(this.snapshot())));
+  },
   apply(d) {
     Wallet.money = d.money ?? CONFIG.start.money;
     Wallet.knots = d.knots ?? d.seagulls ?? 0;               // v1 called knots "seagulls"
@@ -2110,9 +2218,20 @@ const Save = {
     if (!raw) { try { raw = localStorage.getItem(LEGACY_SAVE_KEY); migrated = !!raw; } catch (e) {} }
     if (!raw) return false;
     try {
-      const d = JSON.parse(raw);
+      let d, tampered = false;
+      const sealed = Secure.open(raw);
+      if (sealed) { d = JSON.parse(sealed.text); tampered = !sealed.ok; }
+      else {                                                  // plain JSON: only legit for saves from before encryption
+        d = JSON.parse(raw);
+        let marker = null; try { marker = localStorage.getItem(SAVE_KEY + '_m'); } catch (e) {}
+        if (!marker) marker = await Platform.storage.get(SAVE_KEY + '_m');
+        tampered = !!marker;
+        migrated = true;                                      // re-save encrypted right away
+      }
       if (!d || (d.v !== 1 && d.v !== 2)) return false;
+      if (tampered) { d.money = CONFIG.start.money; d.knots = CONFIG.start.knots; d.pStats = Object.assign({}, d.pStats, { tampered: (d.pStats && d.pStats.tampered || 0) + 1 }); migrated = true; }
       this.apply(d);
+      if (tampered) setTimeout(() => typeof showToast === 'function' && showToast('⚠️ Your save file was changed outside the game, so money and knots were reset.', 5000), 1500);
       // Returning v1 players have already seen the start of the season
       if (migrated && pStats.maxDay > 1) for (const c of CHAPTERS) if (c.days[0] <= pStats.maxDay) pStats.storySeen['intro_' + c.id] = true;
       if (migrated) this.write();
@@ -4443,6 +4562,21 @@ function spawnMistralObj(type, x, z) {
   mState.objs.push(o); return o;
 }
 
+/* Pickups along the flight path of a jump: they ride along with their wave, so
+   a clean launch sails right through them (the top one is a power-up). */
+/* Can the boat reach this pickup at its current height? (floating ones and mid-air ones) */
+function reachY(obj) { return Math.abs(mState.jumpY - (obj.airY || 0)) < 9; }
+function spawnAirArc(ramp, x) {
+  const s = Math.max(55, mState.speed || 55), rel = s + (ramp.still ? 0 : 8);
+  const vy = Math.min(MC.wave.maxLaunch, MC.wave.launch + s * MC.wave.launchPerSpeed), tAir = 2 * vy / 80;
+  const n = 7, apex = Math.floor(n / 2);
+  for (let i = 1; i <= n; i++) {
+    const t = tAir * i / (n + 1), y = vy * t - 40 * t * t, d = rel * t;
+    const type = i === apex + 1 ? (Math.random() < 0.35 ? 'repair' : ['shield', 'magnet', 'double'][Math.floor(Math.random() * 3)]) : 'coin';
+    const o = spawnMistralObj(type, x, ramp.z + RAMP.CREST - d);
+    o.airY = Math.max(0, y); o.follow = ramp; o.offZ = RAMP.CREST - d;
+  }
+}
 function genMistralChunk(zStart) {
   const types = ['coins', 'rocks', 'flamingo', 'ramp', 'whirlpool', 'buoys', 'yacht', 'chain'];
   const t = types[Math.floor(Math.random() * types.length)];
@@ -4464,8 +4598,8 @@ function genMistralChunk(zStart) {
   } else if (t === 'buoys') {
     for(let i=0; i<6; i++) spawnMistralObj('buoy', rx()*0.6, zStart - i*30);
   } else if (t === 'ramp') {
-    const x = rx()*0.5; spawnMistralObj('ramp', x, zStart - 50);
-    spawnMistralObj('coin', x, zStart - 80); spawnMistralObj('coin', x, zStart - 100);
+    const x = rx()*0.5; const rp = spawnMistralObj('ramp', x, zStart - 50);
+    spawnAirArc(rp, x);                                             // coins + a power-up hanging in the air over the jump
     spawnMistralObj('rock', x - 30, zStart - 50); spawnMistralObj('rock', x + 30, zStart - 50);
   } else if (t === 'whirlpool') {
     spawnMistralObj('whirlpool', rx()*0.5, zStart - 100);
@@ -4474,7 +4608,7 @@ function genMistralChunk(zStart) {
   } else if (t === 'chain') {
     // The chain spans the whole track: reach the ramp and JUMP it, or get clotheslined
     const x = rx() * 0.5;
-    spawnMistralObj('ramp', x, zStart - 60).still = true; // this wave holds position — normal ramps drift toward you, which was stretching the gap to unjumpable
+    const rp = spawnMistralObj('ramp', x, zStart - 60); rp.still = true; spawnAirArc(rp, x); // this wave holds position — normal ramps drift toward you, which was stretching the gap to unjumpable
     spawnMistralObj('chain', 0, zStart - 85); // 25 past the ramp: comfortably clearable even at starting speed
   }
   
@@ -4554,7 +4688,8 @@ function updateMistral(dt, time) {
   updatePowerups(dt, time);
   for (let i = mState.objs.length - 1; i >= 0; i--) {
     let obj = mState.objs[i];
-    if (obj.mesh && obj.type !== 'whirlpool' && obj.type !== 'yacht' && obj.type !== 'ramp' && obj.type !== 'curl') { obj.mesh.position.y = waveHeight(obj.x, obj.z, time) + (obj.type==='coin'||obj.type==='knot'?2:0); }
+    if (obj.follow) { obj.z = obj.follow.z + obj.offZ; if (obj.mesh) obj.mesh.position.z = obj.z; }
+    if (obj.mesh && obj.type !== 'whirlpool' && obj.type !== 'yacht' && obj.type !== 'ramp' && obj.type !== 'curl') { obj.mesh.position.y = waveHeight(obj.x, obj.z, time) + (obj.type==='coin'||obj.type==='knot'?2:0) + (obj.airY || 0); }
     
     if (obj.type === 'curl') { obj.mesh.position.y = Math.sin(time * 1.2) * 0.8; } // whole tunnel heaves in unison — joins stay sealed
     else if (obj.type === 'coin' || obj.type === 'knot') { obj.mesh.rotation.y += 3*dt; }
@@ -4602,18 +4737,18 @@ function updateMistral(dt, time) {
       
       // Magnet: coins and knots drift toward the boat
       if (magnetR > 0 && (obj.type === 'coin' || obj.type === 'knot') && dist < magnetR && dist > 0.5) {
-        const step = Math.min(dist, PU.pullSpeed * dt) / dist; obj.x += dx * step; obj.z += dz * step; obj.mesh.position.x = obj.x; obj.mesh.position.z = obj.z;
+        const step = Math.min(dist, PU.pullSpeed * dt) / dist; obj.follow = null; obj.x += dx * step; obj.z += dz * step; if (obj.airY) obj.airY += (mState.jumpY - obj.airY) * Math.min(1, 6 * dt); obj.mesh.position.x = obj.x; obj.mesh.position.z = obj.z;
       }
-      if ((obj.type === 'shield' || obj.type === 'magnet' || obj.type === 'double') && dist < boatHitR + obj.r + 1 && mState.jumpY < 8) {
+      if ((obj.type === 'shield' || obj.type === 'magnet' || obj.type === 'double') && dist < boatHitR + obj.r + 1 + (obj.airY ? 2 : 0) && reachY(obj)) {
         obj.hit = true; obj.mesh.visible = false; grabPowerup(obj.type);
       }
-      else if ((obj.type === 'coin' || obj.type === 'knot') && dist < boatHitR + obj.r && mState.jumpY < 10) {
+      else if ((obj.type === 'coin' || obj.type === 'knot') && dist < boatHitR + obj.r + (obj.airY ? 2 : 0) && reachY(obj)) {
         obj.hit = true; obj.mesh.visible = false;
         if (obj.type === 'coin') mState.coins += coinValue(MC.coinValue); else mState.knots += 1;                 // knots are premium: never multiplied
         playCoinSound(); Platform.haptics.impact('LIGHT');
         updateMistralHUD();
       }
-      else if (obj.type === 'repair' && dist < boatHitR + obj.r + 1 && mState.jumpY < 8) {
+      else if (obj.type === 'repair' && dist < boatHitR + obj.r + 1 + (obj.airY ? 2 : 0) && reachY(obj)) {
         obj.hit = true; obj.mesh.visible = false; playRepairSound(); mState.repairs++;
         const healed = Hull.heal(MC.repair.heal);
         if (healed > 0) showToast(`🔧 Repair kit! +${healed} HP`);
@@ -5528,7 +5663,7 @@ function initSettingsUI() {
   });
   // Secret: tap the version label 5× to reveal the dev panel on a device
   let taps = 0, tapTimer = null;
-  $('versionLabel').addEventListener('click', () => { taps++; clearTimeout(tapTimer); tapTimer = setTimeout(() => taps = 0, 1500); if (taps >= 5) { taps = 0; $('devToggle').style.display = 'inline-block'; showToast('🛠️ Dev tools unlocked'); } });
+  $('versionLabel').addEventListener('click', () => { taps++; clearTimeout(tapTimer); tapTimer = setTimeout(() => taps = 0, 1500); if (taps >= 5 && Platform.isTestBuild) { taps = 0; $('devToggle').style.display = 'inline-block'; showToast('🛠️ Dev tools unlocked'); } });
 }
 
 /* ==============================================================
@@ -5753,8 +5888,9 @@ function initPauseUI() {
    DEV PANEL (hidden unless CONFIG.DEV_MODE or unlocked)
 ================================================================ */
 function initDevUI() {
-  $('devToggle').style.display = CONFIG.DEV_MODE ? 'inline-block' : 'none';
+  $('devToggle').style.display = CONFIG.DEV_MODE && Platform.isTestBuild ? 'inline-block' : 'none';
   $('devToggle').onclick = () => { const p = $('devPanel'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; };
+  if (!Platform.isTestBuild) { $('devPanel').remove(); $('devToggle').remove(); return; }   // no cheat buttons in real builds
   $('devMoneyBtn').onclick = () => { Wallet.earn(50000); refreshMainMenu(); };
   $('devKnotBtn').onclick = () => { Wallet.addKnots(100); refreshMainMenu(); };
   $('devXpBtn').onclick = () => { pStats.maxDay = Math.min(CONFIG.story.totalDays, pStats.maxDay + 5); pStats.day = pStats.maxDay; ensureWorld(); refreshMainMenu(); Save.queue(); };
