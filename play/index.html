@@ -797,6 +797,11 @@ body:not(.mistral) #pwrRow { display: none; }
 #eventChip small { font-weight: 700; opacity: 0.85; }
 #eventChip.good { border-color: var(--lime); } #eventChip.warn { border-color: var(--sun); } #eventChip.bad { border-color: var(--pink); animation: dotPulse 0.8s infinite; } #eventChip.dim { border-color: rgba(255,255,255,0.25); opacity: .75; }
 
+/* ---- Phones: fast taps must never select text, zoom, or pop the iOS callout ---- */
+*, *::before, *::after { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
+button, a, .tile, [onclick], input[type=range] { touch-action: manipulation; }
+input[type=text], textarea { -webkit-user-select: text; user-select: text; }
+
 </style>
 
 
@@ -1122,7 +1127,7 @@ const CONFIG = {
 
   /* ---- MISTRAL RUN (main mode) ---- */
   mistral: {
-    startSpeed: 55, speedPerNm: 2.4, maxSpeed: 150,
+    startSpeed: 48, maxSpeed: 160, rampTime: 110,   // Subway-Surfers ramp: speed = start + (max-start)·(1 − e^(−t/rampTime))  → ~75 @30s, ~95 @1min, ~122 @2min, ~150 @5min
     boatLength: 16,               // every hull is scaled to this in the run
     trackWidth: 140, chunkLen: 300, spawnAhead: 780,
     multTime: 12, maxMult: 8,     // tourist multiplier chain
@@ -4358,7 +4363,7 @@ function startMistralRun() {
   hideAllOverlays(); hideTourHud();
   state = 'mistral_run'; mState.active = true; pStats.runs = (pStats.runs || 0) + 1;
   mState.dist = 0; mState.speed = 50; mState.velX = 0; mState.lean = 0; mState.coins = 0; mState.knots = 0; mState.tourists = 0; mState.mult = 1; mState.multTimer = 0; mState.maxMult = 1; mState.stunTimer = 0; mState.score = 0; mState.chains = 0; mState.repairs = 0; mState.closeCalls = 0; mState.shieldHp = mState.magnetT = mState.doubleT = 0; pwrShown = null; clearTrail(); Retention.onRunStart();
-  const headStart = Retention.takeHeadStart(); if (headStart) mState.dist = headStart; // mission prize: start further in (faster, busier water)
+  mState.runTime = 0; const headStart = Retention.takeHeadStart(); if (headStart) { mState.dist = headStart; mState.runTime = headStart * 4; } // mission prize: start further in (faster, busier water)
   mState.jumpY = 0; mState.jumpVy = 0; mState.objs = []; mState.nextZ = 400; mState.boostTimer = 0; // start generating BEHIND the boat: the wave tunnel surrounds you from frame one
   
   Hull.restore(); boat.x = 0; boat.z = 0; boat.speed = mState.speed; boat.heading = 0;
@@ -4501,7 +4506,11 @@ function updateMistralHUD() {
 }
 
 function updateMistral(dt, time) {
-  mState.speed = Math.min(MC.maxSpeed, MC.startSpeed + mState.dist * MC.speedPerNm); // punchier ramp, higher ceiling
+  if (mState.stunTimer <= 0) mState.runTime = (mState.runTime || 0) + dt;   // the clock that drives the difficulty
+  mState.speed = MC.startSpeed + (MC.maxSpeed - MC.startSpeed) * (1 - Math.exp(-mState.runTime / MC.rampTime));
+  // feel the speed: the view widens a little as you go faster
+  const fovT = 60 + 10 * (mState.speed - MC.startSpeed) / (MC.maxSpeed - MC.startSpeed);
+  if (Math.abs(camera.fov - fovT) > 0.05) { camera.fov += (fovT - camera.fov) * Math.min(1, dt * 2); camera.updateProjectionMatrix(); }
   
   // Multiplier chain drains Subway-Surfers style — rescue again to refresh it
   if (mState.multTimer > 0) {
@@ -4805,6 +4814,7 @@ function endMistralRun(sank) {
 
 /* Put the calm open world back after a run (storm off, fog out, boat home). */
 function leaveMistralWorld() {
+  camera.fov = 60; camera.updateProjectionMatrix();
   hideRunBackdrop(); shieldBubble.visible = false; mState.shieldHp = mState.magnetT = mState.doubleT = 0; Game.emit('hull', { delta: 0 });
   mState.active = false; boatGroup.scale.setScalar(1);
   $('mistralHUD').style.display = 'none'; $('left').classList.remove('show'); $('right').classList.remove('show'); $('btnPause').classList.remove('show');
@@ -6267,6 +6277,14 @@ function onBackButton() {
   if (state === 'docked') { openMainMenu(); return true; }
   return false;                                          // main menu → Android closes the app
 }
+
+/* ---- Phones: no text selection, no double-tap zoom, no pinch zoom, no long-press menu ---- */
+document.addEventListener('selectstart', e => { if (!/^(INPUT|TEXTAREA)$/.test(e.target.tagName)) e.preventDefault(); });
+document.addEventListener('contextmenu', e => e.preventDefault());
+document.addEventListener('dblclick', e => e.preventDefault(), { passive: false });
+document.addEventListener('gesturestart', e => e.preventDefault(), { passive: false });   // iOS pinch
+let lastTouchEnd = 0;
+document.addEventListener('touchend', e => { const now = Date.now(); if (now - lastTouchEnd < 350 && e.cancelable && !/^(INPUT|TEXTAREA|SELECT)$/.test(e.target.tagName)) { e.preventDefault(); e.target.click && e.target.closest('button,a,.tile') && e.target.closest('button,a,.tile').click(); } lastTouchEnd = now; }, { passive: false });
 
 /* ---- BOOT ---- */
 async function boot() {
