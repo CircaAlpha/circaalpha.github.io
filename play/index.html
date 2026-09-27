@@ -756,16 +756,6 @@ body:not(.mistral) #pwrRow { display: none; }
 .shop-grid.upgrades .tile-img { position: relative; }
 .shop-grid.upgrades .pips { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 13px; text-shadow: 0 1px 3px #000, 0 0 6px #000; }
 
-/* ---- Old fisherman tip (main menu) ---- */
-.fisher-tip { display: flex; align-items: center; gap: 10px; width: 100%; margin: 6px 0 4px; padding: 9px 12px; text-align: left; color: #fff;
-  background: rgba(20,10,51,0.78); border: 2px solid rgba(34,228,255,0.35); border-radius: 16px; font: inherit; cursor: pointer; transition: opacity .25s, transform .25s; }
-.fisher-tip.swap { opacity: 0; transform: translateY(-4px); }
-.fisher-tip.hot { border-color: var(--sun); box-shadow: 0 0 18px rgba(255,210,63,0.45); }
-.ft-face { font-size: 26px; flex: none; width: 40px; height: 40px; border-radius: 50%; display: grid; place-items: center; background: linear-gradient(180deg, #ffe0a8, #ffb35c); box-shadow: 0 0 0 2px #fff; }
-.ft-text { flex: 1; font-size: 12.5px; line-height: 1.3; font-weight: 700; }
-.ft-text b { display: block; font-size: 10px; letter-spacing: 1px; color: var(--cyan); }
-.ft-cta { flex: none; font-size: 12px; font-weight: 900; padding: 6px 10px; border-radius: 999px; background: var(--sun); color: #5a3000; box-shadow: 0 3px 0 #c98a00; }
-
 /* ---- Store button: daily gift ready ---- */
 .store-badge { display: none; position: absolute; top: 6px; left: 6px; min-width: 22px; height: 22px; border-radius: 11px; align-items: center; justify-content: center;
   font-size: 13px; font-weight: 900; color: #fff; background: var(--pink); box-shadow: 0 0 0 2px #fff, 0 0 12px var(--pink); animation: dotPulse 1.2s infinite; z-index: 2; }
@@ -2359,42 +2349,134 @@ const MAPS = {
 };
 function mulberry32(a) { return function() { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a >>> 15, 1 | a); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
 
-const matSand = new THREE.MeshLambertMaterial({ color: 0xffd166, flatShading: true }); const matTrunk = new THREE.MeshLambertMaterial({ color: 0x9c6644, flatShading: true });
-const matCanopy = new THREE.MeshLambertMaterial({ color: 0x06d6a0, flatShading: true }); const matBoulder = new THREE.MeshLambertMaterial({ color: 0x8d99ae, flatShading: true });
-const hexGeo = new THREE.CylinderGeometry(1, 1, 1, 18); const pyramidGeo = new THREE.CylinderGeometry(0, 1, 1, 5); const boxGeo = new THREE.BoxGeometry(1, 1, 1); const rockGeo = new THREE.DodecahedronGeometry(1, 0);   // 18-sided beach: round, so it matches the round collision
-const MACCHIA = [0x4f6e3f, 0x5a7a48, 0x445f37, 0x617e46].map(c => new THREE.MeshLambertMaterial({ color: c, flatShading: true })); const MACCHIA_DARK = new THREE.MeshLambertMaterial({ color: 0x3c5230, flatShading: true });
-const GRANITE = [0xbfae94, 0xcbbaa2, 0xb59f88].map(c => new THREE.MeshLambertMaterial({ color: c, flatShading: true }));
-const HOUSE_WALLS = [0xe8956a, 0xf4b183, 0xfdf0d5, 0xd98a5f, 0xe3a06f];
-const roofGeo = new THREE.CylinderGeometry(0, 1, 1, 4); const matRoof  = new THREE.MeshLambertMaterial({ color: 0xa04a35, flatShading: true }); const matStone = new THREE.MeshLambertMaterial({ color: 0xcbb9a0, flatShading: true });
+const matTrunk = new THREE.MeshLambertMaterial({ color: 0x9c6644, flatShading: true });   // port pier posts
+const GRANITE = [0xbfae94, 0xcbbaa2, 0xb59f88].map(c => new THREE.MeshLambertMaterial({ color: c, flatShading: true }));   // also used by mistral.js
+
+/* ---- Low-poly merge helper ------------------------------------------------
+   Every island is baked into ONE vertex-coloured mesh (plus one for the
+   shallows): ~25 draw calls for the whole map instead of ~800, which is what
+   made older phones struggle in story mode. */
+const _tpl = new Map();
+function _flat(geo) { let g = _tpl.get(geo); if (!g) { g = geo.index ? geo.toNonIndexed() : geo; _tpl.set(geo, g); } return g; }
+const _m4 = new THREE.Matrix4(), _q = new THREE.Quaternion(), _e = new THREE.Euler(), _v = new THREE.Vector3(), _s = new THREE.Vector3(), _c = new THREE.Color();
+function Baker() { this.pos = []; this.col = []; }
+Baker.prototype.add = function (geo, color, x, y, z, sx, sy, sz, rx, ry, rz) {
+  const g = _flat(geo), P = g.attributes.position; _c.set(color);
+  _m4.compose(_v.set(x, y, z), _q.setFromEuler(_e.set(rx || 0, ry || 0, rz || 0)), _s.set(sx, sy === undefined ? sx : sy, sz === undefined ? sx : sz));
+  for (let i = 0; i < P.count; i++) { _v.fromBufferAttribute(P, i).applyMatrix4(_m4); this.pos.push(_v.x, _v.y, _v.z); this.col.push(_c.r, _c.g, _c.b); }
+};
+Baker.prototype.tri = function (a, b, c, color) { _c.set(color); for (const p of [a, b, c]) { this.pos.push(p[0], p[1], p[2]); this.col.push(_c.r, _c.g, _c.b); } };
+Baker.prototype.mesh = function (mat) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3)); g.computeVertexNormals(); return new THREE.Mesh(g, mat); };
+
+const matIsland = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
+const matShallow = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false });
+const G_BOX = new THREE.BoxGeometry(1, 1, 1), G_ROCK = new THREE.DodecahedronGeometry(1, 0), G_BLOB = new THREE.IcosahedronGeometry(1, 0), G_CYL = new THREE.CylinderGeometry(1, 1, 1, 7), G_CONE = new THREE.ConeGeometry(1, 1, 7), G_ROOF = new THREE.CylinderGeometry(0, 1, 1, 4), G_FROND = new THREE.BoxGeometry(1, 0.12, 0.34);
+const C = {
+  sand: 0xf3d48c, sandWet: 0xd9b774, dryGrass: 0xb9ae63, macchia: [0x5f7f45, 0x6d8a4a, 0x55743f, 0x4c6a3a], granite: [0xcdb296, 0xbba088, 0xdcc6aa, 0xa99079],
+  pine: [0x3f6034, 0x4a6b3a, 0x36552e], olive: [0x8d9b68, 0x7f8f5e], trunk: 0x8a5a3a, palmTrunk: 0xa8825a, frond: [0x5c9a3c, 0x6aab45], bush: [0x3c5230, 0x46603a], flower: [0xe86a9a, 0xf2f2f2, 0xffc94d],
+  walls: [0xfdf6e8, 0xf4c9a0, 0xe8956a, 0xf6e3b4, 0xd9a07a, 0xfdfdfd], roof: [0xb4553c, 0xa04a35, 0xc0663f], stone: 0xcbb9a0, parasol: [0xff5c8a, 0x5ce1e6, 0xffd166, 0xff7a5c, 0x2ec4b6],
+  shallow: 0x7ff3e4, foam: 0xffffff
+};
+const pick = (rnd, arr) => arr[Math.floor(rnd() * arr.length)];
+
+/* Island shape: a wobbly coastline, hills built from soft bumps, granite on
+   steep ground and peaks, macchia on the slopes, a sand rim on the beach —
+   and on some islands one side drops away as a granite cliff (Capo Testa style). */
+function islandShape(isl, rnd) {
+  const ph = [rnd() * 6.3, rnd() * 6.3, rnd() * 6.3], cliffA = rnd() * 6.3, hasCliff = !isl.village && rnd() < 0.55;
+  const shore = a => isl.r * Math.min(1.1, Math.max(0.96, 1.03 + 0.045 * Math.sin(3 * a + ph[0]) + 0.03 * Math.sin(5 * a + ph[1]) + 0.018 * Math.sin(9 * a + ph[2])));
+  const hills = []; const nH = 2 + Math.floor(rnd() * 3);
+  for (let i = 0; i < nH; i++) { const ha = rnd() * 6.3, hd = rnd() * isl.r * 0.42; hills.push({ x: Math.cos(ha) * hd, z: Math.sin(ha) * hd, s: isl.r * (0.32 + rnd() * 0.28), h: Math.min(95, isl.r * (0.13 + rnd() * 0.2)) }); }
+  const cliffW = a => { if (!hasCliff) return 0; let d = Math.abs(((a - cliffA + Math.PI) % (2 * Math.PI) + 2 * Math.PI) % (2 * Math.PI) - Math.PI); return Math.max(0, 1 - d / 0.9); };
+  const height = (x, z) => {
+    const a = Math.atan2(z, x), t = Math.hypot(x, z) / shore(a), cw = cliffW(a);
+    let base = 0; for (const h of hills) { const d2 = ((x - h.x) ** 2 + (z - h.z) ** 2) / (h.s * h.s); base += h.h * Math.exp(-d2 * 1.6); }
+    base += isl.r * 0.035 * (Math.sin(x * 0.045 + ph[0]) * Math.cos(z * 0.05 + ph[1]));         // lumpy ground
+    const lo = 0.5 + cw * 0.36, hi = 0.9 + cw * 0.08;
+    const e = t <= lo ? 1 : t >= hi ? 0 : 1 - ((t - lo) / (hi - lo)) ** 2 * (3 - 2 * (t - lo) / (hi - lo));
+    const land = Math.max(0, base) * e + cw * isl.r * 0.1 * (t < 0.99 ? 1 : 0);                // cliffs keep a raised lip
+    if (t <= 1) return 2.4 + land;
+    return 2.4 - (t - 1) / 0.07 * 4.6;                                                        // beach slides under the water
+  };
+  return { shore, height, cliffW, hills };
+}
 
 function buildIslands() {
 islands.forEach((isl, idx) => {
-  const rnd = mulberry32(idx * 991 + 7); const group = new THREE.Group();
-  const sand = new THREE.Mesh(hexGeo, matSand); sand.scale.set(isl.r * 1.1, 4, isl.r * 1.1); sand.position.y = 1; group.add(sand);
-  const hills = []; let topHill = null; const nHills = 2 + Math.floor(rnd() * 2);
-  for (let i = 0; i < nHills; i++) { const hr = isl.r * (0.45 + rnd() * 0.3); const hh = hr * (0.55 + rnd() * 0.5); const hx = (rnd() - 0.5) * isl.r * 0.6, hz = (rnd() - 0.5) * isl.r * 0.6; const hill = new THREE.Mesh(pyramidGeo, MACCHIA[Math.floor(rnd() * MACCHIA.length)]); hill.scale.set(hr, hh, hr); hill.position.set(hx, hh / 2 + 1, hz); hill.rotation.y = rnd() * Math.PI; group.add(hill); hills.push({ x: hx, z: hz, hr, hh }); if (!topHill || hh > topHill.hh) topHill = hills[hills.length - 1]; }
-  function ground(px, pz) { let g = 3; for (const h of hills) { const d = Math.hypot(px - h.x, pz - h.z); if (d < h.hr) g = Math.max(g, 1 + h.hh * (1 - d / h.hr)); } return g; }
-  const nBoulders = Math.min(12, 3 + Math.floor(isl.r / 40));
-  for (let i = 0; i < nBoulders; i++) { const a = rnd() * Math.PI * 2, rr = isl.r * (0.15 + rnd() * 0.6); const px = Math.cos(a) * rr, pz = Math.sin(a) * rr; const sc = 4 + rnd() * 9; const b = new THREE.Mesh(rockGeo, GRANITE[Math.floor(rnd() * GRANITE.length)]); b.scale.set(sc * (0.8 + rnd() * 0.5), sc * (0.7 + rnd() * 0.6), sc * (0.8 + rnd() * 0.5)); b.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3); b.position.set(px, ground(px, pz) + sc * 0.25, pz); group.add(b); }
-  if (topHill) { for (let i = 0; i < 3; i++) { const sc = topHill.hr * (0.10 + rnd() * 0.09); const b = new THREE.Mesh(rockGeo, GRANITE[Math.floor(rnd() * GRANITE.length)]); b.scale.set(sc, sc * (1 + rnd() * 0.6), sc); b.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3); b.position.set(topHill.x + (rnd() - 0.5) * sc * 2, 1 + topHill.hh * (0.82 + rnd() * 0.1), topHill.z + (rnd() - 0.5) * sc * 2); group.add(b); } }
-  const nScrub = Math.min(12, 3 + Math.floor(isl.r / 40));
-  for (let i = 0; i < nScrub; i++) { const a = rnd() * Math.PI * 2, rr = isl.r * (0.2 + rnd() * 0.6); const px = Math.cos(a) * rr, pz = Math.sin(a) * rr; const sc = 3 + rnd() * 4; const bush = new THREE.Mesh(rockGeo, MACCHIA_DARK); bush.scale.set(sc * 1.3, sc * 0.6, sc * 1.3); bush.rotation.y = rnd() * 3; bush.position.set(px, ground(px, pz) + sc * 0.2, pz); group.add(bush); }
-  const nTrees = Math.min(12, 3 + Math.floor(isl.r / 35));
-  for (let i = 0; i < nTrees; i++) { const a = rnd() * Math.PI * 2; const rr = isl.r * (0.6 + rnd() * 0.3); const s = 1.2 + rnd() * 1.5; const px = Math.cos(a) * rr, pz = Math.sin(a) * rr; const g = ground(px, pz) - 1; const trunk = new THREE.Mesh(boxGeo, matTrunk); trunk.scale.set(s*0.6, s*3, s*0.6); trunk.position.set(px, s*1.5 + g, pz); group.add(trunk); const leaves = new THREE.Mesh(boxGeo, MACCHIA[Math.floor(rnd() * MACCHIA.length)]); leaves.scale.set(s*3, s*2.5, s*3); leaves.position.set(px, s*4 + g, pz); leaves.rotation.set(rnd()*0.2, rnd()*Math.PI, rnd()*0.2); group.add(leaves); }
-  const nRocks = 2 + Math.floor(rnd() * 3);
-  for (let i = 0; i < nRocks; i++) { const a = rnd() * Math.PI * 2; const b = new THREE.Mesh(rockGeo, GRANITE[Math.floor(rnd() * GRANITE.length)]); b.scale.setScalar(3 + rnd() * 4); b.scale.y *= 1.5; b.rotation.set(rnd() * 3, rnd() * 3, rnd() * 3); b.position.set(Math.cos(a) * isl.r * 0.9, 3, Math.sin(a) * isl.r * 0.9); group.add(b); }
-  if (rnd() > 0.35) { const PARASOL_COLORS = [0xff5c8a, 0x5ce1e6, 0xffd166, 0xff7a5c, 0xb0ff57]; const nPar = 1 + Math.floor(rnd() * 3); for (let i = 0; i < nPar; i++) { const a = rnd() * Math.PI * 2, rr = isl.r * (0.82 + rnd() * 0.12); const px = Math.cos(a) * rr, pz = Math.sin(a) * rr; const pole = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 4.5, 5), new THREE.MeshLambertMaterial({ color: 0xe8e0d0 })); pole.position.set(px, 4.2, pz); group.add(pole); const canopy = new THREE.Mesh(new THREE.ConeGeometry(2.6, 1.4, 8), new THREE.MeshLambertMaterial({ color: PARASOL_COLORS[Math.floor(rnd() * PARASOL_COLORS.length)], flatShading: true })); canopy.position.set(px, 6.6, pz); group.add(canopy); const towel = new THREE.Mesh(new THREE.BoxGeometry(1.6, 0.12, 3), new THREE.MeshLambertMaterial({ color: PARASOL_COLORS[Math.floor(rnd() * PARASOL_COLORS.length)] })); towel.position.set(px + 2 + rnd(), 2.1, pz + rnd() * 2 - 1); towel.rotation.y = rnd() * 3; group.add(towel); } }
-  if (isl.village) { const faceA = Math.atan2(0 - isl.z, 0 - isl.x); const nHouses = Math.min(14, 6 + Math.floor(isl.r / 60)); for (let i = 0; i < nHouses; i++) { const a = faceA + (rnd() - 0.5) * 2.2; const frac = 0.55 + rnd() * 0.38; const px = Math.cos(a) * isl.r * frac, pz = Math.sin(a) * isl.r * frac; const w = 6 + rnd() * 5, dep = 6 + rnd() * 4, hh = 5 + rnd() * 4; const g0 = ground(px, pz) - 0.5; const elev = Math.max(0, (0.93 - frac) * isl.r * 0.1 * rnd()); if (elev > 0.5) { const plinth = new THREE.Mesh(boxGeo, matStone); plinth.scale.set(w * 1.15, elev + 2, dep * 1.15); plinth.position.set(px, g0 + (elev + 2) / 2 - 2, pz); group.add(plinth); } const wallMat = new THREE.MeshLambertMaterial({ color: HOUSE_WALLS[Math.floor(rnd() * HOUSE_WALLS.length)], flatShading: true }); const yaw = a + Math.PI / 2 + (rnd() - 0.5) * 0.3; const body = new THREE.Mesh(boxGeo, wallMat); body.scale.set(w, hh, dep); body.position.set(px, g0 + elev + hh / 2, pz); body.rotation.y = yaw; group.add(body); const roof = new THREE.Mesh(roofGeo, matRoof); roof.scale.set(w * 0.8, 3 + rnd() * 1.6, dep * 0.8); roof.position.set(px, g0 + elev + hh + (3 + rnd() * 1.6) / 2 - 0.2, pz); roof.rotation.y = yaw + Math.PI / 4; group.add(roof); } }
+  const rnd = mulberry32(idx * 991 + 7); const S = islandShape(isl, rnd); const B = new Baker();
+  const N = Math.max(32, Math.min(64, Math.round(isl.r / 5))), RINGS = [0, 0.12, 0.24, 0.36, 0.47, 0.57, 0.66, 0.74, 0.81, 0.87, 0.92, 0.96, 1, 1.035, 1.07];
+  const grid = RINGS.map(f => { const row = []; for (let j = 0; j < N; j++) { const a = (j + (f > 0 ? (RINGS.indexOf(f) % 2) * 0.5 : 0)) / N * Math.PI * 2, R = S.shore(a) * f; const x = Math.cos(a) * R, z = Math.sin(a) * R; row.push([x, S.height(x, z), z, f]); } return row; });
+  let maxH = 3; grid.forEach(r => r.forEach(p => { if (p[1] > maxH) maxH = p[1]; }));
+  const faceCol = (p, q, r) => {
+    const y = (p[1] + q[1] + r[1]) / 3, f = (p[3] + q[3] + r[3]) / 3;
+    const ux = q[0] - p[0], uy = q[1] - p[1], uz = q[2] - p[2], vx = r[0] - p[0], vy = r[1] - p[1], vz = r[2] - p[2];
+    const nx = uy * vz - uz * vy, ny = uz * vx - ux * vz, nz = ux * vy - uy * vx, up = Math.abs(ny) / (Math.hypot(nx, ny, nz) || 1);
+    const k = Math.abs(Math.sin(p[0] * 0.13 + p[2] * 0.11) * 43758.5) % 1;                       // stable per-face variety
+    if (f > 1.005) return C.sandWet;
+    if (y < 3.6 && up > 0.8) return C.sand;
+    if (up < 0.6 || (y > maxH * 0.78 && up < 0.85) || y > 150) return C.granite[Math.floor(k * 4)];
+    if (y < 7) return k < 0.5 ? C.dryGrass : C.sand;
+    return C.macchia[Math.floor(k * 4)];
+  };
+  for (let i = 0; i < RINGS.length - 1; i++) for (let j = 0; j < N; j++) {
+    const A = grid[i][j], Bq = grid[i][(j + 1) % N], Cc = grid[i + 1][j], D = grid[i + 1][(j + 1) % N];
+    if (i === 0) { B.tri(A, D, Cc, faceCol(A, D, Cc)); continue; }                              // centre fan (ring 0 collapses to a point)
+    B.tri(A, D, Cc, faceCol(A, D, Cc)); B.tri(A, Bq, D, faceCol(A, Bq, D));
+  }
+  const ground = (x, z) => S.height(x, z);
+  const slopeOk = (x, z, lim) => Math.abs(ground(x + 3, z) - ground(x - 3, z)) + Math.abs(ground(x, z + 3) - ground(x, z - 3)) < lim;
+  const spot = (fMin, fMax, tries, test) => { for (let t = 0; t < (tries || 12); t++) { const a = rnd() * 6.3, f = fMin + rnd() * (fMax - fMin), R = S.shore(a) * f, x = Math.cos(a) * R, z = Math.sin(a) * R; if (!test || test(x, z, a)) return [x, z, a]; } return null; };
+
+  // umbrella pines & olives on the gentle slopes, palms on the beach
+  const nPines = Math.min(22, 4 + Math.floor(isl.r / 18));
+  for (let i = 0; i < nPines; i++) { const sp = spot(0.3, 0.86, 10, (x, z) => ground(x, z) < maxH * 0.8 && slopeOk(x, z, 7)); if (!sp) continue; const [x, z] = sp, g = ground(x, z) - 0.5, s = 1.3 + rnd() * 1.1;
+    if (rnd() < 0.62) { B.add(G_CYL, C.trunk, x, g + s * 3, z, s * 0.35, s * 6, s * 0.35, (rnd() - 0.5) * 0.2, 0, (rnd() - 0.5) * 0.2); const pc = pick(rnd, C.pine); B.add(G_BLOB, pc, x, g + s * 6.4, z, s * 3.4, s * 1.1, s * 3.4, 0, rnd() * 3, 0); B.add(G_BLOB, pc, x + s * 0.6, g + s * 7.2, z - s * 0.4, s * 2.3, s * 0.8, s * 2.3, 0, rnd() * 3, 0); }
+    else { B.add(G_CYL, C.trunk, x, g + s * 1.4, z, s * 0.45, s * 2.8, s * 0.45); B.add(G_BLOB, pick(rnd, C.olive), x, g + s * 3.6, z, s * 2.4, s * 1.8, s * 2.4, 0, rnd() * 3, 0); } }
+  const nPalms = rnd() < 0.7 ? 2 + Math.floor(rnd() * 4) : 0;
+  for (let i = 0; i < nPalms; i++) { const sp = spot(0.9, 0.97); if (!sp) continue; const [x, z] = sp, g = ground(x, z) - 0.5, s = 1.1 + rnd() * 0.6, lean = (rnd() - 0.5) * 0.5, H = 9 * s;
+    B.add(G_CYL, C.palmTrunk, x, g + H / 2, z, 0.45 * s, H, 0.45 * s, lean, 0, lean * 0.6); const tx = x + Math.sin(lean * 0.6) * -H * 0.5, tz = z + Math.sin(lean) * H * 0.5;
+    for (let k = 0; k < 6; k++) { const fa = k / 6 * Math.PI * 2 + rnd() * 0.4; B.add(G_FROND, pick(rnd, C.frond), tx + Math.cos(fa) * 2.4 * s, g + H - 0.4, tz + Math.sin(fa) * 2.4 * s, 5.2 * s, 1, 1.6 * s, 0, -fa, -0.35); } }
+  // macchia bushes, some flowering (oleander / broom)
+  const nBush = Math.min(30, 6 + Math.floor(isl.r / 14));
+  for (let i = 0; i < nBush; i++) { const sp = spot(0.15, 0.92, 6, (x, z) => ground(x, z) < maxH * 0.85); if (!sp) continue; const [x, z] = sp, s = 2.2 + rnd() * 2.8, g = ground(x, z);
+    B.add(G_BLOB, pick(rnd, C.bush), x, g + s * 0.3, z, s * 1.4, s * 0.75, s * 1.3, 0, rnd() * 3, 0); if (rnd() < 0.3) B.add(G_BLOB, pick(rnd, C.flower), x + s * 0.3, g + s * 0.85, z, s * 0.55, s * 0.35, s * 0.55); }
+  // granite tors: on the peaks and scattered on the slopes; rocks on the waterline
+  for (const h of S.hills) { if (h.h < 25) continue; const n = 2 + Math.floor(rnd() * 3); for (let k = 0; k < n; k++) { const x = h.x + (rnd() - 0.5) * h.s * 0.35, z = h.z + (rnd() - 0.5) * h.s * 0.35, sc = Math.min(18, h.s * (0.07 + rnd() * 0.07)); B.add(G_ROCK, pick(rnd, C.granite), x, ground(x, z) + sc * 0.4, z, sc * (0.9 + rnd() * 0.4), sc * (0.9 + rnd() * 0.8), sc, rnd() * 3, rnd() * 3, rnd() * 3); } }
+  const nTor = Math.min(10, 2 + Math.floor(isl.r / 45)); for (let i = 0; i < nTor; i++) { const sp = spot(0.2, 0.85); if (!sp) continue; const [x, z] = sp, sc = 3 + rnd() * 6; B.add(G_ROCK, pick(rnd, C.granite), x, ground(x, z) + sc * 0.3, z, sc * 1.2, sc * (0.7 + rnd() * 0.7), sc, rnd() * 3, rnd() * 3, rnd() * 3); }
+  const nShoreRocks = 3 + Math.floor(rnd() * 4); for (let i = 0; i < nShoreRocks; i++) { const a = rnd() * 6.3, cw = S.cliffW(a), R = S.shore(a) * (1.0 + rnd() * 0.04), sc = 3 + rnd() * 4 + cw * 5; B.add(G_ROCK, pick(rnd, C.granite), Math.cos(a) * R, 1 + sc * 0.2, Math.sin(a) * R, sc * 1.3, sc, sc, rnd() * 3, rnd() * 3, rnd() * 3); }
+  // beach life
+  if (rnd() > 0.3) { const a0 = rnd() * 6.3, nPar = 2 + Math.floor(rnd() * 4); for (let i = 0; i < nPar; i++) { const a = a0 + (i - nPar / 2) * 0.06 + (rnd() - 0.5) * 0.03, R = S.shore(a) * 0.95; if (S.cliffW(a) > 0.1) continue; const x = Math.cos(a) * R, z = Math.sin(a) * R, g = ground(x, z), col = pick(rnd, C.parasol);
+    B.add(G_CYL, 0xeee6d6, x, g + 2.3, z, 0.14, 4.6, 0.14); B.add(G_CONE, col, x, g + 5, z, 2.8, 1.3, 2.8); B.add(G_BOX, pick(rnd, C.parasol), x + 1.6, g + 0.15, z + 1, 1.6, 0.14, 3, 0, rnd() * 3, 0); } }
+  // villages: whitewashed & pastel houses with terracotta roofs, and a church tower
+  if (isl.village) { const faceA = Math.atan2(-isl.z, -isl.x); const nHouses = Math.min(18, 7 + Math.floor(isl.r / 45)); let placed = 0;
+    for (let i = 0; i < nHouses * 3 && placed < nHouses; i++) { const a = faceA + (rnd() - 0.5) * 2.2, f = 0.55 + rnd() * 0.33, R = S.shore(a) * f, x = Math.cos(a) * R, z = Math.sin(a) * R; if (!slopeOk(x, z, 9)) continue; placed++;
+      const w = 6 + rnd() * 5, d = 6 + rnd() * 4, hh = 5 + rnd() * 4, g = ground(x, z) - 1, yaw = a + Math.PI / 2 + (rnd() - 0.5) * 0.3;
+      B.add(G_BOX, pick(rnd, C.walls), x, g + hh / 2, z, w, hh + 2, d, 0, yaw, 0); const rh = 2.6 + rnd() * 1.4; B.add(G_ROOF, pick(rnd, C.roof), x, g + hh + 1 + rh / 2, z, w * 0.78, rh, d * 0.78, 0, yaw + Math.PI / 4, 0);
+      if (rnd() < 0.35) B.add(G_BOX, 0x5a8fb0, x, g + hh * 0.45, z, w * 1.01, 1.6, 1.2, 0, yaw, 0); }                     // blue shutters stripe
+    const ca = faceA + (rnd() - 0.5) * 0.8, cf = 0.62, cx = Math.cos(ca) * S.shore(ca) * cf, cz = Math.sin(ca) * S.shore(ca) * cf, cg = ground(cx, cz) - 1;
+    B.add(G_BOX, 0xfdfdfd, cx, cg + 7, cz, 10, 14, 16, 0, ca, 0); B.add(G_ROOF, C.roof[0], cx, cg + 15.5, cz, 8, 3, 12, 0, ca + Math.PI / 4, 0);
+    B.add(G_BOX, 0xfdfdfd, cx + Math.cos(ca) * 9, cg + 12, cz + Math.sin(ca) * 9, 5, 24, 5, 0, ca, 0); B.add(G_ROOF, C.roof[1], cx + Math.cos(ca) * 9, cg + 26.5, cz + Math.sin(ca) * 9, 4, 5, 4, 0, ca + Math.PI / 4, 0); }
+  // a lighthouse on the seaward point of some wild islands
+  else if (isl.r > 70 && rnd() < 0.4) { const a = Math.atan2(isl.z - port.z, isl.x - port.x) + (rnd() - 0.5) * 1.2, R = S.shore(a) * 0.84, x = Math.cos(a) * R, z = Math.sin(a) * R, g = ground(x, z) - 1;
+    B.add(G_CYL, 0xfdfdfd, x, g + 4, z, 5, 8, 5); B.add(G_CYL, 0xfdfdfd, x, g + 16, z, 2.6, 18, 2.6); B.add(G_CYL, 0xd6403a, x, g + 17, z, 2.7, 4, 2.7); B.add(G_CYL, 0xffe08a, x, g + 27, z, 2.1, 3.4, 2.1); B.add(G_CONE, 0x2d2d2d, x, g + 30, z, 2.8, 2.4, 2.8); }
+  const group = new THREE.Group(); group.add(B.mesh(matIsland));
+  // turquoise shallows + a foam line that follow the coastline
+  const W = new Baker(); for (let j = 0; j < N; j++) { const a0 = j / N * Math.PI * 2, a1 = (j + 1) / N * Math.PI * 2, s0 = S.shore(a0), s1 = S.shore(a1);
+    const P = (a, R, y) => [Math.cos(a) * R, y, Math.sin(a) * R];
+    const i0 = P(a0, s0 * 0.98, 1.05), i1 = P(a1, s1 * 0.98, 1.05), m0 = P(a0, s0 * 1.08, 1.05), m1 = P(a1, s1 * 1.08, 1.05), o0 = P(a0, s0 * 1.38, 1.05), o1 = P(a1, s1 * 1.38, 1.05);
+    W.tri(i0, m1, m0, C.foam); W.tri(i0, i1, m1, C.foam); W.tri(m0, o1, o0, C.shallow); W.tri(m0, m1, o1, C.shallow); }
+  const wm = W.mesh(matShallow); wm.renderOrder = 1; group.add(wm);
   group.position.set(isl.x, 0, isl.z); worldGroup.add(group);
 });
 }
 
+/* Lone sea rocks: jagged granite with a foam collar, all baked into one mesh. */
 function buildRocks() {
-for (const rock of rocks) {
-  const g = new THREE.Group();
-  for (let i = 0; i < 3; i++) { const spike = new THREE.Mesh(pyramidGeo, matBoulder); spike.scale.set(rock.r * 0.6, rock.r * 1.2, rock.r * 0.6); spike.position.set((Math.random() - 0.5) * rock.r*0.8, rock.r * 0.4, (Math.random() - 0.5) * rock.r*0.8); spike.rotation.set((Math.random()-0.5)*0.5, Math.random() * 3, (Math.random()-0.5)*0.5); g.add(spike); }
-  const foam = new THREE.Mesh(new THREE.CylinderGeometry(rock.r + 3, rock.r + 3, 1, 8), new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.5, flatShading:true })); foam.position.y = 0.5; g.add(foam); g.position.set(rock.x, 0, rock.z); worldGroup.add(g);
-}
+  const B = new Baker(), F = new Baker();
+  rocks.forEach((rock, i) => { const rnd = mulberry32(i * 7919 + Math.round(rock.x) * 31 + Math.round(rock.z));
+    for (let k = 0; k < 3; k++) { const sc = rock.r * (0.45 + rnd() * 0.3); B.add(G_ROCK, pick(rnd, C.granite), rock.x + (rnd() - 0.5) * rock.r * 0.8, sc * 0.5, rock.z + (rnd() - 0.5) * rock.r * 0.8, sc, sc * (1.2 + rnd() * 0.8), sc, rnd() * 3, rnd() * 3, rnd() * 3); }
+    for (let j = 0; j < 14; j++) { const a0 = j / 14 * 6.283, a1 = (j + 1) / 14 * 6.283, r0 = rock.r * 0.7, r1 = rock.r + 4; const P = (a, R) => [rock.x + Math.cos(a) * R, 1.1, rock.z + Math.sin(a) * R]; F.tri(P(a0, r0), P(a1, r1), P(a0, r1), C.foam); F.tri(P(a0, r0), P(a1, r0), P(a1, r1), C.foam); } });
+  if (rocks.length) { worldGroup.add(B.mesh(matIsland)); const f = F.mesh(matShallow); f.renderOrder = 1; worldGroup.add(f); }
 }
 
 function buildPort() {
@@ -2409,7 +2491,7 @@ function buildPort() {
 /* ==============================================================
    6. DESTINATIONS
 ================================================================ */
-const ARRIVE_DIST = 55; const beaconMat = new THREE.MeshLambertMaterial({ color: 0xffd166, transparent: true, opacity: 0.8, flatShading: true }); const lockedMat = new THREE.MeshLambertMaterial({ color: 0x8d99ae, transparent: true, opacity: 0.4, flatShading: true });
+const beaconMat = new THREE.MeshLambertMaterial({ color: 0xffd166, transparent: true, opacity: 0.8, flatShading: true }); const lockedMat = new THREE.MeshLambertMaterial({ color: 0x8d99ae, transparent: true, opacity: 0.4, flatShading: true });
 /* ---- SIGHTS: every destination gets a real wooden jetty running out from
    the nearest island's shore, with a T-head to moor at, lanterns, a name
    board, and the yellow beacon on the end. The jetty is solid (see jettySegs). */
@@ -3413,7 +3495,7 @@ function updateGulls(dt, t) {
 <script>
 /* ==============================================================
    TOUR GAMEPLAY (Story mode) — tourists, sailing, docking,
-   wake minigame, dolphins, summary. The Story hub / chapter
+   wake minigame, summary. The Story hub / chapter
    scenes that wrap around this live in story.js.
    ============================================================== */
 
@@ -3564,19 +3646,6 @@ function endWakeMinigame() {
 }
 
 /* ---- DOLPHINS ---- */
-let dolphinPod = null; let dolphinTimer = 180 + Math.random() * 120;
-function spawnDolphins() {
-  const g = new THREE.Group(); const mat = new THREE.MeshLambertMaterial({ color: 0x1d3557, flatShading: true }); g.userData.members = [];
-  for (let i = 0; i < 3; i++) { const body = new THREE.Mesh(new THREE.BoxGeometry(1.6, 1.4, 4.0), mat); const fin = new THREE.Mesh(new THREE.BoxGeometry(0.4, 1.2, 1.0), mat); fin.position.y = 1.0; const d = new THREE.Group(); d.add(body); d.add(fin); d.userData.phase = i * 1.6; d.userData.offset = { x: 14 + i * 6, z: -6 + i * 7 }; g.add(d); g.userData.members.push(d); }
-  g.userData.life = 18; scene.add(g); dolphinPod = g; showToast('🐬 A rare pod of dolphins joins you!');
-}
-function updateDolphins(dt, t) {
-  if (state === 'sailing' && !dolphinPod) { dolphinTimer -= dt; if (dolphinTimer <= 0) spawnDolphins(); } if (!dolphinPod) return;
-  dolphinPod.userData.life -= dt; const dx = -Math.sin(boat.heading), dz = -Math.cos(boat.heading);
-  for (const d of dolphinPod.userData.members) { const o = d.userData.offset; const sideX = Math.cos(boat.heading), sideZ = -Math.sin(boat.heading); d.position.set(boat.x + sideX * o.x + dx * o.z, waveHeight(boat.x, boat.z, t) + Math.abs(Math.sin(t * 2.2 + d.userData.phase)) * 4 - 2.5, boat.z + sideZ * o.x + dz * o.z); d.rotation.y = boat.heading; d.rotation.x = Math.cos(t * 2.2 + d.userData.phase) * 0.5; }
-  if (dolphinPod.userData.life <= 0) { scene.remove(dolphinPod); dolphinPod = null; dolphinTimer = 240 + Math.random() * 200; if (state === 'sailing' && tour) { const tip = Math.round((20 + Math.random() * 30) * (getRating() / 2)); Wallet.earn(tip, true); tour.tips += tip; tour.xpGained += 50; showToast(`🐬 The tourists loved that rare sight! Tip +${tip} €`); } }
-}
-
 /* ---- RETURN TO PORT & SUMMARY ---- */
 function dockAtPort() { boat.speed = 0; clearTourists(); if (tour && tour.visited > 0) { pStats.totalTours++; state = 'summary'; showSummary(); } else { applyRepairs(true); openStoryHub(); } }
 function applyRepairs(announce) {
@@ -3894,15 +3963,15 @@ const TourEvents = (() => {
     for (const c of cands.slice(0, E.shortcut.maxPerMap)) {
       const mid = 0.5, half = E.shortcut.gap / 2 / c.gap;
       const lenX = c.B.x - c.A.x, lenZ = c.B.z - c.A.z;
+      const RB = new Baker(), FB = new Baker();                                  // whole rock wall = 2 meshes
       for (let s = 0.04; s < 0.97; s += 16 / c.gap) {                         // a wall of rocks with one gap in the middle
         if (Math.abs(s - mid) < half + 6 / c.gap) continue;
         const r = { x: c.A.x + lenX * s + rand(-3, 3), z: c.A.z + lenZ * s + rand(-3, 3), r: 7 + Math.random() * 2, shortcut: true };
         rocks.push(r);
-        const g = new THREE.Group();
-        for (let k = 0; k < 2; k++) { const sp = new THREE.Mesh(pyramidGeo, matBoulder); sp.scale.set(r.r * 0.7, r.r * 1.3, r.r * 0.7); sp.position.set(rand(-2, 2), r.r * 0.4, rand(-2, 2)); sp.rotation.y = Math.random() * 3; g.add(sp); }
-        const foam = new THREE.Mesh(new THREE.CylinderGeometry(r.r + 2.5, r.r + 2.5, 1, 8), new THREE.MeshLambertMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })); foam.position.y = 0.5; g.add(foam);
-        g.position.set(r.x, 0, r.z); worldGroup.add(g);
+        for (let k = 0; k < 2; k++) { const sc = r.r * (0.55 + Math.random() * 0.25); RB.add(G_ROCK, C.granite[k + (Math.random() < 0.5 ? 0 : 2)], r.x + rand(-2, 2), sc * 0.5, r.z + rand(-2, 2), sc, sc * (1.3 + Math.random() * 0.6), sc, Math.random() * 3, Math.random() * 3, Math.random() * 3); }
+        for (let j = 0; j < 10; j++) { const a0 = j / 10 * 6.283, a1 = (j + 1) / 10 * 6.283, P = (a, R) => [r.x + Math.cos(a) * R, 1.1, r.z + Math.sin(a) * R]; FB.tri(P(a0, r.r * 0.6), P(a1, r.r + 2.5), P(a0, r.r + 2.5), C.foam); FB.tri(P(a0, r.r * 0.6), P(a1, r.r * 0.6), P(a1, r.r + 2.5), C.foam); }
       }
+      worldGroup.add(RB.mesh(matIsland)); const fm = FB.mesh(matShallow); fm.renderOrder = 1; worldGroup.add(fm);
       // channel markers at both sides of the gap (red / green like real harbours) + a floating sign
       const gx = c.A.x + lenX * mid, gz = c.A.z + lenZ * mid, ux = lenX / c.gap, uz = lenZ / c.gap;
       [[-1, buoyRed], [1, buoyGreen]].forEach(([sd, mat]) => {
@@ -3987,10 +4056,7 @@ let mState = { active: false, dist: 0, score: 0, speed: 60, velX: 0, lean: 0, co
 const M_WIDTH = MC.trackWidth; // Track width (constrained visually by massive side waves)
 const M_CHUNK_LEN = MC.chunkLen;
 const M_SPAWN_AHEAD = MC.spawnAhead;      // chunks generate this far ahead of the boat
-// Mistral fog: dense wall of haze so obstacles materialize out of the mist
-// instead of popping into view. Spawn distance (780 + in-chunk offsets)
-// always sits beyond MIST_FOG_FAR, so you never see anything appear.
-const MIST_FOG_NEAR = 220, MIST_FOG_FAR = 680;
+// Mistral fog comes from the run theme (runthemes.js: fogNear / fogFar).
 const WORLD_FOG_NEAR = 500, WORLD_FOG_FAR = 2200; // the open-world defaults
 
 /* ---- STORM: dark sky, rain, and lightning for the Mistral Run ---- */
@@ -5511,7 +5577,6 @@ function playThunder(near, hit) {
   n.connect(lp); lp.connect(g); g.connect(sfxGain); n.start(t + delay); n.stop(t + delay + dur + 0.3);
   if (hit) { tone('sawtooth', 220, 55, 0.5, 0.25); flashAudioIndicator('⚡'); }
 }
-function playLightningSound() { playThunder(true, true); }
 
 function flashAudioIndicator(emoji) {
   const el = document.getElementById('audioIndicator') || document.getElementById('audioIndicatorMain');
@@ -6242,39 +6307,6 @@ const Retention = (() => {
   /* ---------- MENU WIDGETS ---------- */
   function renderMenu() {
     $('missionsCard').innerHTML = missionsHtml(false);
-  }
-
-  /* ---------- THE OLD FISHERMAN'S TIPS (main menu) ----------
-     Short, useful nudges in his voice: what to do next. Rotates. */
-  let tipIdx = 0, tipTimer = null;
-  function fisherTips() {
-    const tips = [], d = daily();
-    if (d.available) tips.push({ p: 10, text: `Your daily gift is waiting in the Store, lad. Day ${d.dayNum}: ${rewardText(d.reward)}!`, cta: '🎁 Open', go: () => openStore() });
-    for (const m of store().active) {
-      const f = m.progress / m.target;
-      if (f >= 0.5 && f < 1) tips.push({ p: 8, text: `So close! "${m.text}" is ${Math.round(f * 100)}% done. Prize: ${rewardText(m.reward)}.`, cta: '🌪️ Play', go: () => $('btnMistral').click() });
-    }
-    const next = FLEET.find(b => !b.premium && !owned.has(b.id) && typeof boatLocked === 'function' && !boatLocked(b));
-    if (next && Wallet.canAfford(next.price, 'money')) tips.push({ p: 9, text: `You've saved enough for the ${next.name}! Go have a look at her in the Shop.`, cta: '⛵ Shop', go: () => openBoutique('boats') });
-    else if (next) tips.push({ p: 3, text: `${(next.price - Wallet.money).toLocaleString()} € more and the ${next.name} is yours. Keep sailing.`, cta: '🌪️ Play', go: () => $('btnMistral').click() });
-    if (currentBoat && typeof upgradeCost === 'function') {
-      const cheap = UPGRADE_DEFS.map(u => ({ u, c: upgradeCost(u) })).filter(x => x.c !== null && Wallet.canAfford(x.c, 'money')).sort((a, b) => a.c - b.c)[0];
-      if (cheap) tips.push({ p: 6, text: `Your ${currentBoat.name} could use a ${cheap.u.name} (${cheap.c.toLocaleString()} €). You can see it on the boat!`, cta: '🔧 Upgrade', go: () => openBoutique('upgrades') });
-    }
-    if (!pStats.starterBought) tips.push({ p: 2, text: 'The Starter Pack in the Store is the best deal on this coast. Just saying.', cta: '💎 Store', go: () => openStore() });
-    if (mBestScore > 0) tips.push({ p: 2, text: `Your record is ${Math.floor(mBestScore).toLocaleString()}. The Mistral says you can't beat it. Prove it wrong.`, cta: '🌪️ Play', go: () => $('btnMistral').click() });
-    tips.push({ p: 1, text: OLD_MAN_ADVICE[Math.floor(Date.now() / 86400000) % OLD_MAN_ADVICE.length], cta: null });
-    return tips.sort((a, b) => b.p - a.p);
-  }
-  function renderFisherTip(reset) {
-    const el = $('fisherTip'); if (!el) return;
-    const tips = fisherTips(); if (reset) tipIdx = 0;
-    const t = tips[tipIdx % tips.length];
-    el.className = 'fisher-tip' + (t.p >= 8 ? ' hot' : '');
-    el.innerHTML = `<span class="ft-face">🎣</span><span class="ft-text"><b>THE OLD FISHERMAN</b>${t.text}</span>${t.cta ? `<span class="ft-cta">${t.cta}</span>` : ''}`;
-    el.onclick = t.go ? () => { playMenuClick(); t.go(); } : null;
-    clearTimeout(tipTimer);
-    tipTimer = setTimeout(() => { if ($('mainMenuOverlay').classList.contains('open')) { tipIdx++; el.classList.add('swap'); setTimeout(() => { renderFisherTip(false); el.classList.remove('swap'); }, 250); } else renderFisherTip(false); }, 9000);
   }
 
   /* ---------- SUMMARY JUICE ---------- */
