@@ -5519,15 +5519,31 @@ function flashAudioIndicator(emoji) {
 }
 
 // Browsers only allow sound after a tap/click: create/resume the context on the first one.
+/* Phones (iPhone especially) only allow sound after a real tap, and Safari
+   mutes web audio when the ringer switch is on silent unless we ask for
+   "playback" audio. So on every tap until sound runs we: ask for playback
+   mode, play a silent HTML audio clip (switches iOS to media audio), play a
+   1-sample buffer and resume the context. After iOS interruptions (calls,
+   app switching) the next tap brings the sound back. */
+const SILENT_WAV = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAESsAACJWAAACABAAZGF0YQAAAAA=';
+let silentEl = null;
 function unlockAudio() {
+  if (!settings.audioEnabled) return;
+  try { if (navigator.audioSession) navigator.audioSession.type = 'playback'; } catch (e) {}   // iOS 17+: ignore the silent switch
   if (!isAudioInit) initAudio();
-  if (audioCtx && audioCtx.state === 'suspended' && settings.audioEnabled) audioCtx.resume();
-  if (audioCtx && audioCtx.state === 'running') {
-    flashAudioIndicator('🔊');
-    ['pointerdown', 'touchstart', 'mousedown', 'keydown', 'click'].forEach(ev => window.removeEventListener(ev, unlockAudio, true));
+  if (!audioCtx) return;
+  if (!silentEl) { try { silentEl = new Audio(SILENT_WAV); silentEl.setAttribute('playsinline', ''); silentEl.loop = true; silentEl.volume = 0.01; } catch (e) {} }
+  if (silentEl && silentEl.paused) { const p = silentEl.play(); if (p && p.catch) p.catch(() => {}); }
+  if (audioCtx.state !== 'running') {
+    try { const b = audioCtx.createBuffer(1, 1, 22050), src = audioCtx.createBufferSource(); src.buffer = b; src.connect(audioCtx.destination); src.start(0); } catch (e) {}
+    const r = audioCtx.resume(); if (r && r.then) r.then(() => { if (audioCtx.state === 'running') flashAudioIndicator('🔊'); }).catch(() => {});
   }
 }
-['pointerdown', 'touchstart', 'mousedown', 'keydown', 'click'].forEach(ev => window.addEventListener(ev, unlockAudio, true));
+// touchend/click count as a real tap on iOS; pointerdown/touchstart for Android & desktop.
+// Kept active for the whole session: they only do work while sound isn't running.
+['pointerdown', 'touchstart', 'touchend', 'mousedown', 'keydown', 'click'].forEach(ev => window.addEventListener(ev, () => { if ((!audioCtx || audioCtx.state !== 'running') && !(typeof Game !== 'undefined' && Game.paused)) unlockAudio(); }, { capture: true, passive: true }));
+document.addEventListener('visibilitychange', () => { if (document.hidden && silentEl) silentEl.pause();
+  if (!document.hidden && audioCtx && audioCtx.state !== 'running' && settings.audioEnabled && !(typeof Game !== 'undefined' && Game.paused)) audioCtx.resume().catch(() => {}); });
 // Pause/resume of the audio context on app background is handled in main.js (Platform hooks).
 
 </script>
