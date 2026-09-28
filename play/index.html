@@ -1377,8 +1377,8 @@ const AD_BREAKS = { everyRuns: 5, everyTours: 5 };
 
 /* Rewarded-ad gift cycle */
 const GIFT_CYCLE = [
-  { knots: 1, money: 0 }, { knots: 0, money: 100 }, { knots: 2, money: 0 },
-  { knots: 0, money: 200 }, { knots: 3, money: 0 }, { knots: 0, money: 400 }, { knots: 1, money: 150 },
+  { knots: 3, money: 0 }, { knots: 0, money: 500 }, { knots: 5, money: 0 },
+  { knots: 0, money: 1000 }, { knots: 8, money: 0 }, { knots: 0, money: 2000 }, { knots: 5, money: 750 },
 ];
 
 /* ---- RETENTION: missions & daily streak ----
@@ -1400,14 +1400,14 @@ const MISSIONS = [
    beforehand). weight = how often each kind comes up. `tier` 0..4. */
 const MISSION_REWARDS = [
   { kind: 'money',    weight: 40, amount: tier => 120 + tier * 180 + Math.round(Math.random() * 4) * 25 },
-  { kind: 'knots',    weight: 30, amount: tier => 5 * (3 + tier * 2 + Math.floor(Math.random() * 3)) },   // 15–65 knots
+  { kind: 'knots',    weight: 30, amount: () => 5 },   // a knot mission always pays 5 knots
   { kind: 'miles',    weight: 20, amount: tier => 1 + tier },     // head start: next run begins this many NM in
   { kind: 'cosmetic', weight: 10 },                              // a random flag or sail you don't own yet
 ];
 
 /* Daily login streak: day 1..7, then it repeats. Missing a day restarts at day 1. */
 const DAILY_REWARDS = [
-  { money: 50 }, { knots: 1 }, { money: 120 }, { knots: 2 }, { money: 250 }, { knots: 3 }, { money: 500, knots: 5 },
+  { money: 500 }, { knots: 5 }, { money: 1000 }, { knots: 10 }, { money: 2000 }, { knots: 15 }, { money: 5000, knots: 30 },
 ];
 
 </script>
