@@ -835,11 +835,32 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
 .vn-slider span { font-size: 12px; font-weight: 900; color: var(--muted); white-space: nowrap; } .vn-slider span.ok { color: var(--lime); }
 .vn-slider input { flex: 1; min-width: 120px; accent-color: var(--sun); height: 34px; }
 
+/* web lock (public web copy) */
+#webLock { display: none; position: fixed; inset: 0; z-index: 500; align-items: center; justify-content: center; padding: 20px;
+  background: radial-gradient(ellipse at 50% 25%, #3fd2e6 0%, #0b8fb8 45%, #04344d 100%); }
+#webLock.show { display: flex; }
+.wl-card { max-width: 360px; width: 100%; text-align: center; color: #fff; padding: 24px 20px; border-radius: 22px; background: rgba(4,52,77,0.75); border: 3px solid var(--line); box-shadow: 0 12px 0 rgba(0,0,0,0.25); }
+.wl-logo { font-size: 56px; } .wl-card h2 { margin: 4px 0 10px; color: var(--sun); font-size: 28px; text-shadow: 0 3px 0 #b3471f; }
+.wl-card p { margin: 8px 0; font-size: 16px; line-height: 1.4; } .wl-small { font-size: 13px !important; color: var(--muted); } .wl-card a { color: var(--sun); }
+.wl-code { display: flex; gap: 8px; margin-top: 16px; }
+.wl-code input { flex: 1; min-width: 0; padding: 10px 12px; border-radius: 12px; border: 2px solid var(--violet); background: rgba(3,40,62,0.8); color: #fff; font: inherit; font-size: 16px; font-weight: 800; letter-spacing: 1px; }
+.wl-code button { padding: 10px 16px; border-radius: 12px; border: 0; font: inherit; font-weight: 900; background: var(--sun); color: #5a3000; }
+#webLockMsg { min-height: 18px; margin-top: 8px; font-size: 13px; color: #ffb3a8; }
+
 </style>
 
 
 <div id="loading"><div class="hero-title">Sardinia Skipper</div><div class="hero-subtitle">Loading the sea…</div></div>
 <div id="dmgFlash"></div>
+<!-- Web lock: the public web copy is for the developer's own testing only. Players get the
+     Android app (with ads). Unlocked once per device with the developer code. -->
+<div id="webLock"><div class="wl-card">
+  <div class="wl-logo">⛵</div><h2>Sardinia Skipper</h2>
+  <p>This game is a phone app. <b>Coming soon to Google Play!</b></p>
+  <p class="wl-small">Want to play early? Become a tester: email <a href="mailto:minjauwleonard@gmail.com?subject=Sardinia%20Skipper%20tester">minjauwleonard@gmail.com</a></p>
+  <div class="wl-code"><input id="webLockCode" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Tester code"><button id="webLockOk">OK</button></div>
+  <div id="webLockMsg"></div>
+</div></div>
 <div id="banner" class="banner"></div>
 <canvas id="confetti"></canvas>
 
@@ -6821,6 +6842,19 @@ async function boot() {
   const startBoat = (loaded && savedBoatId && owned.has(savedBoatId) && FLEET.find(b => b.id === savedBoatId)) || FLEET[0];
   selectBoat(startBoat);
 
+  // Public web copy (GitHub Pages): locked unless this device entered the developer code once.
+  // The phone apps, localhost and previews are never locked.
+  if (!Platform.isNative && !Platform.isTestBuild && !pStats.webAccess && !pStats.dev) {
+    const lock = $('webLock'); lock.classList.add('show');
+    const tryCode = () => {
+      const code = $('webLockCode').value.trim().toUpperCase().replace(/\s+/g, ''); if (!code) return;
+      if (Date.now() < (tryCode.lockUntil || 0)) { $('webLockMsg').textContent = 'Too many tries. Wait a minute.'; return; }
+      if (codeHash(code) === CONFIG.DEV_CODE_HASH) { pStats.webAccess = true; Save.write(); lock.classList.remove('show'); return; }
+      tryCode.fails = (tryCode.fails || 0) + 1; if (tryCode.fails >= 5) { tryCode.fails = 0; tryCode.lockUntil = Date.now() + 60000; }
+      $('webLockMsg').textContent = "That code doesn't work."; $('webLockCode').value = '';
+    };
+    $('webLockOk').onclick = tryCode; $('webLockCode').onkeydown = e => { if (e.key === 'Enter') tryCode(); };
+  }
   initShopUI(); initSettingsUI(); initStoreUI(); initPauseUI(); initDevUI(); initStoryUI(); $('codeRedeem').onclick = () => { playMenuClick(); redeemCode($('codeInput').value); $('codeInput').value = ''; }; $('codeInput').onkeydown = e => { if (e.key === 'Enter') $('codeRedeem').click(); }; Game.on('wallet', devTopUp); initMistralUI(); initLegalUI();
   applyQuality(); refreshSettingsUI();
 
