@@ -1176,23 +1176,23 @@ const CONFIG = {
 
   /* ---- MISTRAL RUN (main mode) ---- */
   mistral: {
-    startSpeed: 48, maxSpeed: 160, rampTime: 110,   // Subway-Surfers ramp: speed = start + (max-start)·(1 − e^(−t/rampTime))  → ~75 @30s, ~95 @1min, ~122 @2min, ~150 @5min
+    startSpeed: 85, maxSpeed: 250, rampTime: 150,   // Subway-Surfers ramp: speed = start + (max-start)·(1 − e^(−t/rampTime))  → ~115 @30s, ~140 @1min, ~175 @2min, ~230 @5min, ~245 @8min
     boatLength: 16,               // every hull is scaled to this in the run
     trackWidth: 140, chunkLen: 300, spawnAhead: 780,
     multTime: 12, maxMult: 8,     // tourist multiplier chain
-    coinValue: 3, chainBonus: 12, chainScore: 150,
+    coinValue: 2, chainBonus: 8,   /* per coin: tuned so €/minute stays the same at the faster speeds */ chainScore: 150,
     multCoinFactor: 0.25,         // each ×1 of tourist multiplier adds +25% coin value (score still gets the full ×)
     softBuoyChance: 0.5,          // share of buoys that are the yellow, softer kind (buoySoft damage)
     knots: {                      // knots are rare AND risky: never just lying in open water
-      arcChance: 0.06,            // top of a jump arc (only reachable mid-air)
-      rockChance: 0.012,          // per chunk: tucked right against a rock / buoy (skim it or crash)
+      arcChance: 0.04,            // top of a jump arc (only reachable mid-air)
+      rockChance: 0.008,          // per chunk: tucked right against a rock / buoy (skim it or crash)
     },
     damage: {                     // HP lost per hit
       rock: 20, buoy: 30, buoySoft: 12, edgerock: 35, chain: 20, yacht: 40, lightning: 25, surf: 6, whirlpool: 5,
     },
     repair: {                     // 🔧 repair kit pickups (heal % comes from POWERUP_DEFS / shop level)
-      baseChance: 0.025,          // per chunk at full HP
-      lowHpBonus: 0.1,            // extra chance as HP drops (at 0 HP → 0.125)
+      baseChance: 0.017,          // per chunk at full HP
+      lowHpBonus: 0.07,           // extra chance as HP drops (at 0 HP → 0.087)
       fullHpScore: 100,           // score bonus if you grab one at full HP
     },
     wave: { launch: 26, launchPerSpeed: 0.18, maxLaunch: 55 },  // jump wave: take-off speed off the crest (grows with boat speed)
@@ -1204,8 +1204,8 @@ const CONFIG = {
       nearMiss: 11, nearMissScore: 60, nearMissCoins: 6,
     },
     powerups: {                   // floating pickups: shield / magnet / double coins
-      chance: 0.04,               // per chunk
-      airArcChance: 0.3,          // chance the top of a jump arc holds a power-up (else a coin)
+      chance: 0.027,              // per chunk (the faster run covers ~1.5× more chunks per minute)
+      airArcChance: 0.2,          // chance the top of a jump arc holds a power-up (else a coin)
       magnetRadius: 30, addonMagnetRadius: 14, pullSpeed: 140,
     },
     lightning: { warnTime: 1.25, radius: 13, idleDelay: 7, campDelay: 3.5 },
@@ -4854,9 +4854,6 @@ function updateMistral(dt, time) {
     if (SHOW_RUN_TIME && sec !== mState.clockShown) { mState.clockShown = sec; const el = $('mTime'); if (el) el.textContent = fmtTime(sec); } }
   if (mState.stunTimer <= 0) mState.runTime = (mState.runTime || 0) + dt;   // the clock that drives the difficulty
   mState.speed = MC.startSpeed + (MC.maxSpeed - MC.startSpeed) * (1 - Math.exp(-mState.runTime / MC.rampTime));
-  // feel the speed: the view widens a little as you go faster
-  const fovT = 60 + 10 * (mState.speed - MC.startSpeed) / (MC.maxSpeed - MC.startSpeed);
-  if (Math.abs(camera.fov - fovT) > 0.05) { camera.fov += (fovT - camera.fov) * Math.min(1, dt * 2); camera.updateProjectionMatrix(); }
   
   // Multiplier chain drains Subway-Surfers style — rescue again to refresh it
   if (mState.multTimer > 0) {
@@ -4878,11 +4875,11 @@ function updateMistral(dt, time) {
   // ~0.45s — taps give small corrections, long holds build into a hard carve.
   // Progressive response curve: velocity follows lean·(0.35+0.65·|lean|).
   const steer = (input.right ? 1 : 0) - (input.left ? 1 : 0);
-  if (input.drag !== null && !steer) mState.lean += (input.drag - mState.lean) * Math.min(1, 9 * dt);   // thumb drag: lean follows the thumb
-  else if (steer !== 0) mState.lean = Math.max(-1, Math.min(1, mState.lean + steer * dt / 0.45));
-  else mState.lean += (0 - mState.lean) * Math.min(1, 5 * dt);   // settles gently on release
+  if (input.drag !== null && !steer) mState.lean += (input.drag - mState.lean) * Math.min(1, 13 * dt);   // thumb drag: lean follows the thumb
+  else if (steer !== 0) mState.lean = Math.max(-1, Math.min(1, mState.lean + steer * dt / (steer * mState.lean < 0 ? 0.15 : 0.3)));   // snappy, and reversing is extra quick
+  else mState.lean += (0 - mState.lean) * Math.min(1, 7 * dt);   // settles gently on release
   const agility = 1 - Math.min(0.45, mState.tourists * 0.06);
-  const maxLat = (52 + boat.speed * 0.26) * agility * boatRun().handling * (mState.boostTimer > 0 ? 1.25 : 1);
+  const maxLat = (60 + boat.speed * 0.24) * agility * boatRun().handling * (mState.boostTimer > 0 ? 1.25 : 1);
   mState.velX = mState.lean * (0.35 + 0.65 * Math.abs(mState.lean)) * maxLat;
   
   boat.x += mState.velX * dt;
@@ -5102,7 +5099,7 @@ function updateMistral(dt, time) {
   
   // Speed feel: FOV stretches wide as you accelerate, boosts punch it further,
   // and a fine shake creeps in at high speed
-  const targetFov = 60 + Math.max(0, boat.speed - 50) * 0.16 + (mState.boostTimer > 0 ? 8 : 0);
+  const targetFov = 62 + 12 * Math.min(1, Math.max(0, (mState.speed - MC.startSpeed) / (MC.maxSpeed - MC.startSpeed))) + (mState.boostTimer > 0 ? 6 : 0);   // feel the speed: 62° → 74° (+6° boosting)
   camera.fov += (targetFov - camera.fov) * Math.min(1, 6 * dt); camera.updateProjectionMatrix();
   const shake = settings.shake ? Math.max(0, (boat.speed - 75) * 0.004) + (mState.boostTimer > 0 ? 0.3 : 0) : 0;
   camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake;
