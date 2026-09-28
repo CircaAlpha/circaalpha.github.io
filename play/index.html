@@ -824,6 +824,8 @@ body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: no
 .code-row input { flex: 1; min-width: 0; margin: 0 8px; padding: 7px 10px; border-radius: 10px; border: 2px solid var(--violet); background: rgba(10,5,30,0.7); color: #fff; font: inherit; font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; font-size: 16px; }
 .code-row input::placeholder { color: rgba(255,255,255,0.4); letter-spacing: 0; text-transform: none; font-weight: 600; }
 #devPanel { flex-wrap: wrap; gap: 4px; max-width: 260px; }
+.dbtn.upg { background: linear-gradient(180deg, #7ff0ff, #1b9cff); color: #062a4a; border-color: #0b6fb8; }
+#pauseMissions { margin: 10px 0 4px; text-align: left; max-height: 46vh; overflow-y: auto; }
 
 </style>
 
@@ -1113,6 +1115,7 @@ body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: no
   <div class="panel small-panel">
     <h2 id="pauseTitle">⏸ Paused</h2>
     <button class="go-btn" id="pauseResume">▶ RESUME</button>
+    <div id="pauseMissions"></div>
     <button class="btn wide danger" id="pauseQuit">End</button>
   </div>
 </div>
@@ -1170,12 +1173,13 @@ const CONFIG = {
     multTime: 12, maxMult: 8,     // tourist multiplier chain
     coinValue: 3, chainBonus: 12, chainScore: 150,
     multCoinFactor: 0.25,         // each ×1 of tourist multiplier adds +25% coin value (score still gets the full ×)
+    softBuoyChance: 0.5,          // share of buoys that are the yellow, softer kind (buoySoft damage)
     knots: {                      // knots are rare AND risky: never just lying in open water
       arcChance: 0.06,            // top of a jump arc (only reachable mid-air)
       rockChance: 0.012,          // per chunk: tucked right against a rock / buoy (skim it or crash)
     },
     damage: {                     // HP lost per hit
-      rock: 20, buoy: 30, edgerock: 35, chain: 20, yacht: 40, lightning: 25, surf: 6, whirlpool: 5,
+      rock: 20, buoy: 30, buoySoft: 12, edgerock: 35, chain: 20, yacht: 40, lightning: 25, surf: 6, whirlpool: 5,
     },
     repair: {                     // 🔧 repair kit pickups (heal % comes from POWERUP_DEFS / shop level)
       baseChance: 0.025,          // per chunk at full HP
@@ -1221,15 +1225,15 @@ const FLEET = [
        magnet   coin pull radius (0 = none)                                                     */
   { id: 'dinghy',      name: 'Little Dinghy',    price: 0,     mult: 1.0, maxSpeed: 20,  turn: 1.5, sail: false, tier: 1, len: 12, seats: 2,  maxHp: 80,  desc: 'Coastal waters only.',
     run: { hitR: 3.0, handling: 1.00, armor: 0.00, loot: 1.00, magnet: 0 } },
-  { id: 'speedboat',   name: 'Speedboat',        price: 4500,   mult: 1.2, maxSpeed: 42,  turn: 1.7, sail: false, tier: 2, len: 16, seats: 4,  maxHp: 100, desc: 'Fast, nimble, fun.',
+  { id: 'speedboat',   name: 'Speedboat',        price: 12000,   mult: 1.2, maxSpeed: 42,  turn: 1.7, sail: false, tier: 2, len: 16, seats: 4,  maxHp: 100, desc: 'Fast, nimble, fun.',
     run: { hitR: 2.9, handling: 1.12, armor: 0.00, loot: 1.05, magnet: 0 } },
-  { id: 'sailboat',    name: 'Sailing Yacht',    price: 28000,  mult: 1.4, maxSpeed: 52,  turn: 1.0, sail: true,  tier: 3, len: 19, seats: 6,  maxHp: 125, desc: 'Crosses the strait.',
+  { id: 'sailboat',    name: 'Sailing Yacht',    price: 60000,  mult: 1.4, maxSpeed: 52,  turn: 1.0, sail: true,  tier: 3, len: 19, seats: 6,  maxHp: 125, desc: 'Crosses the strait.',
     run: { hitR: 2.9, handling: 1.05, armor: 0.05, loot: 1.10, magnet: 0 } },
-  { id: 'schooner',    name: 'Classic Schooner', price: 85000,  mult: 1.6, maxSpeed: 58,  turn: 0.9, sail: true,  tier: 4, len: 23, seats: 7,  maxHp: 150, desc: 'Teak decks, twin masts, timeless lines.',
+  { id: 'schooner',    name: 'Classic Schooner', price: 180000,  mult: 1.6, maxSpeed: 58,  turn: 0.9, sail: true,  tier: 4, len: 23, seats: 7,  maxHp: 150, desc: 'Teak decks, twin masts, timeless lines.',
     run: { hitR: 2.8, handling: 1.05, armor: 0.12, loot: 1.15, magnet: 0 } },
-  { id: 'catamaran',   name: 'Grand Catamaran',  price: 220000, mult: 1.8, maxSpeed: 64,  turn: 0.8, sail: true,  tier: 4, len: 26, seats: 8,  maxHp: 175, desc: 'The flagship. Its wide nets scoop up nearby coins.',
+  { id: 'catamaran',   name: 'Grand Catamaran',  price: 450000, mult: 1.8, maxSpeed: 64,  turn: 0.8, sail: true,  tier: 4, len: 26, seats: 8,  maxHp: 175, desc: 'The flagship. Its wide nets scoop up nearby coins.',
     run: { hitR: 2.8, handling: 1.10, armor: 0.12, loot: 1.20, magnet: 10 } },
-  { id: 'goldenyacht', name: 'The Golden Yacht', price: 650000, mult: 2.2, maxSpeed: 136, turn: 0.7, sail: false, tier: 4, len: 30, seats: 10, maxHp: 220, desc: '75 knots of solid gold. Throttle lever included.',
+  { id: 'goldenyacht', name: 'The Golden Yacht', price: 1200000, mult: 2.2, maxSpeed: 136, turn: 0.7, sail: false, tier: 4, len: 30, seats: 10, maxHp: 220, desc: '75 knots of solid gold. Throttle lever included.',
     run: { hitR: 2.6, handling: 1.18, armor: 0.15, loot: 1.35, magnet: 6 } },
   /* Premium boats: bought with knots, outside the unlock chain.
      By design they beat the Golden Yacht on every Mistral stat (HP, armor, handling, hitbox, loot, magnet). */
@@ -1263,7 +1267,7 @@ const UPGRADE_DEFS = [
   { id: 'radar',  icon: '📡', name: 'Radar Mast',    costFactor: 0.25, desc: '+3 m coin pull per level (Mistral)', look: 'Spinning radar → dome → lights & beacon' },
   { id: 'cargo',  icon: '📦', name: 'Cargo Hold',    costFactor: 0.35, desc: '+5% coin value (Mistral) & tips (Story) per level', look: 'A crate per level → treasure chest' },
 ];
-const UPGRADE_TIER_COST = [0.15, 0.25, 0.4, 0.6, 0.85];
+const UPGRADE_TIER_COST = [0.09, 0.15, 0.24, 0.36, 0.51];
 /* Upgrade prices scale with the boat's value in euros (min 4,000 €; knot boats count 100 € per knot) */
 function upgradeBase(def) { return Math.max(4000, def.cur === 'knots' ? def.price * 100 : def.price); }
 const UPGRADE_MAX_LEVEL = 5;
@@ -1276,7 +1280,7 @@ const POWERUP_DEFS = [
   { id: 'double', icon: '💰', name: 'Double Coins', desc: 'Every coin is worth twice as much.' },
   { id: 'repair', icon: '🔧', name: 'Repair Kit',   desc: 'Instantly fixes part of your hull.' },
 ];
-const POWERUP_UPG = { baseTime: 5, timePerLevel: 1, repairBase: 0.10, repairPerLevel: 0.04, maxLevel: 5, cost: [6000, 12000, 20000, 32000, 50000] };
+const POWERUP_UPG = { baseTime: 5, timePerLevel: 1, repairBase: 0.10, repairPerLevel: 0.04, maxLevel: 5, cost: [7500, 15000, 25000, 40000, 62500] };
 function pwrLevel(id) { return (pStats.pwr && pStats.pwr[id]) || 0; }
 function pwrTime(id) { return POWERUP_UPG.baseTime + POWERUP_UPG.timePerLevel * pwrLevel(id); }
 function repairFrac(lvl = pwrLevel('repair')) { return POWERUP_UPG.repairBase + POWERUP_UPG.repairPerLevel * lvl; }
@@ -1584,13 +1588,13 @@ const SPEAKERS = {
 
 const CHAPTERS = [
   {
-    id: 1, days: [1, 15], title: 'A Borrowed Dinghy', goal: 'Save up for the Speedboat (4,500 €).',
+    id: 1, days: [1, 15], title: 'A Borrowed Dinghy', goal: 'Save up for the Speedboat (12,000 €).',
     intro: [
       { who: 'narr', text: 'Spring, on the strait between Sardinia and Corsica. You step off the ferry with one bag and a signed lease for a **leaky rubber dinghy**.', show: 'boat_dinghy' },
       { who: 'old',  text: "So you're the new skipper. Hm. That boat has seen better decades." },
       { who: 'you',  choices: ["It floats. That's a start.", 'It has character.', 'Where do I bail the water out?'] },
       { who: 'old',  text: 'Take the **families** out first. They pay little, but they never rush you. Keep them dry and bring them back.', show: 'tourists' },
-      { who: 'old',  text: 'Save your euros. **4,500 €** buys the **Speedboat** in the Shop, and a faster boat reaches the sights further out.', show: 'boat_speedboat' },
+      { who: 'old',  text: 'Save your euros. **12,000 €** buys the **Speedboat** in the Shop, and a faster boat reaches the sights further out.', show: 'boat_speedboat' },
     ],
     outro: [
       { who: 'old',  text: "Two weeks and you haven't drowned a single tourist. People at the bar are saying your **name**." },
@@ -1759,7 +1763,7 @@ const MISTRAL_INTRO = [
   { who: 'radio', text: 'Survivors spotted on **flamingo floats**! Each one you pick up is a **rescue**, and every rescue raises your **×multiplier** for 12 seconds. Chain them!', show: 'flamingo' },
   { who: 'you',   text: 'And all that money floating around?' },
   { who: 'old',   text: '**Coins** and **knots** washed off the ship. Scoop them up: they\'re yours to spend in the **Shop** back home.', show: 'coins' },
-  { who: 'old',   text: '**Rocks** and **buoys** eat your hull. Keep an eye on the **❤️ HP bar** in the top-right corner. At zero, you sink.', show: 'hazards' },
+  { who: 'old',   text: '**Rocks** and **red buoys** eat your hull (**yellow buoys** only scratch it). Keep an eye on the **❤️ HP bar** in the top-right corner. At zero, you sink.', show: 'hazards' },
   { who: 'radio', text: 'Storm cell overhead! A **yellow ring** on the water means lightning is about to strike right there. **Move!**', show: 'lightning' },
   { who: 'old',   text: 'Luck floats too. A **🔧 repair kit** patches up **30 HP**…', show: 'repair' },
   { who: 'old',   text: '…and power-ups: a **🛡️ shield** makes you untouchable, a **🧲 magnet** pulls coins to you, and **💰 ×2** doubles them. Each lasts **5 seconds**, and a **🔧 repair kit** fixes 10% of your hull. Upgrade them in the Shop!', show: 'powerups' },
@@ -3252,11 +3256,13 @@ function openBoatDetail(def) {
     R.magnet ? 'pulls in nearby coins' : '', R.hitR < 3 ? 'smaller hitbox' : ''].filter(Boolean);
   openDetail({ img: `<img alt="" ${thumbAttr({ boat: def.id })}>`, title: def.name, sub: def.desc,
     body: boatStats(def) + (perks.length ? `<div class="perks">🌪️ Mistral perks: ${perks.join(' · ')}</div>` : '') + `<div class="perks dim">📖 Story: ${def.seats} seat${def.seats > 1 ? 's' : ''} · pays ×${def.mult}</div>`,
-    actions: cur ? [{ label: '✔ Sailing this boat', disabled: true }]
-      : own ? [{ label: 'SAIL THIS BOAT', cls: 'go', run: () => { selectBoat(def); closeDetail(); } }]
+    actions: cur ? [{ label: '✔ Sailing this boat', disabled: true }, { label: '🔧 UPGRADES', cls: 'upg', run: () => openUpgradesFor(def) }]
+      : own ? [{ label: 'SAIL THIS BOAT', cls: 'go', run: () => { selectBoat(def); closeDetail(); } }, { label: '🔧 UPGRADES', cls: 'upg', run: () => openUpgradesFor(def) }]
       : locked ? [{ label: '🔒 Own the ' + prevChainBoat(def).name + ' first', disabled: true }]
       : [{ label: 'BUY · ' + priceTag(def.price, boatCur(def)), cls: boatCur(def) === 'knots' ? 'prem' : 'go', run: () => { buyBoat(def); if (owned.has(def.id)) { Retention.confetti(1500); closeDetail(); } } }] });
 }
+/* From a boat's detail sheet straight to its upgrades (switches to that boat, since upgrades are per boat) */
+function openUpgradesFor(def) { if (currentBoat !== def) selectBoat(def); shopTab = 'upgrades'; $('itemDetail').classList.remove('open'); renderItemShop(); }
 function openUpgradeDetail(u) {
   const lvl = upgLevel(u.id), price = upgradeCost(u);
   const show = Math.min(UPGRADE_MAX_LEVEL, lvl + 1);
@@ -4319,7 +4325,8 @@ function makeWaveCurl(side, zStart) {
   g.setIndex(idx); g.computeVertexNormals();
   return new THREE.Mesh(g, matCurl);
 }
-const matBuoy = new THREE.MeshLambertMaterial({color: 0xe63946, flatShading: true});
+const matBuoyRed = new THREE.MeshLambertMaterial({color: 0xe63946, flatShading: true});
+const matBuoySoft = new THREE.MeshLambertMaterial({color: 0xffc93c, flatShading: true});   // yellow buoy: softer hit
 const matFoam = new THREE.MeshLambertMaterial({color: 0xffffff, flatShading: true});
 
 /* ---- THE JUMP WAVE ----
@@ -4402,11 +4409,11 @@ function updateSpray(dt) {
   }
 }
 
-function makeMistralBuoy() {
-  const g = new THREE.Group();
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 1.4, 1.6, 10), matBuoy);
+function makeMistralBuoy(soft) {
+  const g = new THREE.Group(); const mat = soft ? matBuoySoft : matBuoyRed;
+  const base = new THREE.Mesh(new THREE.CylinderGeometry(2.4, 1.4, 1.6, 10), mat);
   base.position.y = 0.6; g.add(base);
-  const ball = new THREE.Mesh(new THREE.SphereGeometry(2.1, 12, 10), matBuoy);
+  const ball = new THREE.Mesh(new THREE.SphereGeometry(2.1, 12, 10), mat);
   ball.position.y = 2.6; g.add(ball);
   const stripe = new THREE.Mesh(new THREE.CylinderGeometry(2.15, 2.15, 0.8, 12), matFoam);
   stripe.position.y = 2.6; g.add(stripe);
@@ -4414,7 +4421,7 @@ function makeMistralBuoy() {
     new THREE.MeshLambertMaterial({ color: 0x333a44 }));
   mastB.position.y = 4.8; g.add(mastB);
   const light = new THREE.Mesh(new THREE.SphereGeometry(0.55, 8, 6),
-    new THREE.MeshBasicMaterial({ color: 0xff3020 }));
+    new THREE.MeshBasicMaterial({ color: soft ? 0xffe066 : 0xff3020 }));
   light.position.y = 6.1; g.add(light);
   g.userData = { light, ph: Math.random() * 6.28 };
   return g;
@@ -4694,6 +4701,7 @@ function makeRivalYacht() {
   return mesh;
 }
 function spawnMistralObj(type, x, z) {
+  const soft = type === 'buoy' && Math.random() < MC.softBuoyChance;
   let mesh; let r = 3;
   if (type === 'coin') { mesh = new THREE.Mesh(coinGeo, matCoin); }
   else if (type === 'knot') { mesh = new THREE.Mesh(knotGeo, matKnot); }
@@ -4702,7 +4710,7 @@ function spawnMistralObj(type, x, z) {
   else if (type === 'edgerock') { mesh = makeMistralRock(); const sc = 1.6 + Math.random() * 1.0; mesh.scale.setScalar(sc); r = 8 * sc; } // big breaker rock — now a real hazard at the track edge
   else if (type === 'curl') { mesh = makeWaveCurl(Math.sign(x) || 1, z); r = 0; } // overhanging wave wall, pure scenery
   else if (type === 'chain') { mesh = makeChain(); r = 0; } // full-width jump gate — custom collision on dz only
-  else if (type === 'buoy') { mesh = makeMistralBuoy(); r = 4; }
+  else if (type === 'buoy') { mesh = makeMistralBuoy(soft); r = 4; }
   else if (type === 'ramp') { mesh = makeJumpWave(); r = 0; }
   else if (type === 'whirlpool') { mesh = makeWhirlpool(); r = 18; }
   else if (type === 'repair') { mesh = makeRepairKit(); r = 5.5; }
@@ -4714,6 +4722,7 @@ function spawnMistralObj(type, x, z) {
   
   if(mesh) { mesh.position.set(x, 0, z); mGroup.add(mesh); }
   const o = { type, x, z, mesh, r, hit: false, phase: Math.random()*10, speedX: 0, speedZ: type==='yacht' ? -35 : 0 };
+  if (soft) o.soft = true;
   mState.objs.push(o); return o;
 }
 
@@ -4968,7 +4977,7 @@ function updateMistral(dt, time) {
       else if ((obj.type === 'rock' || obj.type === 'buoy' || obj.type === 'edgerock') && dist < hitR + obj.r && mState.jumpY < 4) {
         obj.hit = true;
         if (mState.boostTimer > 0 && obj.type !== 'edgerock') { obj.mesh.visible = false; } // boost smashes small rocks/buoys, but not the big breakers
-        else { if (obj.type !== 'edgerock') obj.mesh.visible = false; mHit(MC.damage[obj.type], obj.type, obj.type === 'buoy' ? "💥 Buoy Exploded!" : obj.type === 'edgerock' ? "💥 Smashed the breakers!" : "💥 Hit Rocks!"); }
+        else { if (obj.type !== 'edgerock') obj.mesh.visible = false; mHit(obj.soft ? MC.damage.buoySoft : MC.damage[obj.type], obj.type, obj.type === 'buoy' ? (obj.soft ? '💛 Bumped a yellow buoy!' : '💥 Buoy Exploded!') : obj.type === 'edgerock' ? "💥 Smashed the breakers!" : "💥 Hit Rocks!"); }
       }
     }
   }
@@ -5382,18 +5391,18 @@ const PROPS = {
   chain:     { label: '⛓️ Harbor chain — jump it!', make: () => makeChain(), view: [0.35, 0.55, 1], zoom: 0.95 },
   flamingo:  { label: '🦩 Tourist on a float = RESCUE', make: () => makeFlamingo(), view: [0.8, 0.5, -1], zoom: 2.0 },
   coins:     { label: '💰 Coins  ·  🪢 Knots', make: () => { const g = new THREE.Group(); for (let i = 0; i < 3; i++) { const c = new THREE.Mesh(coinGeo, matCoin); c.position.set(i * 4 - 6, 0, 0); g.add(c); } const k = new THREE.Mesh(knotGeo, matKnot); k.position.set(7, 0, 0); g.add(k); return g; }, view: [0.2, 0.3, 1], zoom: 1.9 },
-  hazards:   { label: '🪨 Rocks & 🔴 buoys hurt your hull', make: () => { const g = new THREE.Group(); const rk = makeMistralRock(); rk.position.x = -6; g.add(rk); const b = makeMistralBuoy(); b.position.x = 7; g.add(b); return g; }, view: [0.4, 0.6, 1], zoom: 1.7 },
+  hazards:   { label: '🪨 Rocks & 🔴 red buoys hurt · 🟡 yellow buoys hurt less', make: () => { const g = new THREE.Group(); const rk = makeMistralRock(); rk.position.x = -8; g.add(rk); const b = makeMistralBuoy(); b.position.x = 4; g.add(b); const y = makeMistralBuoy(true); y.position.x = 11; g.add(y); return g; }, view: [0.4, 0.6, 1], zoom: 1.7 },
   lightning: { label: '⚡ Yellow ring = lightning incoming', make: () => { const g = new THREE.Group(); const m = makeStrikeMarker(); g.add(m); const bolt = makeBolt(0, 0); bolt.scale.setScalar(0.22); bolt.position.set(0, 2, 0); g.add(bolt); return g; }, view: [0.3, 0.6, 1], zoom: 1.5 },
   repair:    { label: '🔧 Repair kit: +30 HP', make: () => noBeam(makeRepairKit()), view: [0.8, 0.6, 1], zoom: 1.7 },
   powerups:  { label: '🛡️ Shield · 🧲 Magnet · 💰 ×2 — 5 s each', make: () => { const g = new THREE.Group(); ['shield', 'magnet', 'double'].forEach((k, i) => { const p = noBeam(makePowerup(k)); p.position.x = (i - 1) * 12; g.add(p); }); return g; }, view: [0.2, 0.4, 1], zoom: 1.8 },
   yacht:     { label: '🛥️ Ride the cyan wake = BOOST', make: () => { const y = makeRivalYacht(); y.children.filter(c => c.geometry && c.geometry.type === 'PlaneGeometry').forEach(c => { c.geometry = new THREE.PlaneGeometry(c.geometry.parameters.width, 26); c.position.z = MC.yacht.halfLen + 13; }); return y; }, view: [0.8, 0.7, 0.9], zoom: 1.6 },
   // ---- Story mode & menus ----
   boat_dinghy:      { label: '⛵ Little Dinghy', url: () => boatPicture('dinghy') },
-  boat_speedboat:   { label: '🚤 Speedboat · 4,500 €', url: () => boatPicture('speedboat') },
-  boat_sailboat:    { label: '⛵ Sailing Yacht · 28,000 €', url: () => boatPicture('sailboat') },
-  boat_schooner:    { label: '⛵ Classic Schooner · 85,000 €', url: () => boatPicture('schooner') },
-  boat_catamaran:   { label: '⛵ Grand Catamaran · 220,000 €', url: () => boatPicture('catamaran') },
-  boat_goldenyacht: { label: '🛥️ The Golden Yacht · 650,000 €', url: () => boatPicture('goldenyacht') },
+  boat_speedboat:   { label: '🚤 Speedboat · 12,000 €', url: () => boatPicture('speedboat') },
+  boat_sailboat:    { label: '⛵ Sailing Yacht · 60,000 €', url: () => boatPicture('sailboat') },
+  boat_schooner:    { label: '⛵ Classic Schooner · 180,000 €', url: () => boatPicture('schooner') },
+  boat_catamaran:   { label: '⛵ Grand Catamaran · 450,000 €', url: () => boatPicture('catamaran') },
+  boat_goldenyacht: { label: '🛥️ The Golden Yacht · 1,200,000 €', url: () => boatPicture('goldenyacht') },
   tourists:  { label: '👨‍👩‍👧 Your booked guests', make: () => { const g = new THREE.Group(); [{ c: 0xd95f4d }, { c: 0x4d7dd9 }, { c: 0xf0c94d, kid: true }, { c: 0xff5c8a }].forEach((sp, i) => { const p = makePerson(sp); p.position.x = (i - 1.5) * 1.3; p.rotation.y = (i - 1.5) * -0.25; g.add(p); }); return g; }, view: [0.2, 0.35, -1], zoom: 1.6 },
   beacon:    { label: '🟡 Beacon = a sight to visit', make: () => { const g = new THREE.Group(); const m = new THREE.MeshLambertMaterial({ color: 0xffd166, flatShading: true }); const p = new THREE.Mesh(new THREE.BoxGeometry(3, 40, 3), m); p.position.y = 20; g.add(p); const r = new THREE.Mesh(new THREE.TorusGeometry(10, 1.5, 4, 8), m); r.rotation.x = Math.PI / 2; r.position.y = 2; g.add(r); return g; }, view: [0.5, 0.45, 1], zoom: 1.5 },
   dock:      { label: '⚓ Dock close = bigger tip', make: () => { const g = new THREE.Group(); const wood = new THREE.MeshLambertMaterial({ color: 0x8a6a45, flatShading: true }); const d = new THREE.Mesh(new THREE.BoxGeometry(22, 2, 8), wood); g.add(d); for (const x of [-10, 10]) { const post = new THREE.Mesh(new THREE.BoxGeometry(2, 6, 2), new THREE.MeshLambertMaterial({ color: 0x5a4a35 })); post.position.set(x, 1, 0); g.add(post); } const b = new THREE.Mesh(stampedeHullGeometry(12, 4.4, 1.6, { bow: 0.4, sternW: 0.8, taper: 0.6 }), matWhite); b.position.set(0, -0.5, 11); g.add(b); return g; }, view: [0.9, 0.8, 1], zoom: 1.45 },
@@ -6054,6 +6063,8 @@ function pauseGame() {
   Game.paused = true; input.left = input.right = false;
   $('pauseTitle').textContent = state === 'mistral_run' ? '⏸ Run paused' : '⏸ Tour paused';
   $('pauseQuit').textContent = state === 'mistral_run' ? '🏁 End run (keep loot)' : '🏳️ Abandon tour';
+  const pm = $('pauseMissions');                                       // Mistral run: check your missions while paused
+  if (state === 'mistral_run') { pm.innerHTML = Retention.missionsHtml(false); pm.style.display = ''; } else { pm.innerHTML = ''; pm.style.display = 'none'; }
   $('pauseOverlay').classList.add('open');
   if (audioCtx && audioCtx.state === 'running') audioCtx.suspend();
   return true;
