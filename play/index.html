@@ -847,7 +847,7 @@ body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: no
 
 <!-- ============ MISTRAL HUD ============ -->
 <div id="mistralHUD">
-  <div class="hud-box score-box">⭐ <span class="big" id="mScore">0</span><br><span class="tiny">🌊 <span id="mDist">0.0</span> NM · 🏆 <span id="mBest">0</span><br>⏱️ <span id="mTime">0:00</span></span></div>
+  <div class="hud-box score-box">⭐ <span class="big" id="mScore">0</span><br><span class="tiny">🌊 <span id="mDist">0.0</span> NM · 🏆 <span id="mBest">0</span><span id="mTimeWrap"><br>⏱️ <span id="mTime">0:00</span></span></span></div>
   <div class="hud-box" id="mMultBox">👥 x<span class="big" id="mMult">1</span><br><span class="tiny">TOURISTS</span><div id="mMultBar"><div id="mMultFill"></div></div></div>
   <div class="hud-box hud-right">
     💰 <span id="mEuro">0</span> € · 🪢 <span id="mKnot">0</span>
@@ -1432,18 +1432,21 @@ const DAILY_REWARDS = [
    Belgian lawyer glance over it before launch.
    ============================================================== */
 
+/* Published under the developer name CircaAlpha (an independent developer in Belgium).
+   When a company takes over later: set name/enterpriseNo/address again. */
 const COMPANY = {
-  name: 'Min-S BV',
-  enterpriseNo: '1023.657.034',              // KBO/BCE enterprise number
-  address: 'Doornstraat 39, 8200 Brugge, Belgium',   // registered office
-  email: 'minjauwleonard@gmail.com',          // TODO: consider a dedicated address, e.g. support@yourdomain
+  name: 'CircaAlpha',
+  enterpriseNo: '',                           // KBO/BCE number (empty = independent developer)
+  address: 'Belgium',
+  email: 'minjauwleonard@gmail.com',
   game: 'Sardinia Skipper',
   effective: '27 September 2026',
 };
 
 const LEGAL_DOCS = (() => {
   const C = COMPANY;
-  const who = `<b>${C.name}</b>, enterprise number (KBO/BCE) <b>${C.enterpriseNo}</b>, ${C.address}. Contact: <b>${C.email}</b>`;
+  const who = C.enterpriseNo ? `<b>${C.name}</b>, enterprise number (KBO/BCE) <b>${C.enterpriseNo}</b>, ${C.address}. Contact: <b>${C.email}</b>`
+    : `<b>${C.name}</b>, an independent game developer based in ${C.address}. Contact: <b>${C.email}</b>`;
   return {
     /* ------------------------------------------------------------ */
     terms: { title: 'Terms of Service', html: `
@@ -1555,7 +1558,7 @@ const LEGAL_DOCS = (() => {
 
     /* ------------------------------------------------------------ */
     credits: { title: 'Credits & Licences', html: `
-<p>${C.game} © ${new Date().getFullYear()} ${C.name} (${C.enterpriseNo}). All rights reserved.</p>
+<p>${C.game} © ${new Date().getFullYear()} ${C.name}${C.enterpriseNo ? ' (' + C.enterpriseNo + ')' : ''}. All rights reserved.</p>
 <h4>Open-source software</h4>
 <ul>
 <li><b>three.js</b> r128 — MIT License, © 2010–2021 three.js authors</li>
@@ -4646,7 +4649,7 @@ function startMistralRun() {
   hideAllOverlays(); hideTourHud();
   state = 'mistral_run'; mState.active = true; pStats.runs = (pStats.runs || 0) + 1;
   mState.dist = 0; mState.speed = 50; mState.velX = 0; mState.lean = 0; mState.coins = 0; mState.knots = 0; mState.tourists = 0; mState.mult = 1; mState.multTimer = 0; mState.maxMult = 1; mState.stunTimer = 0; mState.score = 0; mState.chains = 0; mState.repairs = 0; mState.closeCalls = 0; mState.shieldT = mState.magnetT = mState.doubleT = 0; pwrShown = null; clearTrail(); Retention.onRunStart();
-  mState.clock = 0; mState.clockShown = -1; mState.runTime = 0; const headStart = Retention.takeHeadStart(); if (headStart) { mState.dist = headStart; mState.runTime = headStart * 4; } // mission prize: start further in (faster, busier water)
+  mState.clock = 0; mState.clockShown = -1; $('mTimeWrap').style.display = SHOW_RUN_TIME ? '' : 'none'; mState.runTime = 0; const headStart = Retention.takeHeadStart(); if (headStart) { mState.dist = headStart; mState.runTime = headStart * 4; } // mission prize: start further in (faster, busier water)
   mState.jumpY = 0; mState.jumpVy = 0; mState.objs = []; mState.nextZ = 400; mState.boostTimer = 0; // start generating BEHIND the boat: the wave tunnel surrounds you from frame one
   
   Hull.restore(); boat.x = 0; boat.z = 0; boat.speed = mState.speed; boat.heading = 0;
@@ -6035,7 +6038,7 @@ function initLegalUI() {
     if (!shown) showToast(Platform.isNative ? 'Ad privacy options are not available right now. Try again when you are online.' : 'Ad privacy settings are only on the phone app.', 3000);
   });
   document.querySelectorAll('[data-legal]').forEach(a => a.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); playMenuClick(); openLegal(a.dataset.legal); }));
-  $('menuCompany').textContent = '© ' + COMPANY.name + ' · ' + COMPANY.enterpriseNo;
+  $('menuCompany').textContent = '© ' + COMPANY.name + (COMPANY.enterpriseNo ? ' · ' + COMPANY.enterpriseNo : '');
   $('storeLegal').innerHTML = 'Payments are handled by Google Play / the App Store. Knots are delivered immediately: by buying you agree to immediate delivery and lose the 14-day right of withdrawal. <a href="#" id="storeTerms">Terms</a> · <a href="#" id="storePrivacy">Privacy</a>';
   $('storeTerms').onclick = e => { e.preventDefault(); openLegal('terms'); };
   $('storePrivacy').onclick = e => { e.preventDefault(); openLegal('privacy'); };
