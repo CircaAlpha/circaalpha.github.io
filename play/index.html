@@ -4555,11 +4555,16 @@ function makeHorseshoe() {
     const sc = HS.segR * (1.05 + Math.random() * 0.25); sp.scale.set(sc, sc * (1.5 + Math.random() * 0.7), sc);
     sp.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3); sp.position.set(s.x, 1, s.z); g.add(sp);
   }
-  // gold posts + a glowing ring mark the slot you have to thread
-  const gold = new THREE.MeshBasicMaterial({ color: 0xffd23f });
-  for (const side of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 9, 6), gold); p.position.set(side * (HS.slotHalf + 2.2), 5, -HS.R + 1); g.add(p); }
-  const ring = new THREE.Mesh(new THREE.TorusGeometry(HS.slotHalf + 1.2, 0.35, 6, 20), new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.85 }));
-  ring.position.set(0, 4.5, -HS.R + 1); g.add(ring); g.userData.ring = ring;
+  // the TOP: a stone arch over the slot, like an upside-down horseshoe (∩) you sail under.
+  // Its legs stand on the two rocks either side of the gap, so the hitbox doesn't change.
+  const zA = -HS.R * Math.cos(27 * Math.PI / 180), rA = HS.R * Math.sin(27 * Math.PI / 180), legH = 6;
+  const stone = (x, y, sc) => { const r = new THREE.Mesh(rockGeoMistral, GRANITE[Math.floor(Math.random() * GRANITE.length)]);
+    r.scale.set(sc * 1.1, sc, sc * 1.25); r.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3); r.position.set(x, y, zA); g.add(r); };
+  for (const side of [-1, 1]) for (let y = 1.5; y <= legH; y += 2.2) stone(side * rA, y, 2.6);                    // the two legs
+  for (let i = 0; i <= 14; i++) { const a = Math.PI * i / 14; stone(Math.cos(a) * rA, legH + Math.sin(a) * rA, 2.3 + Math.sin(a) * 0.5); }   // the curved top
+  // a glowing gold ring hangs under the arch: aim for it
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(HS.slotHalf + 0.6, 0.3, 6, 20), new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.85 }));
+  ring.position.set(0, 4, zA + 0.5); g.add(ring); g.userData.ring = ring;
   return g;
 }
 /* Composite hitbox test: returns the rock circle you touched (or null). */
