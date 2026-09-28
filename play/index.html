@@ -1216,6 +1216,8 @@ const CONFIG = {
 };
 
 /* Boats. maxHp is the new real hit-point pool. */
+/* Boat prices are planned on ~300 €/min of Mistral play (more with better boats):
+   2nd boat ≈ 4 h of play, and every boat after that takes about twice as long as the one before. */
 const FLEET = [
   /* run: Mistral Run perks — every boat is scaled to the same length in the run, so these are what make them differ.
        hitR     collision radius (smaller = easier to dodge). Never bigger on a pricier boat.
@@ -1225,15 +1227,15 @@ const FLEET = [
        magnet   coin pull radius (0 = none)                                                     */
   { id: 'dinghy',      name: 'Little Dinghy',    price: 0,     mult: 1.0, maxSpeed: 20,  turn: 1.5, sail: false, tier: 1, len: 12, seats: 2,  maxHp: 80,  desc: 'Coastal waters only.',
     run: { hitR: 3.0, handling: 1.00, armor: 0.00, loot: 1.00, magnet: 0 } },
-  { id: 'speedboat',   name: 'Speedboat',        price: 12000,   mult: 1.2, maxSpeed: 42,  turn: 1.7, sail: false, tier: 2, len: 16, seats: 4,  maxHp: 100, desc: 'Fast, nimble, fun.',
+  { id: 'speedboat',   name: 'Speedboat',        price: 75000,   mult: 1.2, maxSpeed: 42,  turn: 1.7, sail: false, tier: 2, len: 16, seats: 4,  maxHp: 100, desc: 'Fast, nimble, fun.',
     run: { hitR: 2.9, handling: 1.12, armor: 0.00, loot: 1.05, magnet: 0 } },
-  { id: 'sailboat',    name: 'Sailing Yacht',    price: 60000,  mult: 1.4, maxSpeed: 52,  turn: 1.0, sail: true,  tier: 3, len: 19, seats: 6,  maxHp: 125, desc: 'Crosses the strait.',
+  { id: 'sailboat',    name: 'Sailing Yacht',    price: 175000,  mult: 1.4, maxSpeed: 52,  turn: 1.0, sail: true,  tier: 3, len: 19, seats: 6,  maxHp: 125, desc: 'Crosses the strait.',
     run: { hitR: 2.9, handling: 1.05, armor: 0.05, loot: 1.10, magnet: 0 } },
-  { id: 'schooner',    name: 'Classic Schooner', price: 180000,  mult: 1.6, maxSpeed: 58,  turn: 0.9, sail: true,  tier: 4, len: 23, seats: 7,  maxHp: 150, desc: 'Teak decks, twin masts, timeless lines.',
+  { id: 'schooner',    name: 'Classic Schooner', price: 400000,  mult: 1.6, maxSpeed: 58,  turn: 0.9, sail: true,  tier: 4, len: 23, seats: 7,  maxHp: 150, desc: 'Teak decks, twin masts, timeless lines.',
     run: { hitR: 2.8, handling: 1.05, armor: 0.12, loot: 1.15, magnet: 0 } },
-  { id: 'catamaran',   name: 'Grand Catamaran',  price: 450000, mult: 1.8, maxSpeed: 64,  turn: 0.8, sail: true,  tier: 4, len: 26, seats: 8,  maxHp: 175, desc: 'The flagship. Its wide nets scoop up nearby coins.',
+  { id: 'catamaran',   name: 'Grand Catamaran',  price: 850000, mult: 1.8, maxSpeed: 64,  turn: 0.8, sail: true,  tier: 4, len: 26, seats: 8,  maxHp: 175, desc: 'The flagship. Its wide nets scoop up nearby coins.',
     run: { hitR: 2.8, handling: 1.10, armor: 0.12, loot: 1.20, magnet: 10 } },
-  { id: 'goldenyacht', name: 'The Golden Yacht', price: 1200000, mult: 2.2, maxSpeed: 136, turn: 0.7, sail: false, tier: 4, len: 30, seats: 10, maxHp: 220, desc: '75 knots of solid gold. Throttle lever included.',
+  { id: 'goldenyacht', name: 'The Golden Yacht', price: 1750000, mult: 2.2, maxSpeed: 136, turn: 0.7, sail: false, tier: 4, len: 30, seats: 10, maxHp: 220, desc: '75 knots of solid gold. Throttle lever included.',
     run: { hitR: 2.6, handling: 1.18, armor: 0.15, loot: 1.35, magnet: 6 } },
   /* Premium boats: bought with knots, outside the unlock chain.
      By design they beat the Golden Yacht on every Mistral stat (HP, armor, handling, hitbox, loot, magnet). */
@@ -1267,9 +1269,9 @@ const UPGRADE_DEFS = [
   { id: 'radar',  icon: '📡', name: 'Radar Mast',    costFactor: 0.25, desc: '+3 m coin pull per level (Mistral)', look: 'Spinning radar → dome → lights & beacon' },
   { id: 'cargo',  icon: '📦', name: 'Cargo Hold',    costFactor: 0.35, desc: '+5% coin value (Mistral) & tips (Story) per level', look: 'A crate per level → treasure chest' },
 ];
-const UPGRADE_TIER_COST = [0.09, 0.15, 0.24, 0.36, 0.51];
-/* Upgrade prices scale with the boat's value in euros (min 4,000 €; knot boats count 100 € per knot) */
-function upgradeBase(def) { return Math.max(4000, def.cur === 'knots' ? def.price * 100 : def.price); }
+const UPGRADE_TIER_COST = [0.02, 0.03, 0.045, 0.06, 0.085];   // all 5 lines maxed ≈ 40% of the boat's price
+/* Upgrade prices scale with the boat's value in euros (min 30,000 €; knot boats count 100 € per knot) */
+function upgradeBase(def) { return Math.max(30000, def.cur === 'knots' ? def.price * 100 : def.price); }
 const UPGRADE_MAX_LEVEL = 5;
 
 /* Mistral power-ups: every one lasts 5 s (repair heals 10% of max HP).
@@ -1588,13 +1590,13 @@ const SPEAKERS = {
 
 const CHAPTERS = [
   {
-    id: 1, days: [1, 15], title: 'A Borrowed Dinghy', goal: 'Save up for the Speedboat (12,000 €).',
+    id: 1, days: [1, 15], title: 'A Borrowed Dinghy', goal: 'Save up for the Speedboat (75,000 €).',
     intro: [
       { who: 'narr', text: 'Spring, on the strait between Sardinia and Corsica. You step off the ferry with one bag and a signed lease for a **leaky rubber dinghy**.', show: 'boat_dinghy' },
       { who: 'old',  text: "So you're the new skipper. Hm. That boat has seen better decades." },
       { who: 'you',  choices: ["It floats. That's a start.", 'It has character.', 'Where do I bail the water out?'] },
       { who: 'old',  text: 'Take the **families** out first. They pay little, but they never rush you. Keep them dry and bring them back.', show: 'tourists' },
-      { who: 'old',  text: 'Save your euros. **12,000 €** buys the **Speedboat** in the Shop, and a faster boat reaches the sights further out.', show: 'boat_speedboat' },
+      { who: 'old',  text: 'Save your euros. **75,000 €** buys the **Speedboat** in the Shop, and a faster boat reaches the sights further out.', show: 'boat_speedboat' },
     ],
     outro: [
       { who: 'old',  text: "Two weeks and you haven't drowned a single tourist. People at the bar are saying your **name**." },
@@ -5398,11 +5400,11 @@ const PROPS = {
   yacht:     { label: '🛥️ Ride the cyan wake = BOOST', make: () => { const y = makeRivalYacht(); y.children.filter(c => c.geometry && c.geometry.type === 'PlaneGeometry').forEach(c => { c.geometry = new THREE.PlaneGeometry(c.geometry.parameters.width, 26); c.position.z = MC.yacht.halfLen + 13; }); return y; }, view: [0.8, 0.7, 0.9], zoom: 1.6 },
   // ---- Story mode & menus ----
   boat_dinghy:      { label: '⛵ Little Dinghy', url: () => boatPicture('dinghy') },
-  boat_speedboat:   { label: '🚤 Speedboat · 12,000 €', url: () => boatPicture('speedboat') },
-  boat_sailboat:    { label: '⛵ Sailing Yacht · 60,000 €', url: () => boatPicture('sailboat') },
-  boat_schooner:    { label: '⛵ Classic Schooner · 180,000 €', url: () => boatPicture('schooner') },
-  boat_catamaran:   { label: '⛵ Grand Catamaran · 450,000 €', url: () => boatPicture('catamaran') },
-  boat_goldenyacht: { label: '🛥️ The Golden Yacht · 1,200,000 €', url: () => boatPicture('goldenyacht') },
+  boat_speedboat:   { label: '🚤 Speedboat · 75,000 €', url: () => boatPicture('speedboat') },
+  boat_sailboat:    { label: '⛵ Sailing Yacht · 175,000 €', url: () => boatPicture('sailboat') },
+  boat_schooner:    { label: '⛵ Classic Schooner · 400,000 €', url: () => boatPicture('schooner') },
+  boat_catamaran:   { label: '⛵ Grand Catamaran · 850,000 €', url: () => boatPicture('catamaran') },
+  boat_goldenyacht: { label: '🛥️ The Golden Yacht · 1,750,000 €', url: () => boatPicture('goldenyacht') },
   tourists:  { label: '👨‍👩‍👧 Your booked guests', make: () => { const g = new THREE.Group(); [{ c: 0xd95f4d }, { c: 0x4d7dd9 }, { c: 0xf0c94d, kid: true }, { c: 0xff5c8a }].forEach((sp, i) => { const p = makePerson(sp); p.position.x = (i - 1.5) * 1.3; p.rotation.y = (i - 1.5) * -0.25; g.add(p); }); return g; }, view: [0.2, 0.35, -1], zoom: 1.6 },
   beacon:    { label: '🟡 Beacon = a sight to visit', make: () => { const g = new THREE.Group(); const m = new THREE.MeshLambertMaterial({ color: 0xffd166, flatShading: true }); const p = new THREE.Mesh(new THREE.BoxGeometry(3, 40, 3), m); p.position.y = 20; g.add(p); const r = new THREE.Mesh(new THREE.TorusGeometry(10, 1.5, 4, 8), m); r.rotation.x = Math.PI / 2; r.position.y = 2; g.add(r); return g; }, view: [0.5, 0.45, 1], zoom: 1.5 },
   dock:      { label: '⚓ Dock close = bigger tip', make: () => { const g = new THREE.Group(); const wood = new THREE.MeshLambertMaterial({ color: 0x8a6a45, flatShading: true }); const d = new THREE.Mesh(new THREE.BoxGeometry(22, 2, 8), wood); g.add(d); for (const x of [-10, 10]) { const post = new THREE.Mesh(new THREE.BoxGeometry(2, 6, 2), new THREE.MeshLambertMaterial({ color: 0x5a4a35 })); post.position.set(x, 1, 0); g.add(post); } const b = new THREE.Mesh(stampedeHullGeometry(12, 4.4, 1.6, { bow: 0.4, sternW: 0.8, taper: 0.6 }), matWhite); b.position.set(0, -0.5, 11); g.add(b); return g; }, view: [0.9, 0.8, 1], zoom: 1.45 },
