@@ -2346,7 +2346,7 @@ window.addEventListener('keyup', e => { if (e.key === 'ArrowLeft'  || e.key === 
 ================================================================ */
 const scene = new THREE.Scene(); const SKY = 0x5bc0eb; scene.background = new THREE.Color(SKY); scene.fog = new THREE.Fog(SKY, 500, 2200);
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.5, 4000);
-const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); document.body.appendChild(renderer.domElement);
+const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio, 2.5)); document.body.appendChild(renderer.domElement);
 renderer.domElement.id = 'gl'; renderer.domElement.style.width = renderer.domElement.style.height = '';
 /* Size from the canvas' CSS box (it is pinned to the full screen), not innerHeight:
    iOS home-screen apps report a short innerHeight at launch, which left a blue strip. */
@@ -5825,8 +5825,17 @@ function refreshMainMenu() {
 /* ==============================================================
    SETTINGS
 ================================================================ */
+/* Sharpness: HIGH renders at up to 2.5× (phones have 3× screens), LOW at 1×.
+   If a phone can't keep up, autoRes() steps the resolution down by itself. */
+let resScale = 1, slowTime = 0, fastTime = 0;
+function autoRes(frameMs, dt) {
+  if (settings.quality !== 'high' || document.hidden) return;
+  if (frameMs > 45) { slowTime += dt; fastTime = 0; } else { fastTime += dt; slowTime = Math.max(0, slowTime - dt * 0.5); }
+  if (slowTime > 2.5 && resScale > 1.25) { resScale = Math.max(1.25, resScale - 0.25); renderer.setPixelRatio(resScale); slowTime = 0; }   // struggling → a bit softer
+}
 function applyQuality() {
-  renderer.setPixelRatio(settings.quality === 'high' ? Math.min(devicePixelRatio, 1.5) : 1);
+  resScale = settings.quality === 'high' ? Math.min(devicePixelRatio, 2.5) : 1; slowTime = fastTime = 0;
+  renderer.setPixelRatio(resScale);
   rainGeo.setDrawRange(0, (settings.quality === 'high' ? RAIN_COUNT : Math.floor(RAIN_COUNT * 0.35)) * 2);
 }
 function applyFx() { if (state === 'mistral_run') rainMesh.visible = settings.fx; }
@@ -6616,6 +6625,7 @@ function loop(now) {
   frameAcc += now - lastTime; lastTime = now;
   if (frameAcc < FRAME_MS) return;
   frameAcc = frameAcc % FRAME_MS; const dt = FRAME_MS / 1000; const t = now / 1000;
+  if (loop.last) autoRes(Math.min(1000, now - loop.last), dt); loop.last = now;
   if (Game.paused) { renderer.render(scene, camera); return; }
 
   if (state === 'mistral_run') {
