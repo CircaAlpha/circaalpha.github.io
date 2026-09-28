@@ -6402,19 +6402,23 @@ const Retention = (() => {
   let runDone = [], bestShown = false, tickAcc = 0;
   function complete(m) {
     const s = store(); s.active = s.active.filter(x => x !== m); s.completed++;
-    pay(m.reward); runDone.push(m); ensure();
-    for (const x of s.active) if (!x.progress) x.fresh = true;   // replacements start counting next run (no instant chain-completes)
+    const before = new Set(s.active); pay(m.reward); runDone.push(m); ensure();
+    // The replacement starts counting right away, from what you've already done this run
+    // (so it can't complete instantly off the same stats). "Play N runs" counts from the next run.
+    const fresh = s.active.filter(x => !before.has(x));
+    for (const x of fresh) { if (x.cumulative || x.type === 'mult') x.fresh = true; else if (state === 'mistral_run') x.base = statFor(x.type); }
     showBanner('✅ MISSION DONE! ' + rewardText(m.reward), 'mission', 1800);
+    if (fresh[0]) setTimeout(() => showBanner('🎯 NEW MISSION: ' + fresh[0].text, 'good', 2200), 1900);
     playRescueSound(); Platform.haptics.success(); Save.queue();
   }
   function checkRun() {
     for (const m of [...store().active]) {
       if (m.cumulative || m.fresh) continue;
-      const v = statFor(m.type); m.progress = Math.max(m.progress, v);
+      const v = Math.max(0, statFor(m.type) - (m.base || 0)); m.progress = Math.max(m.progress, v);
       if (v >= m.target) complete(m);
     }
   }
-  function onRunStart() { ensure(); for (const m of store().active) delete m.fresh; runDone = []; bestShown = mBestScore <= 0; tickAcc = 0; shownScore = shownDist = -1; }
+  function onRunStart() { ensure(); for (const m of store().active) { delete m.fresh; delete m.base; } runDone = []; bestShown = mBestScore <= 0; tickAcc = 0; shownScore = shownDist = -1; }
   let shownScore = -1, shownDist = -1;
   function onRunTick(dt) {
     // HUD counters: touch the DOM only when the shown number actually changes
