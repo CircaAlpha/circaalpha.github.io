@@ -39,21 +39,6 @@ canvas { display: block; }
 #mMultBar { height: 4px; background: rgba(255,255,255,0.25); border-radius: 2px; margin-top: 3px; overflow: hidden; }
 #mMultFill { height: 100%; width: 0%; background: linear-gradient(90deg, #ffd166, #ff6b4a); border-radius: 2px; }
 
-.steer {
-  display: none;
-  position: fixed; bottom: 26px; width: 92px; height: 92px;
-  border-radius: 16px;
-  background: rgba(255,255,255,0.2);
-  border: 4px solid rgba(255,255,255,0.6);
-  color: #fff; font-size: 40px; font-weight: bold;
-  align-items: center; justify-content: center;
-  z-index: 10; cursor: pointer; box-shadow: 0 4px 0 rgba(0,0,0,0.2);
-}
-.steer.active-btn { background: rgba(255,255,255,0.5); transform: translateY(4px); box-shadow: 0 0 0 rgba(0,0,0,0); }
-.steer.show { display: flex; }
-.steer { bottom: calc(26px + env(safe-area-inset-bottom)); }
-#left  { left: calc(22px + env(safe-area-inset-left)); }
-#right { right: calc(22px + env(safe-area-inset-right)); }
 
 #toast {
   position: fixed; top: 30%; left: 50%; transform: translate(-50%,-50%);
@@ -270,7 +255,7 @@ body.mistral #toast.show { transform: translate(-50%, 0); }
 #btnPause { display: none; position: fixed; z-index: 11; left: 50%; transform: translateX(-50%); top: calc(58px + env(safe-area-inset-top));
   width: 44px; height: 44px; border-radius: 50%; border: 3px solid rgba(255,255,255,0.7); background: rgba(10,30,60,0.7); color: #fff; font-size: 18px; }
 #btnPause.show { display: block; }
-body:not(.mistral) #btnPause { top: auto; bottom: calc(40px + env(safe-area-inset-bottom)); left: calc(130px + env(safe-area-inset-left)); transform: none; }
+body:not(.mistral) #btnPause { top: auto; bottom: calc(96px + env(safe-area-inset-bottom)); left: calc(14px + env(safe-area-inset-left)); transform: none; }
 
 /* Buttons */
 .btn.small { font-size: 11px; padding: 6px 10px; }
@@ -344,7 +329,6 @@ body:not(.mistral) #btnPause { top: auto; bottom: calc(40px + env(safe-area-inse
   .hud-box .big { font-size: 15px; }
   .hud-right { min-width: 110px; }
   #audioIndicator, #audioIndicatorMain { display: none; }
-  .steer { width: 80px; height: 80px; }
   .hero-title { font-size: 34px; }
 }
 
@@ -454,8 +438,6 @@ body { background: #3fb4e6; }
 #mMultFill { background: linear-gradient(90deg, var(--sun), var(--pink)); }
 .hpbar { border-color: var(--lime); }
 .hpbar .hpfill { background: linear-gradient(90deg, #2fd15f, var(--lime)); }
-.steer { background: rgba(255,255,255,0.18); border-color: rgba(34,228,255,0.8); box-shadow: 0 4px 0 rgba(0,0,0,0.25), 0 0 16px rgba(34,228,255,0.35); }
-.steer.active-btn { background: rgba(34,228,255,0.45); }
 #btnPause { background: rgba(5,64,95,0.8); border-color: var(--violet); }
 #toast { background: linear-gradient(180deg, var(--panel-a), var(--panel-b)); border-color: var(--sun); border-radius: 16px; }
 
@@ -802,7 +784,7 @@ body.docking #storyStack { width: calc(100vw - 150px); }
 #minigameUI .mg-title { font-size: 12px; margin-bottom: 6px; }
 #mgBar { height: 22px; }
 
-#feed { position: fixed; z-index: 7; pointer-events: none; left: 50%; transform: translateX(-50%); bottom: calc(118px + env(safe-area-inset-bottom));
+#feed { position: fixed; z-index: 7; pointer-events: none; left: 50%; transform: translateX(-50%); bottom: calc(150px + env(safe-area-inset-bottom));
   width: min(92vw, 420px); display: flex; flex-direction: column; align-items: center; gap: 5px; }
 body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: none; width: calc(100vw - 150px); align-items: flex-start; }
 .feed-item { max-width: 100%; padding: 6px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; color: #fff; text-align: center; line-height: 1.3;
@@ -828,13 +810,30 @@ body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: no
 .dbtn.upg { background: linear-gradient(180deg, #7ff0ff, #1b9cff); color: #062a4a; border-color: #0b6fb8; }
 #pauseMissions { margin: 10px 0 4px; text-align: left; max-height: 46vh; overflow-y: auto; }
 
-/* drag steering: a small floating joystick under the thumb */
-#swipeStick { position: fixed; z-index: 9; width: 120px; height: 44px; margin: -22px 0 0 -60px; border-radius: 22px; pointer-events: none; opacity: 0; transition: opacity .15s;
-  background: rgba(4,52,77,0.28); border: 2px solid rgba(34,228,255,0.55); box-shadow: 0 0 14px rgba(34,228,255,0.35); }
-#swipeStick.on { opacity: 1; }
-#swipeStick i { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fff, #22e4ff); box-shadow: 0 0 10px rgba(34,228,255,0.8); }
-body.swipe-only .steer { display: none !important; }
-body.swipe-only:not(.mistral) #btnPause { left: calc(16px + env(safe-area-inset-left)); }
+
+#cometBtn { display: none; position: fixed; z-index: 12; left: 50%; transform: translateX(-50%); bottom: calc(118px + env(safe-area-inset-bottom)); padding: 10px 22px; border-radius: 18px;
+  font: inherit; font-size: 18px; font-weight: 900; color: #3a1400; border: 3px solid #fff; background: linear-gradient(180deg, #fff1a8, var(--sun) 45%, var(--orange));
+  box-shadow: 0 5px 0 #b3471f, 0 0 26px rgba(255,210,63,0.9); animation: cometPulse 0.8s ease-in-out infinite; }
+#cometBtn small { display: block; font-size: 11px; font-weight: 800; opacity: .8; }
+#cometBtn.show { display: block; }
+@keyframes cometPulse { 50% { transform: translateX(-50%) scale(1.07); } }
+
+/* ---- STEERING SLIDER (the only steering control) ---- */
+#steerBar { display: none; position: fixed; z-index: 10; left: 50%; transform: translateX(-50%); bottom: calc(22px + env(safe-area-inset-bottom));
+  width: min(calc(100vw - 28px), 520px); height: 60px; touch-action: none; }
+#steerBar.show { display: block; }
+#steerBar .sb-track { position: absolute; inset: 10px 0; border-radius: 20px; background: linear-gradient(90deg, rgba(255,107,74,0.35), rgba(4,52,77,0.55) 30%, rgba(4,52,77,0.55) 70%, rgba(63,242,224,0.35));
+  border: 3px solid rgba(255,231,176,0.85); box-shadow: 0 4px 0 rgba(0,0,0,0.25), inset 0 2px 8px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: space-between; padding: 0 14px; color: rgba(255,255,255,0.75); font-size: 14px; }
+#steerBar .sb-mid { position: absolute; left: 50%; top: 6px; bottom: 6px; width: 3px; margin-left: -1.5px; border-radius: 2px; background: rgba(255,255,255,0.35); }
+#steerBar .sb-knob { position: absolute; left: 50%; top: 50%; width: 58px; height: 58px; margin: -29px 0 0 -29px; border-radius: 50%; pointer-events: none;
+  background: radial-gradient(circle at 38% 32%, #fff 0, #fff7d6 18%, var(--sun) 55%, var(--orange) 100%); border: 3px solid #fff; box-shadow: 0 4px 0 #b3471f, 0 0 16px rgba(255,210,63,0.7);
+  transition: transform 0.12s ease-out; }
+#steerBar.held .sb-knob { transition: none; box-shadow: 0 2px 0 #b3471f, 0 0 26px rgba(255,210,63,1); }
+#steerBar.left .sb-arrow.l, #steerBar.right .sb-arrow.r { color: #fff; text-shadow: 0 0 8px var(--sun); }
+body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)); }
+.vn-slider { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 16px; background: rgba(4,52,77,0.8); border: 2px solid var(--line); }
+.vn-slider span { font-size: 12px; font-weight: 900; color: var(--muted); white-space: nowrap; } .vn-slider span.ok { color: var(--lime); }
+.vn-slider input { flex: 1; min-width: 120px; accent-color: var(--sun); height: 34px; }
 
 </style>
 
@@ -857,7 +856,7 @@ body.swipe-only:not(.mistral) #btnPause { left: calc(16px + env(safe-area-inset-
 <!-- ============ MISTRAL HUD ============ -->
 <div id="mistralHUD">
   <div class="hud-box score-box">⭐ <span class="big" id="mScore">0</span><br><span class="tiny">🌊 <span id="mDist">0.0</span> NM · 🏆 <span id="mBest">0</span><span id="mTimeWrap"><br>⏱️ <span id="mTime">0:00</span></span></span></div>
-  <div class="hud-box" id="mMultBox">👥 x<span class="big" id="mMult">1</span><br><span class="tiny">TOURISTS</span><div id="mMultBar"><div id="mMultFill"></div></div></div>
+  <div class="hud-box" id="mMultBox">🔥 ×<span class="big" id="mMult">1</span><br><span class="tiny">STREAK</span><div id="mMultBar"><div id="mMultFill"></div></div></div>
   <div class="hud-box hud-right">
     💰 <span id="mEuro">0</span> € · 🪢 <span id="mKnot">0</span>
     <div class="hpbar"><div class="hpfill"></div><div class="hpshield"></div><span class="hptxt">❤️ 80 / 80</span></div>
@@ -865,6 +864,7 @@ body.swipe-only:not(.mistral) #btnPause { left: calc(16px + env(safe-area-inset-
   <div class="hud-box" id="audioIndicator">🔇</div>
 </div>
 <button id="btnPause" aria-label="Pause">⏸</button>
+<button id="cometBtn">☄️ LAUNCH COMET</button>
 <div id="pwrRow"></div>
 
 <!-- Story HUD: one left-hand column (goal card → event card → minigame) that
@@ -911,8 +911,8 @@ body.swipe-only:not(.mistral) #btnPause { left: calc(16px + env(safe-area-inset-
   <div class="lever-label">⚜️ THROTTLE</div>
   <input type="range" id="throttleLever" min="0" max="1" step="0.02" value="0">
 </div>
-<div class="steer" id="left">⟲</div>
-<div class="steer" id="right">⟳</div>
+<!-- Steering slider: the only on-screen steering control -->
+<div id="steerBar"><div class="sb-track"><span class="sb-arrow l">◀</span><i class="sb-mid"></i><span class="sb-arrow r">▶</span></div><div class="sb-knob"></div></div>
 
 <!-- ============ MAIN MENU ============ -->
 <div class="overlay" id="mainMenuOverlay">
@@ -1059,7 +1059,6 @@ body.swipe-only:not(.mistral) #btnPause { left: calc(16px + env(safe-area-inset-
     <div class="set-row"><span>🎵 Music</span><input type="range" id="setMusic" min="0" max="100" value="70"><span class="set-val" id="setMusicVal">70%</span></div>
     <div class="set-row"><span>🔊 Sound FX</span><input type="range" id="setSfx" min="0" max="100" value="80"><span class="set-val" id="setSfxVal">80%</span></div>
     <div class="set-row"><span>🖼️ Graphics</span><div class="set-seg"><button class="btn seg" id="setQHigh">HIGH</button><button class="btn seg" id="setQLow">LOW</button></div></div>
-    <div class="set-row"><span>🎮 Steering</span><div class="set-seg"><button class="btn seg" id="setCtlBoth">BUTTONS + DRAG</button><button class="btn seg" id="setCtlSwipe">DRAG ONLY</button></div></div>
     <div class="set-row"><span>📷 Screen shake</span><button class="btn seg wide" id="setShake">ON</button></div>
     <div class="set-row"><span>🌧️ Weather effects</span><button class="btn seg wide" id="setFx">ON</button></div>
     <div class="set-row"><span>📳 Vibration</span><button class="btn seg wide" id="setHaptics">ON</button></div>
@@ -1177,11 +1176,15 @@ const CONFIG = {
 
   /* ---- MISTRAL RUN (main mode) ---- */
   mistral: {
-    startSpeed: 85, maxSpeed: 250, rampTime: 150,   // Subway-Surfers ramp: speed = start + (max-start)·(1 − e^(−t/rampTime))  → ~115 @30s, ~140 @1min, ~175 @2min, ~230 @5min, ~245 @8min
+    startSpeed: 85, maxSpeed: 250, speedTau: 60, speedK: 1.1,   // log curve toward a terminal velocity: v = max − (max−start)·(1+t/τ)^−k → 144 @30s, 173 @1min, 201 @2min, 235 @8min, →250
     boatLength: 16,               // every hull is scaled to this in the run
     trackWidth: 140, chunkLen: 300, spawnAhead: 780,
-    multTime: 12, maxMult: 8,     // tourist multiplier chain
-    coinValue: 2, chainBonus: 8,   /* per coin: tuned so €/minute stays the same at the faster speeds */ chainScore: 150,
+    /* € multiplier = Collection Streak + precision passes. Any damage → back to ×1. */
+    streak: { coinsPerStep: 12, step: 0.25, coinCap: 2,          // +0.25× per 12 € collected in a row, up to ×2 from coins alone
+              horseshoe: 1.0, closeCall: 0.25, chainJump: 0.25,     // clean precision passes add on top…
+              maxMult: 2.5 },                                       // …up to ×2.5 in total
+    comet: { price: 400, skipTime: 60, skipDist: 2, invincible: 5, boost: 3 },   // ☄️ Mistral Comet head start
+    coinValue: 1, chainScore: 150,   /* 1 € per coin; the streak multiplies it */
     multCoinFactor: 0.25,         // each ×1 of tourist multiplier adds +25% coin value (score still gets the full ×)
     softBuoyChance: 0.5,          // share of buoys that are the yellow, softer kind (buoySoft damage)
     knots: {                      // knots are rare AND risky: never just lying in open water
@@ -1226,8 +1229,8 @@ const CONFIG = {
 };
 
 /* Boats. maxHp is the new real hit-point pool. */
-/* Boat prices are planned on ~300 €/min of Mistral play (more with better boats):
-   2nd boat ≈ 4 h of play, and every boat after that takes about twice as long as the one before. */
+/* Boat prices: a flawless 8-min Mistral run pays ~500 €, a normal one less.
+   2nd boat (2,500 €) ≈ 1 h of play; every boat after that takes about twice as long. */
 const FLEET = [
   /* run: Mistral Run perks — every boat is scaled to the same length in the run, so these are what make them differ.
        hitR     collision radius (smaller = easier to dodge). Never bigger on a pricier boat.
@@ -1237,15 +1240,15 @@ const FLEET = [
        magnet   coin pull radius (0 = none)                                                     */
   { id: 'dinghy',      name: 'Little Dinghy',    price: 0,     mult: 1.0, maxSpeed: 20,  turn: 1.5, sail: false, tier: 1, len: 12, seats: 2,  maxHp: 80,  desc: 'Coastal waters only.',
     run: { hitR: 3.0, handling: 1.00, armor: 0.00, loot: 1.00, magnet: 0 } },
-  { id: 'speedboat',   name: 'Speedboat',        price: 75000,   mult: 1.2, maxSpeed: 42,  turn: 1.7, sail: false, tier: 2, len: 16, seats: 4,  maxHp: 100, desc: 'Fast, nimble, fun.',
+  { id: 'speedboat',   name: 'Speedboat',        price: 2500,   mult: 1.2, maxSpeed: 42,  turn: 1.7, sail: false, tier: 2, len: 16, seats: 4,  maxHp: 100, desc: 'Fast, nimble, fun.',
     run: { hitR: 2.9, handling: 1.12, armor: 0.00, loot: 1.05, magnet: 0 } },
-  { id: 'sailboat',    name: 'Sailing Yacht',    price: 175000,  mult: 1.4, maxSpeed: 52,  turn: 1.0, sail: true,  tier: 3, len: 19, seats: 6,  maxHp: 125, desc: 'Crosses the strait.',
+  { id: 'sailboat',    name: 'Sailing Yacht',    price: 6000,  mult: 1.4, maxSpeed: 52,  turn: 1.0, sail: true,  tier: 3, len: 19, seats: 6,  maxHp: 125, desc: 'Crosses the strait.',
     run: { hitR: 2.9, handling: 1.05, armor: 0.05, loot: 1.10, magnet: 0 } },
-  { id: 'schooner',    name: 'Classic Schooner', price: 400000,  mult: 1.6, maxSpeed: 58,  turn: 0.9, sail: true,  tier: 4, len: 23, seats: 7,  maxHp: 150, desc: 'Teak decks, twin masts, timeless lines.',
+  { id: 'schooner',    name: 'Classic Schooner', price: 13500,  mult: 1.6, maxSpeed: 58,  turn: 0.9, sail: true,  tier: 4, len: 23, seats: 7,  maxHp: 150, desc: 'Teak decks, twin masts, timeless lines.',
     run: { hitR: 2.8, handling: 1.05, armor: 0.12, loot: 1.15, magnet: 0 } },
-  { id: 'catamaran',   name: 'Grand Catamaran',  price: 850000, mult: 1.8, maxSpeed: 64,  turn: 0.8, sail: true,  tier: 4, len: 26, seats: 8,  maxHp: 175, desc: 'The flagship. Its wide nets scoop up nearby coins.',
+  { id: 'catamaran',   name: 'Grand Catamaran',  price: 28000, mult: 1.8, maxSpeed: 64,  turn: 0.8, sail: true,  tier: 4, len: 26, seats: 8,  maxHp: 175, desc: 'The flagship. Its wide nets scoop up nearby coins.',
     run: { hitR: 2.8, handling: 1.10, armor: 0.12, loot: 1.20, magnet: 10 } },
-  { id: 'goldenyacht', name: 'The Golden Yacht', price: 1750000, mult: 2.2, maxSpeed: 136, turn: 0.7, sail: false, tier: 4, len: 30, seats: 10, maxHp: 220, desc: '75 knots of solid gold. Throttle lever included.',
+  { id: 'goldenyacht', name: 'The Golden Yacht', price: 58000, mult: 2.2, maxSpeed: 136, turn: 0.7, sail: false, tier: 4, len: 30, seats: 10, maxHp: 220, desc: '75 knots of solid gold. Throttle lever included.',
     run: { hitR: 2.6, handling: 1.18, armor: 0.15, loot: 1.35, magnet: 6 } },
   /* Premium boats: bought with knots, outside the unlock chain.
      By design they beat the Golden Yacht on every Mistral stat (HP, armor, handling, hitbox, loot, magnet). */
@@ -1260,10 +1263,10 @@ const FLEET = [
 /* ADD-ONS: bought once, always active once owned (cosmetics can be switched off).
    Perks cost euros (earned by playing); cosmetics cost knots.                  */
 const ADDONS = [
-  { id: 'addon_magnet',  kind: 'perk',     name: 'Coin Magnet',       icon: '🧲', price: 20000, cur: 'money', desc: 'Pulls in coins and knots within reach during the Mistral Run.' },
-  { id: 'addon_rod',     kind: 'perk',     name: 'Lightning Rod',     icon: '⚡', price: 28000, cur: 'money', desc: 'Lightning strikes do 60% less damage.' },
-  { id: 'addon_bumper',  kind: 'perk',     name: 'Rubber Bumpers',    icon: '🛟', price: 35000, cur: 'money', desc: 'Rocks, buoys and yachts do 25% less damage.' },
-  { id: 'addon_turbo',   kind: 'perk',     name: 'Turbo Wake',        icon: '🚀', price: 15000, cur: 'money', desc: 'Yacht-wake boosts last twice as long.' },
+  { id: 'addon_magnet',  kind: 'perk',     name: 'Coin Magnet',       icon: '🧲', price: 700, cur: 'money', desc: 'Pulls in coins and knots within reach during the Mistral Run.' },
+  { id: 'addon_rod',     kind: 'perk',     name: 'Lightning Rod',     icon: '⚡', price: 950, cur: 'money', desc: 'Lightning strikes do 60% less damage.' },
+  { id: 'addon_bumper',  kind: 'perk',     name: 'Rubber Bumpers',    icon: '🛟', price: 1200, cur: 'money', desc: 'Rocks, buoys and yachts do 25% less damage.' },
+  { id: 'addon_turbo',   kind: 'perk',     name: 'Turbo Wake',        icon: '🚀', price: 500, cur: 'money', desc: 'Yacht-wake boosts last twice as long.' },
   { id: 'addon_glow',    kind: 'cosmetic', name: 'Neon Underglow',    icon: '🌈', price: 450, desc: 'A colour-cycling glow under your hull.' },
   { id: 'addon_dog',     kind: 'cosmetic', name: 'Ship’s Dog',   icon: '🐕', price: 350, desc: 'A loyal first mate who barks at waves.' },
   { id: 'addon_parrot',  kind: 'cosmetic', name: 'Pirate Parrot',     icon: '🦜', price: 400, desc: 'Perches on your bow. Judges your steering.' },
@@ -1276,12 +1279,12 @@ const UPGRADE_DEFS = [
   { id: 'engine', icon: '🔥', name: 'Turbo Engine',  costFactor: 0.4,  desc: '+4% top speed (Story) · +10% boost time (Mistral) per level', look: 'Exhaust stacks → flames → gold pipes & blue flames' },
   { id: 'hull',   icon: '🛡️', name: 'Armored Hull',  costFactor: 0.35, desc: '+12% max HP per level', look: 'Steel bow ram → armor plates → gold armor' },
   { id: 'fins',   icon: '🏁', name: 'Racing Wing',   costFactor: 0.3,  desc: '+6% steering per level (Mistral + Story)', look: 'Carbon wing → red end plates → neon wing' },
-  { id: 'radar',  icon: '📡', name: 'Radar Mast',    costFactor: 0.25, desc: '+3 m coin pull per level (Mistral)', look: 'Spinning radar → dome → lights & beacon' },
+  { id: 'radar',  icon: '📡', name: 'Radar Mast',    costFactor: 0.25, desc: '−10% lightning strike size per level (Mistral)', look: 'Spinning radar → dome → lights & beacon' },
   { id: 'cargo',  icon: '📦', name: 'Cargo Hold',    costFactor: 0.35, desc: '+5% coin value (Mistral) & tips (Story) per level', look: 'A crate per level → treasure chest' },
 ];
 const UPGRADE_TIER_COST = [0.02, 0.03, 0.045, 0.06, 0.085];   // all 5 lines maxed ≈ 40% of the boat's price
-/* Upgrade prices scale with the boat's value in euros (min 30,000 €; knot boats count 100 € per knot) */
-function upgradeBase(def) { return Math.max(30000, def.cur === 'knots' ? def.price * 100 : def.price); }
+/* Upgrade prices scale with the boat's value in euros (min 1,000 €; knot boats count 3 € per knot) */
+function upgradeBase(def) { return Math.max(1000, def.cur === 'knots' ? def.price * 3 : def.price); }
 const UPGRADE_MAX_LEVEL = 5;
 
 /* Mistral power-ups: every one lasts 5 s (repair heals 10% of max HP).
@@ -1292,7 +1295,7 @@ const POWERUP_DEFS = [
   { id: 'double', icon: '💰', name: 'Double Coins', desc: 'Every coin is worth twice as much.' },
   { id: 'repair', icon: '🔧', name: 'Repair Kit',   desc: 'Instantly fixes part of your hull.' },
 ];
-const POWERUP_UPG = { baseTime: 5, timePerLevel: 1, repairBase: 0.10, repairPerLevel: 0.04, maxLevel: 5, cost: [7500, 15000, 25000, 40000, 62500] };
+const POWERUP_UPG = { baseTime: 5, timePerLevel: 1, repairBase: 0.10, repairPerLevel: 0.04, maxLevel: 5, cost: [250, 500, 850, 1350, 2100] };
 function pwrLevel(id) { return (pStats.pwr && pStats.pwr[id]) || 0; }
 function pwrTime(id) { return POWERUP_UPG.baseTime + POWERUP_UPG.timePerLevel * pwrLevel(id); }
 function repairFrac(lvl = pwrLevel('repair')) { return POWERUP_UPG.repairBase + POWERUP_UPG.repairPerLevel * lvl; }
@@ -1307,7 +1310,7 @@ const ITEMS = [
   { id: 'flag_pizza',    type: 'flag', name: 'Pizza Flag',    price: 350,  bg: '#d94f3a', emoji: '🍕', desc: 'Margherita on the high seas.' },
   { id: 'flag_dolphin',  type: 'flag', name: 'Dolphin Flag',  price: 450,  bg: '#5ce1e6', emoji: '🐬', desc: 'For friends of the pod.' },
   { id: 'flag_italy',    type: 'flag', name: 'Italia Flag',   price: 300,  bg: '#f5f5f5', emoji: '🇮🇹', desc: 'Bella vita.' },
-  { id: 'flag_anchor',   type: 'flag', name: 'Anchor Flag',   price: 6000, cur: 'money', bg: '#1d3557', emoji: '⚓', desc: 'A classic. Paid in honest euros.' },
+  { id: 'flag_anchor',   type: 'flag', name: 'Anchor Flag',   price: 200, cur: 'money', bg: '#1d3557', emoji: '⚓', desc: 'A classic. Paid in honest euros.' },
   { id: 'flag_crown',    type: 'flag', name: 'Crown Flag',    price: 750,  bg: '#7a1e6e', emoji: '👑', desc: 'For catamaran royalty.' },
   { id: 'flag_sun',      type: 'flag', name: 'Sunshine Flag', price: 250,  bg: '#ffd166', emoji: '☀️', desc: 'Endless summer.' },
   { id: 'sail_stripes',   type: 'sail', name: 'Regatta Stripes', price: 600, icon: '🟥', bg: '#f5f0e6', color2: '#d94f3a', pattern: 'stripes', desc: 'Classic racing stripes.' },
@@ -1325,7 +1328,7 @@ const ITEMS = [
   { id: 'flag_fish',     type: 'flag', name: 'Fisherman Flag', price: 250,  bg: '#5ce1e6', emoji: '🐟', desc: 'Fresh catch aboard.' },
   { id: 'flag_gelato',   type: 'flag', name: 'Gelato Flag',    price: 300,  bg: '#ffe0ea', emoji: '🍦', desc: 'Stracciatella speed.' },
   { id: 'flag_star',     type: 'flag', name: 'Stella Flag',    price: 600,  bg: '#1d3557', emoji: '⭐', desc: 'Navigate by it.' },
-  { id: 'flag_octopus',  type: 'flag', name: 'Polpo Flag',     price: 8000, cur: 'money', bg: '#7a1e6e', emoji: '🐙', desc: 'Eight arms. Honest euros.' },
+  { id: 'flag_octopus',  type: 'flag', name: 'Polpo Flag',     price: 270, cur: 'money', bg: '#7a1e6e', emoji: '🐙', desc: 'Eight arms. Honest euros.' },
   { id: 'sail_citrus',   type: 'sail', name: 'Limone Sail',    price: 650, icon: '🍋', bg: '#fff3b0', color2: '#7ac74f', pattern: 'gradient', desc: 'Zest for the open sea.' },
   { id: 'sail_night',    type: 'sail', name: 'Notte Sail',     price: 850, icon: '🌙', bg: '#101828', emoji: '🌙', desc: 'Sail the midnight blue.' },
   { id: 'sail_flamingo', type: 'sail', name: 'Fenicottero',    price: 750, icon: '🦩', bg: '#ffd1e8', emoji: '🦩', desc: 'Stands on one hull.' },
@@ -1358,18 +1361,18 @@ const OLD_MAN_ADVICE = [
 /* Real-money knot bundles. `sku` must match the product id you create
    in Google Play Console / App Store Connect. */
 const KNOT_IAP = [
-  { sku: 'knots_250',   eur: '€0.99',  price: 0.99,  knots: 250, bonusMoney: 1500,   art: '🪢' },
-  { sku: 'knots_1500',  eur: '€4.99',  price: 4.99,  knots: 1500, bonusMoney: 25000,  art: '🪢🪢',   tag: 'MOST POPULAR' },
-  { sku: 'knots_3250',  eur: '€9.99',  price: 9.99,  knots: 3250, bonusMoney: 50000,  art: '🪢🪢🪢' },
-  { sku: 'knots_7000',  eur: '€19.99', price: 19.99, knots: 7000, bonusMoney: 120000, art: '🧰' },
-  { sku: 'knots_20000', eur: '€49.99', price: 49.99, knots: 20000, bonusMoney: 350000, art: '💰',     tag: 'BEST VALUE' },
+  { sku: 'knots_250',   eur: '€0.99',  price: 0.99,  knots: 250, bonusMoney: 50,   art: '🪢' },
+  { sku: 'knots_1500',  eur: '€4.99',  price: 4.99,  knots: 1500, bonusMoney: 850,  art: '🪢🪢',   tag: 'MOST POPULAR' },
+  { sku: 'knots_3250',  eur: '€9.99',  price: 9.99,  knots: 3250, bonusMoney: 1700,  art: '🪢🪢🪢' },
+  { sku: 'knots_7000',  eur: '€19.99', price: 19.99, knots: 7000, bonusMoney: 4000, art: '🧰' },
+  { sku: 'knots_20000', eur: '€49.99', price: 49.99, knots: 20000, bonusMoney: 12000, art: '💰',     tag: 'BEST VALUE' },
 ];
 /* One-time "No Ads" bundle: removes the forced ad breaks (the interstitial
    after every Nth run / story day) and unlocks the exclusive Honey sail skin.
    Optional rewarded ads (free gift, bonuses) still play a video. */
 const NOADS_BUNDLE = { sku: 'noads_honey', eur: '€4.99', price: 4.99, item: 'sail_honey', knots: 0, bonusMoney: 0 };
 /* One-time starter bundle, shown at the top of the store until bought. */
-const STARTER_PACK = { sku: 'starter_pack', eur: '€1.99', price: 1.99, knots: 600, bonusMoney: 20000, item: 'sail_stripes' };
+const STARTER_PACK = { sku: 'starter_pack', eur: '€1.99', price: 1.99, knots: 600, bonusMoney: 700, item: 'sail_stripes' };
 
 /* ---- ADS & PAYMENTS ----
    testAds: true  → Google's official test ads (safe to click, pay nothing).
@@ -1395,8 +1398,8 @@ const AD_BREAKS = { everyRuns: 5, everyTours: 5 };
 
 /* Rewarded-ad gift cycle */
 const GIFT_CYCLE = [
-  { knots: 3, money: 0 }, { knots: 0, money: 500 }, { knots: 5, money: 0 },
-  { knots: 0, money: 1000 }, { knots: 8, money: 0 }, { knots: 0, money: 2000 }, { knots: 5, money: 750 },
+  { knots: 3, money: 0 }, { knots: 0, money: 60 }, { knots: 5, money: 0 },
+  { knots: 0, money: 120 }, { knots: 8, money: 0 }, { knots: 0, money: 250 }, { knots: 5, money: 90 },
 ];
 
 /* ---- RETENTION: missions & daily streak ----
@@ -1404,12 +1407,12 @@ const GIFT_CYCLE = [
    a new one takes its place; every 3 finished raises the difficulty tier.
    {n} in the text is replaced by the target.                            */
 const MISSIONS = [
-  { type: 'coins',    text: 'Collect {n} € in one run',            targets: [60, 120, 200, 300, 450] },
+  { type: 'coins',    text: 'Collect {n} € in one run',            targets: [25, 50, 90, 140, 200] },
   { type: 'tourists', text: 'Rescue {n} tourist{s} in one run',    targets: [3, 5, 7, 9, 12] },
   { type: 'dist',     text: 'Sail {n} NM in one run',              targets: [5, 8, 12, 16, 20] },
   { type: 'chains',   text: 'Jump {n} harbor chain{s} in one run', targets: [2, 3, 4, 5, 6] },
   { type: 'repairs',  text: 'Grab {n} repair kit{s} in one run',   targets: [2, 3, 4, 5, 6] },
-  { type: 'mult',     text: 'Reach a ×{n} tourist multiplier',     targets: [3, 4, 5, 6, 8] },
+  { type: 'mult',     text: 'Reach a ×{n} streak multiplier',      targets: [1.5, 1.75, 2, 2.25, 2.5] },
   { type: 'close',    text: 'Slip past {n} yacht{s} (close call)', targets: [2, 3, 4, 5, 6] },
   { type: 'score',    text: 'Score {n} in one run',                targets: [80, 150, 220, 300, 400] },
   { type: 'runs',     text: 'Play {n} Mistral Run{s}',             targets: [3, 5, 8, 10, 12], cumulative: true },
@@ -1417,15 +1420,15 @@ const MISSIONS = [
 /* Mission rewards are rolled when the mission appears (so you see the prize
    beforehand). weight = how often each kind comes up. `tier` 0..4. */
 const MISSION_REWARDS = [
-  { kind: 'money',    weight: 40, amount: tier => 120 + tier * 180 + Math.round(Math.random() * 4) * 25 },
+  { kind: 'money',    weight: 40, amount: tier => 20 + tier * 30 + Math.round(Math.random() * 4) * 5 },
   { kind: 'knots',    weight: 30, amount: () => 5 },   // a knot mission always pays 5 knots
-  { kind: 'miles',    weight: 20, amount: tier => 1 + tier },     // head start: next run begins this many NM in
+  { kind: 'comet',    weight: 20, amount: () => 1 },             // ☄️ a Mistral Comet head start for a later run
   { kind: 'cosmetic', weight: 10 },                              // a random flag or sail you don't own yet
 ];
 
 /* Daily login streak: day 1..7, then it repeats. Missing a day restarts at day 1. */
 const DAILY_REWARDS = [
-  { money: 500 }, { knots: 5 }, { money: 1000 }, { knots: 10 }, { money: 2000 }, { knots: 15 }, { money: 5000, knots: 30 },
+  { money: 60 }, { knots: 5 }, { money: 120 }, { knots: 10 }, { money: 250 }, { knots: 15 }, { money: 600, knots: 30 },
 ];
 
 </script>
@@ -1765,22 +1768,23 @@ function chapterForDay(day) {
    first run; can be replayed from Settings. Future themes get their own intro.
    Line fields:  who, text (**bold** = highlighted keyword), show (a prop to
    illustrate, see PROPS in portraits.js), choices (you pick what to say),
-   action: 'steer' (player must tap both steering buttons to continue).      */
+   action: 'steer' (player must slide the steering slider to both ends to continue).      */
 const MISTRAL_INTRO = [
   { who: 'narr',  text: 'Sardinia, late summer. The **Mistral** wind has grown into a hurricane the old sailors call **Su Bentu Mannu**: the Great Wind.' },
   { who: 'radio', text: 'Mayday, mayday! Cruise liner **STELLA MARIS** adrift off Capo Testa. Engines dead. Passengers **washed overboard** on their pool floats!', show: 'stella' },
   { who: 'old',   text: 'Our coast guard cutters are too big for those breakers. But a small, stubborn boat… Skipper, are you listening?' },
   { who: 'you',   choices: ["I'm going out there.", 'Someone has to.', 'Only if you talk me through it.'] },
   { who: 'old',   text: 'Hah! Then listen close. The sea has rules, even in a storm. I\'ll be on the radio the whole way.' },
-  { who: 'old',   text: 'First, the rudder. Tap **⟲ LEFT** and **⟳ RIGHT** to steer, or just **drag your thumb** left and right anywhere on the water. One hand is enough! Go on, try both buttons now.', action: 'steer' },
+  { who: 'old',   text: 'First, the rudder. You steer with the **slider** at the bottom: slide it left and right, or just drag your thumb across the water. One hand is enough! Go on, slide it all the way **left** and all the way **right**.', action: 'steer' },
   { who: 'old',   text: 'Good hands. Now the big swells: ride **UP the wave** where the white arrows point, and you\'ll fly.', show: 'wave' },
   { who: 'old',   text: 'You\'ll need that air. The harbor has strung **chains** across the water. Only a jump off a wave gets you over them.', show: 'chain' },
-  { who: 'radio', text: 'Survivors spotted on **flamingo floats**! Each one you pick up is a **rescue**, and every rescue raises your **×multiplier** for 12 seconds. Chain them!', show: 'flamingo' },
+  { who: 'radio', text: 'Survivors spotted on **flamingo floats**! Every one you pick up is a **rescue**: big points for your score. Bring them home!', show: 'flamingo' },
   { who: 'you',   text: 'And all that money floating around?' },
-  { who: 'old',   text: '**Coins** and **knots** washed off the ship. Scoop them up: they\'re yours to spend in the **Shop** back home.', show: 'coins' },
+  { who: 'old',   text: '**Coins** washed off the ship: **1 € each**. Grab them **in a row** without getting hit and your **🔥 streak** multiplies them, up to ×2. One scrape and it\'s back to ×1!', show: 'coins' },
+  { who: 'old',   text: 'And the **horseshoe rocks**: thread the narrow gap at the back without touching the stone, and your streak jumps **+1×**. Close calls past yachts and clean chain jumps help too.', show: 'horseshoe' },
   { who: 'old',   text: '**Rocks** and **red buoys** eat your hull (**yellow buoys** only scratch it). Keep an eye on the **❤️ HP bar** in the top-right corner. At zero, you sink.', show: 'hazards' },
   { who: 'radio', text: 'Storm cell overhead! A **yellow ring** on the water means lightning is about to strike right there. **Move!**', show: 'lightning' },
-  { who: 'old',   text: 'Luck floats too. A **🔧 repair kit** patches up **30 HP**…', show: 'repair' },
+  { who: 'old',   text: 'Luck floats too. A **🔧 repair kit** patches up **10%** of your hull…', show: 'repair' },
   { who: 'old',   text: '…and power-ups: a **🛡️ shield** makes you untouchable, a **🧲 magnet** pulls coins to you, and **💰 ×2** doubles them. Each lasts **5 seconds**, and a **🔧 repair kit** fixes 10% of your hull. Upgrade them in the Shop!', show: 'powerups' },
   { who: 'old',   text: 'See a yacht? Tuck into its **cyan wake** for a speed boost, then swerve out before you hit its stern.', show: 'yacht' },
   { who: 'you',   choices: ['How far is the Stella Maris?', 'When does the storm stop?'] },
@@ -2188,7 +2192,7 @@ const upgrades = {};
 let equippedFlag = null, equippedSail = null;
 let mBestScore = 0;
 let savedBoatId = null;
-const settings = { music: 0.7, sfx: 0.8, quality: 'high', controls: 'both', shake: true, fx: true, audioEnabled: true, haptics: true, reminders: true };
+const settings = { music: 0.7, sfx: 0.8, quality: 'high', shake: true, fx: true, audioEnabled: true, haptics: true, reminders: true };
 
 /* ==============================================================
    WALLET API
@@ -2336,42 +2340,48 @@ const Save = {
 </script>
 <script>
 /* ==============================================================
-   2. INPUT
+   2. INPUT — steering is ONE analog slider (no left/right buttons).
+   • Grab the bar at the bottom: the knob jumps to your thumb (absolute).
+   • Or drag anywhere on the open water: the knob follows your thumb's
+     movement (relative), so it plays with one hand from any grip.
+   input.drag is −1…1 while steering, null when released (knob springs back).
+   Arrow keys / A-D still work on a computer keyboard.
 ================================================================ */
-const input = { left: false, right: false, drag: null };   // drag: −1..1 while a thumb is steering, else null
-function bindButton(id, key) {
-  const el = document.getElementById(id);
-  const on  = e => { e.preventDefault(); input[key] = true;  el.classList.add('active-btn'); };
-  const off = e => { e.preventDefault(); input[key] = false; el.classList.remove('active-btn'); };
-  el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointercancel', off); el.addEventListener('pointerleave', off);
-}
-bindButton('left', 'left'); bindButton('right', 'right');
+const input = { left: false, right: false, drag: null };
 window.addEventListener('keydown', e => { if (e.key === 'ArrowLeft'  || e.key === 'a') input.left = true; if (e.key === 'ArrowRight' || e.key === 'd') input.right = true; });
 window.addEventListener('keyup', e => { if (e.key === 'ArrowLeft'  || e.key === 'a') input.left = false; if (e.key === 'ArrowRight' || e.key === 'd') input.right = false; });
-
-/* ---- DRAG STEERING: put a thumb anywhere on the game screen and slide it.
-   Works like a floating joystick: how far you slide = how hard you steer,
-   so the whole game plays with one hand. The buttons keep working too. */
 const steerAxis = () => Math.max(-1, Math.min(1, (input.right ? 1 : 0) - (input.left ? 1 : 0) + (input.drag || 0)));
-(() => {
-  const RANGE = 55, DEAD = 6;                     // px for full lock · small dead zone
-  let id = null, ox = 0, oy = 0;
-  const stick = document.createElement('div'); stick.id = 'swipeStick'; stick.innerHTML = '<i></i>'; document.body.appendChild(stick);
-  const knob = stick.firstChild;
-  const canSteer = () => !Game.paused && (state === 'mistral_run' || state === 'sailing' || state === 'docking' || state === 'viewing');
-  const set = x => {
-    let dx = x - ox;
-    if (Math.abs(dx) > RANGE) { ox = x - Math.sign(dx) * RANGE; dx = x - ox; }   // the centre follows your thumb: reversing is instant
-    input.drag = Math.abs(dx) < DEAD ? 0 : (dx - Math.sign(dx) * DEAD) / (RANGE - DEAD);
-    stick.style.left = ox + 'px'; stick.style.top = oy + 'px'; knob.style.transform = `translateX(${dx}px)`;
-  };
-  const end = e => { if (e.pointerId !== id) return; id = null; input.drag = null; stick.classList.remove('on'); };
+
+const SteerSlider = (() => {
+  const bar = document.getElementById('steerBar'), knob = bar.querySelector('.sb-knob');
+  const RANGE = 70, DEAD = 0.06;                        // relative drag: 70 px = full lock · small dead zone in the middle
+  let id = null, mode = null, ox = 0;
+  const halfW = () => Math.max(40, bar.clientWidth / 2 - knob.offsetWidth / 2);
+  const canSteer = () => !Game.paused && bar.classList.contains('show') &&
+    (state === 'mistral_run' || state === 'sailing' || state === 'docking' || state === 'viewing');
+  const clamp = v => Math.max(-1, Math.min(1, v));
+  const setDrag = v => { v = clamp(v); input.drag = Math.abs(v) < DEAD ? 0 : v; };
+  function move(x) {
+    if (mode === 'abs') { const r = bar.getBoundingClientRect(); setDrag((x - (r.left + r.width / 2)) / halfW()); return; }
+    let v = (x - ox) / RANGE;                           // relative: the zero point follows your thumb past full lock,
+    if (Math.abs(v) > 1) { ox = x - Math.sign(v) * RANGE; v = Math.sign(v); }   // so reversing is instant
+    setDrag(v);
+  }
+  function end(e) { if (e.pointerId !== id) return; id = null; mode = null; input.drag = null; bar.classList.remove('held'); }
   document.addEventListener('pointerdown', e => {
-    if (id !== null || !canSteer() || e.target.id !== 'gl') return;     // only on the open game screen, never on buttons
-    id = e.pointerId; ox = e.clientX; oy = e.clientY; stick.classList.add('on'); set(e.clientX);
-  });
-  document.addEventListener('pointermove', e => { if (e.pointerId === id) { if (!canSteer()) { end(e); return; } set(e.clientX); } });
+    if (id !== null || !canSteer()) return;
+    const onBar = bar.contains(e.target), onWater = e.target.id === 'gl';
+    if (!onBar && !onWater) return;                      // buttons, minimap, pause… keep working normally
+    e.preventDefault(); id = e.pointerId; bar.classList.add('held');
+    if (onBar) mode = 'abs'; else { mode = 'rel'; ox = e.clientX - (input.drag || 0) * RANGE; }
+    move(e.clientX);
+  }, { passive: false });
+  document.addEventListener('pointermove', e => { if (e.pointerId !== id) return; if (!canSteer()) { end(e); return; } move(e.clientX); });
   document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);
+  /* called every frame: the knob shows the real steering value (slider, or keys) */
+  function render() { const v = steerAxis(); knob.style.transform = `translateX(${(v * halfW()).toFixed(1)}px)`; bar.classList.toggle('left', v < -0.05); bar.classList.toggle('right', v > 0.05); }
+  function show(on) { bar.classList.toggle('show', !!on); if (!on) { input.drag = null; id = null; bar.classList.remove('held'); } }
+  return { render, show };
 })();
 
 </script>
@@ -3254,6 +3264,8 @@ function renderItemShop() {
       tile({ img: p.icon + `<span class="pips">${'●'.repeat(lvl)}${'○'.repeat(M - lvl)}</span>`, imgCls: 'emoji perk pwr', name: p.name + ' · ' + pwrEffect(p.id),
         sub: price === null ? 'MAX LEVEL' : priceTag(price, 'money'), badge: 'Lv ' + lvl, badgeCls: 'own', open: () => openPowerupDetail(p) });
     }
+    head('☄️ Head start — use it at the start of a run');
+    tile({ img: '☄️', imgCls: 'emoji perk pwr', name: 'Mistral Comet', sub: priceTag(MC_COMET().price, 'money'), badge: '×' + (pStats.comets || 0), badgeCls: 'own', open: openCometDetail });
   } else if (shopTab === 'addons') {
     head('⚙️ Perks — boost every Mistral Run');
     for (const a of ADDONS.filter(a => a.kind === 'perk')) addonTile(a, tile);
@@ -3310,6 +3322,13 @@ function openUpgradeDetail(u) {
     body: statBar('Level ' + lvl + ' / ' + UPGRADE_MAX_LEVEL, lvl, UPGRADE_MAX_LEVEL, 'gold') + (u.id === 'hull' ? `<div class="perks">Max HP now: ❤️ ${Hull.max()}</div>` : '') +
       `<div class="perks dim">👀 ${price === null ? 'Fully upgraded' : 'Preview: level ' + show} · ${u.look}</div>`,
     actions: price === null ? [{ label: 'MAX LEVEL', disabled: true }] : [{ label: 'UPGRADE · ' + priceTag(price, 'money'), cls: 'go', run: () => { buyUpgrade(u); if (currentBoat) buildBoatModel(currentBoat); openUpgradeDetail(u); } }] });
+}
+const MC_COMET = () => CONFIG.mistral.comet;
+function openCometDetail() {
+  const C = MC_COMET();
+  openDetail({ img: '<span class="big-emoji">☄️</span>', title: '☄️ Mistral Comet', sub: 'Blast off the start line: skip the slow opening, gain ' + C.skipDist + ' NM and be invincible for ' + C.invincible + ' s.',
+    body: `<div class="perks">You have: <b>${pStats.comets || 0}</b></div><div class="perks dim">Tap ☄️ LAUNCH COMET in the first seconds of a Mistral Run. Also a mission prize.</div>`,
+    actions: [{ label: 'BUY 1 · ' + priceTag(C.price, 'money'), cls: 'go', run: () => { if (tryPay(C.price, 'money', 'a Mistral Comet')) { pStats.comets = (pStats.comets || 0) + 1; Save.queue(); } openCometDetail(); } }] });
 }
 function buyPowerup(p) {
   const price = pwrUpgradeCost(p.id); if (price === null || !tryPay(price, 'money', p.name)) return;
@@ -3395,7 +3414,7 @@ function visLvl(id) { return upgPreview && upgPreview.id === id ? upgPreview.lvl
 const UPG = {
   engineBoost: 0.10,   // Mistral: +10% yacht-wake boost time per engine level
   finsHandling: 0.06,  // +6% steering per wing level (Mistral + Story)
-  radarPull: 3,        // +3 m coin pull radius per radar level (Mistral)
+  radarStrike: 0.1,    // −10% lightning strike radius per radar level (Mistral)
   cargoLoot: 0.05,     // +5% coin value per cargo level (Mistral + Story tips)
 };
 
@@ -3810,11 +3829,11 @@ function showSummary() {
 /* ---- HUD for tours ---- */
 function showTourHud() {
   $('hud').style.display = 'flex'; $('storyStack').classList.add('active'); $('minimap').classList.add('show'); document.body.classList.add('story');
-  $('left').classList.add('show'); $('right').classList.add('show'); $('btnPause').classList.add('show');
+  SteerSlider.show(true); $('btnPause').classList.add('show');
 }
 function hideTourHud() {
   $('hud').style.display = 'none'; $('storyStack').classList.remove('active'); $('minimap').classList.remove('show'); hideToast(); document.body.classList.remove('story', 'docking');
-  $('left').classList.remove('show'); $('right').classList.remove('show'); $('speedLever').style.display = 'none'; $('btnPause').classList.remove('show');
+  SteerSlider.show(false); $('speedLever').style.display = 'none'; $('btnPause').classList.remove('show');
   $('dockingUI').style.display = 'none'; $('dockLabels').classList.remove('show'); $('minigameUI').style.display = 'none'; mgActive = false;
   bubbleEl.classList.remove('show'); bubbleTimer = 0;
 }
@@ -4186,7 +4205,6 @@ const TourEvents = (() => {
 ================================================================ */
 let mGroup = new THREE.Group(); scene.add(mGroup);
 const MC = CONFIG.mistral;       // all Mistral tuning lives in config.js
-const M_MULT_TIME = MC.multTime; // seconds a multiplier boost lasts (refreshed by each rescue)
 let mState = { active: false, dist: 0, score: 0, speed: 60, velX: 0, lean: 0, coins: 0, knots: 0, tourists: 0, mult: 1, multTimer: 0, maxMult: 1, jumpY: 0, jumpVy: 0, objs: [], nextZ: -200, boostTimer: 0, bolts: [], strike: null, strikeTimer: 5, flash: 0, edgeT: 0 };
 const M_WIDTH = MC.trackWidth; // Track width (constrained visually by massive side waves)
 const M_CHUNK_LEN = MC.chunkLen;
@@ -4521,6 +4539,34 @@ function makeWhirlpool() {
   return g;
 }
 
+/* ---- HORSESHOE ROCK ----
+   A U of granite: a wide mouth facing you that funnels into a narrow slot at
+   the back. The hitbox is COMPOSITE: one collision circle per rock of the arc
+   (local coords, boat travels −z). Threading the slot cleanly = big multiplier boost. */
+const HS = (() => {
+  const R = 15, segR = 3.4, a0 = 27 * Math.PI / 180, a1 = 125 * Math.PI / 180, n = 8, segs = [];
+  for (let i = 0; i < n; i++) { const a = a0 + (a1 - a0) * i / (n - 1); for (const side of [-1, 1]) segs.push({ x: side * R * Math.sin(a), z: -R * Math.cos(a) }); }
+  return { R, segR, segs, slotHalf: R * Math.sin(a0) - segR };   // slotHalf ≈ 3.4: the gap your boat's centre must thread
+})();
+function makeHorseshoe() {
+  const g = new THREE.Group();
+  for (const s of HS.segs) {
+    const sp = new THREE.Mesh(rockGeoMistral, GRANITE[Math.floor(Math.random() * GRANITE.length)]);
+    const sc = HS.segR * (1.05 + Math.random() * 0.25); sp.scale.set(sc, sc * (1.5 + Math.random() * 0.7), sc);
+    sp.rotation.set(Math.random() * 3, Math.random() * 3, Math.random() * 3); sp.position.set(s.x, 1, s.z); g.add(sp);
+  }
+  // gold posts + a glowing ring mark the slot you have to thread
+  const gold = new THREE.MeshBasicMaterial({ color: 0xffd23f });
+  for (const side of [-1, 1]) { const p = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 9, 6), gold); p.position.set(side * (HS.slotHalf + 2.2), 5, -HS.R + 1); g.add(p); }
+  const ring = new THREE.Mesh(new THREE.TorusGeometry(HS.slotHalf + 1.2, 0.35, 6, 20), new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.85 }));
+  ring.position.set(0, 4.5, -HS.R + 1); g.add(ring); g.userData.ring = ring;
+  return g;
+}
+/* Composite hitbox test: returns the rock circle you touched (or null). */
+function horseshoeHit(dx, dz, hitR) {
+  for (const s of HS.segs) if (Math.hypot(dx - s.x, dz - s.z) < hitR + HS.segR) return s;
+  return null;
+}
 function makeMistralRock() {
   const g = new THREE.Group();
   for (let k = 0; k < 3; k++) {
@@ -4623,7 +4669,7 @@ function mHit(amount, source, msg) {
 /* This boat's Mistral perks (config.js → FLEET[].run) */
 function boatRun() {
   const R = (currentBoat && currentBoat.run) || { hitR: 3, handling: 1, armor: 0, loot: 1, magnet: 0 };
-  return { ...R, handling: R.handling * (1 + UPG.finsHandling * upgLevel('fins')), magnet: (R.magnet || 0) + UPG.radarPull * upgLevel('radar'), loot: R.loot * (1 + UPG.cargoLoot * upgLevel('cargo')) };
+  return { ...R, handling: R.handling * (1 + UPG.finsHandling * upgLevel('fins')), magnet: R.magnet || 0, loot: R.loot * (1 + UPG.cargoLoot * upgLevel('cargo')) };
 }
 /* All run damage goes through here: shield → boat armor → add-ons → Hull */
 function mDamage(amount, source) {
@@ -4634,9 +4680,37 @@ function mDamage(amount, source) {
   if (mState.shieldT > 0) {                                    // shield: untouchable while it lasts
     Platform.haptics.impact('LIGHT'); showBanner('🛡️ BLOCKED!', 'boost', 700); return false;
   }
-  Hull.damage(dmg, source); return true;
+  Hull.damage(dmg, source); breakStreak(); return true;
 }
-function coinValue(base) { return Math.max(1, Math.round(base * (1 + (mState.mult - 1) * MC.multCoinFactor) * boatRun().loot * (mState.doubleT > 0 ? 2 : 1))); }
+/* ---- € STREAK MULTIPLIER ----
+   Built ONLY by (a) a Collection Streak: coins picked up in a row without taking
+   damage, and (b) clean passes through precision hazards (horseshoe rocks, yacht
+   close calls, chain jumps). ANY damage drops it straight back to ×1. */
+function streakMult() {
+  const S = MC.streak, fromCoins = Math.min(S.coinCap, 1 + S.step * Math.floor(mState.streak / S.coinsPerStep));
+  return Math.min(S.maxMult, fromCoins + mState.precision);
+}
+function refreshMult() {
+  const before = mState.mult; mState.mult = streakMult(); mState.maxMult = Math.max(mState.maxMult, mState.mult);
+  if (mState.mult > before) { const box = $('mMultBox'); box.classList.add('bump'); setTimeout(() => box.classList.remove('bump'), 200); }
+  updateMistralHUD();
+}
+function precisionPass(amount, label) { mState.precision += amount; refreshMult(); showBanner(label + ' ×' + fmtMult(mState.mult), 'good'); }
+function breakStreak() {
+  if (mState.mult > 1) showToast('💔 Streak lost: back to ×1');
+  mState.streak = 0; mState.precision = 0; refreshMult();
+}
+const fmtMult = m => (Math.round(m * 100) / 100).toString();
+/* Value of one pickup in € (fractions are kept, so ×1.25 really pays 1.25 €) */
+function coinValue(base) { return base * mState.mult * boatRun().loot * (mState.doubleT > 0 ? 2 : 1); }
+/* ---- SPEED: logarithmic climb toward a terminal velocity ----
+   The gap to top speed shrinks as (1 + t/τ)^−k: a fast climb in the first
+   minute, then ever slower. It only gets truly close to max after a long,
+   high-skill run. Collisions never slow the boat down. */
+function terminalSpeed(t) { return MC.maxSpeed - (MC.maxSpeed - MC.startSpeed) * Math.pow(1 + t / MC.speedTau, -MC.speedK); }
+/* ---- RADAR: every level shrinks the lightning strike zone by 10% (lvl 5 → half size) ---- */
+function strikeRadius() { return MC.lightning.radius * (1 - UPG.radarStrike * upgLevel('radar')); }
+function addEuros(v) { mState.coinsF = (mState.coinsF || 0) + v; mState.coins = Math.floor(mState.coinsF); }
 
 /* ---- POWER-UP PICKUPS: 🛡️ shield · 🧲 magnet · 💰 double coins ---- */
 const PU = CONFIG.mistral.powerups;
@@ -4681,11 +4755,24 @@ function updatePowerups(dt, time) {
   if (chips !== pwrShown) { pwrShown = chips; $('pwrRow').innerHTML = chips; }
 }
 
+/* ---- ☄️ MISTRAL COMET (consumable head start) ----
+   Launches you past the early, slow part of the run: the difficulty clock jumps
+   ahead, you gain distance, and you're invincible (+ boosted) for a few seconds. */
+function launchComet() {
+  if (!mState.active || !(pStats.comets > 0) || mState.cometUsed) return;
+  const C = MC.comet; pStats.comets--; mState.cometUsed = true; $('cometBtn').classList.remove('show');
+  mState.runTime += C.skipTime; mState.dist += C.skipDist; mState.score += C.skipDist * 12;
+  mState.shieldT = Math.max(mState.shieldT || 0, C.invincible); mState.boostTimer = C.boost;
+  Game.emit('hull', { delta: 0 }); playBoostSound(); Platform.haptics.impact('HEAVY'); flashFov = 14;
+  showBanner('☄️ MISTRAL COMET! Invincible ' + C.invincible + 's', 'record', 1800); Save.queue();
+}
+let flashFov = 0;
 function startMistralRun() {
   hideAllOverlays(); hideTourHud();
   state = 'mistral_run'; mState.active = true; pStats.runs = (pStats.runs || 0) + 1;
-  mState.dist = 0; mState.speed = 50; mState.velX = 0; mState.lean = 0; mState.coins = 0; mState.knots = 0; mState.tourists = 0; mState.mult = 1; mState.multTimer = 0; mState.maxMult = 1; mState.stunTimer = 0; mState.score = 0; mState.chains = 0; mState.repairs = 0; mState.closeCalls = 0; mState.shieldT = mState.magnetT = mState.doubleT = 0; pwrShown = null; clearTrail(); Retention.onRunStart();
-  mState.clock = 0; mState.clockShown = -1; $('mTimeWrap').style.display = SHOW_RUN_TIME ? '' : 'none'; mState.runTime = 0; const headStart = Retention.takeHeadStart(); if (headStart) { mState.dist = headStart; mState.runTime = headStart * 4; } // mission prize: start further in (faster, busier water)
+  mState.dist = 0; mState.speed = 50; mState.velX = 0; mState.lean = 0; mState.coins = 0; mState.knots = 0; mState.tourists = 0; mState.mult = 1; mState.streak = 0; mState.precision = 0; mState.coinsF = 0; mState.maxMult = 1; mState.score = 0; mState.chains = 0; mState.repairs = 0; mState.closeCalls = 0; mState.shieldT = mState.magnetT = mState.doubleT = 0; pwrShown = null; clearTrail(); Retention.onRunStart();
+  mState.clock = 0; mState.clockShown = -1; $('mTimeWrap').style.display = SHOW_RUN_TIME ? '' : 'none'; mState.runTime = 0; const headStart = Retention.takeHeadStart(); if (headStart) { mState.dist = headStart; mState.runTime = headStart * 4; }
+  mState.cometUsed = false; const cb = $('cometBtn'); cb.innerHTML = '☄️ LAUNCH COMET<small>' + (pStats.comets || 0) + ' left · tap now!</small>'; cb.classList.toggle('show', pStats.comets > 0); // mission prize: start further in (faster, busier water)
   mState.jumpY = 0; mState.jumpVy = 0; mState.objs = []; mState.nextZ = 400; mState.boostTimer = 0; // start generating BEHIND the boat: the wave tunnel surrounds you from frame one
   
   Hull.restore(); boat.x = 0; boat.z = 0; boat.speed = mState.speed; boat.heading = 0;
@@ -4716,8 +4803,7 @@ function startMistralRun() {
   
   document.getElementById('hud').style.display = 'none';
   document.getElementById('mistralHUD').style.display = 'flex';
-  document.getElementById('left').classList.add('show');
-  document.getElementById('right').classList.add('show');
+  SteerSlider.show(true);
   $('btnPause').classList.add('show');
   
   showToast("🌪️ THE MISTRAL RUN!<br>Storm's up — dodge obstacles, watch for ⚡, don't hug the breakers!", 4000);
@@ -4748,6 +4834,7 @@ function spawnMistralObj(type, x, z) {
   else if (type === 'knot') { mesh = new THREE.Mesh(knotGeo, matKnot); }
   else if (type === 'flamingo') { mesh = makeFlamingo(); r = 4; }
   else if (type === 'rock') { mesh = makeMistralRock(); r = 8; }
+  else if (type === 'horseshoe') { mesh = makeHorseshoe(); r = 0; }   // composite hitbox, see horseshoeHit()
   else if (type === 'edgerock') { mesh = makeMistralRock(); const sc = 1.6 + Math.random() * 1.0; mesh.scale.setScalar(sc); r = 8 * sc; } // big breaker rock — now a real hazard at the track edge
   else if (type === 'curl') { mesh = makeWaveCurl(Math.sign(x) || 1, z); r = 0; } // overhanging wave wall, pure scenery
   else if (type === 'chain') { mesh = makeChain(); r = 0; } // full-width jump gate — custom collision on dz only
@@ -4775,7 +4862,7 @@ function spawnAirArc(ramp, x) {
   const s = Math.max(55, mState.speed || 55), rel = s + (ramp.still ? 0 : 8);
   const vy = Math.min(MC.wave.maxLaunch, MC.wave.launch + s * MC.wave.launchPerSpeed), tAir = 2 * vy / 80;
   const n = 7, apex = Math.floor(n / 2);
-  for (let i = 1; i <= n; i++) {
+  for (let i = apex; i <= apex + 1; i++) {                        // 2 pickups at the top of the arc: a coin + the prize (or a 2nd coin)
     const t = tAir * i / (n + 1), y = vy * t - 40 * t * t, d = rel * t;
     const top = i === apex + 1, roll = top ? Math.random() : 1;
     const type = roll < MC.knots.arcChance ? 'knot' : roll < MC.knots.arcChance + PU.airArcChance ? (Math.random() < 0.3 ? 'repair' : ['shield', 'magnet', 'double'][Math.floor(Math.random() * 3)]) : 'coin';
@@ -4784,8 +4871,9 @@ function spawnAirArc(ramp, x) {
   }
 }
 function genMistralChunk(zStart) {
-  const types = ['coins', 'rocks', 'flamingo', 'ramp', 'whirlpool', 'buoys', 'yacht', 'chain'];
-  const t = types[Math.floor(Math.random() * types.length)];
+  const types = ['coins', 'rocks', 'flamingo', 'ramp', 'whirlpool', 'buoys', 'yacht', 'chain', 'horseshoe'];
+  let t = types[Math.floor(Math.random() * types.length)];
+  if (t === 'horseshoe' && Math.random() < 0.5) t = 'rocks';        // horseshoes are special: about 1 chunk in 18
   const rx = () => (Math.random() - 0.5) * (M_WIDTH - 12); // full width — the edges are not a safe lane
   const sceneryOnly = zStart > -150; // chunks at/behind the start line get walls but no hazards
   
@@ -4795,7 +4883,7 @@ function genMistralChunk(zStart) {
   if (sceneryOnly) { /* walls only near the start line */ }
   else if (t === 'coins' || t === 'flamingo') {
     const x = rx();
-    for(let i=0; i<5; i++) spawnMistralObj('coin', x, zStart - i*15);
+    if (t === 'coins') for (let i = 0; i < 3; i++) spawnMistralObj('coin', x, zStart - i * 15);   // coins are worth 1 € now: fewer, but every one counts for the streak
     if (t === 'flamingo') spawnMistralObj('flamingo', x, zStart - 80);
   } else if (t === 'rocks') {
     spawnMistralObj('rock', rx(), zStart - 50);
@@ -4807,6 +4895,10 @@ function genMistralChunk(zStart) {
     const x = rx()*0.5; const rp = spawnMistralObj('ramp', x, zStart - 50);
     spawnAirArc(rp, x);                                             // coins + a power-up hanging in the air over the jump
     spawnMistralObj('rock', x - 30, zStart - 50); spawnMistralObj('rock', x + 30, zStart - 50);
+  } else if (t === 'horseshoe') {
+    const x = (Math.random() - 0.5) * 2 * (M_WIDTH / 2 - HS.R - 10), z = zStart - 150;
+    spawnMistralObj('horseshoe', x, z);
+    spawnMistralObj('coin', x, z + HS.R + 16);                                          // a guide coin leads into the mouth
   } else if (t === 'whirlpool') {
     spawnMistralObj('whirlpool', rx()*0.5, zStart - 100);
   } else if (t === 'yacht') {
@@ -4845,7 +4937,10 @@ function updateMistralHUD() {
   document.getElementById('mBest').textContent = Math.floor(Math.max(mBestScore, mState.score));
   document.getElementById('mEuro').textContent = mState.coins;
   document.getElementById('mKnot').textContent = mState.knots;
-  document.getElementById('mMult').textContent = mState.mult;
+  document.getElementById('mMult').textContent = fmtMult(mState.mult);
+  const S = MC.streak, capped = 1 + S.step * Math.floor(mState.streak / S.coinsPerStep) >= S.coinCap;
+  $('mMultFill').style.width = (capped ? 100 : (mState.streak % S.coinsPerStep) / S.coinsPerStep * 100) + '%';
+  $('mMultBox').classList.toggle('hot', mState.mult > 1);
 }
 
 /* TEMPORARY (balancing): real run length on the HUD and in the summary. Set to false to hide it. */
@@ -4854,20 +4949,13 @@ const fmtTime = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padSt
 function updateMistral(dt, time) {
   if (mState.active && !Game.paused) { mState.clock = (mState.clock || 0) + dt; const sec = Math.floor(mState.clock);
     if (SHOW_RUN_TIME && sec !== mState.clockShown) { mState.clockShown = sec; const el = $('mTime'); if (el) el.textContent = fmtTime(sec); } }
-  if (mState.stunTimer <= 0) mState.runTime = (mState.runTime || 0) + dt;   // the clock that drives the difficulty
-  mState.speed = MC.startSpeed + (MC.maxSpeed - MC.startSpeed) * (1 - Math.exp(-mState.runTime / MC.rampTime));
+  mState.runTime = (mState.runTime || 0) + dt;                             // the clock that drives the difficulty (hits never pause it)
+  if (!mState.cometUsed && mState.clock > 6) { mState.cometUsed = true; $('cometBtn').classList.remove('show'); }   // the launch window is the first 6 s
+  mState.speed = terminalSpeed(mState.runTime);
   
-  // Multiplier chain drains Subway-Surfers style — rescue again to refresh it
-  if (mState.multTimer > 0) {
-    mState.multTimer -= dt;
-    if (mState.multTimer <= 0) { mState.multTimer = 0; mState.mult = 1; updateMistralHUD(); showToast("⏳ Multiplier chain expired!"); }
-  }
-  document.getElementById('mMultFill').style.width = (mState.multTimer / M_MULT_TIME * 100) + '%';
-  document.getElementById('mMultBox').classList.toggle('hot', mState.multTimer > 0);
   
   if (mState.boostTimer > 0) { mState.boostTimer -= dt; boat.speed = mState.speed * 1.5; } 
   else { boat.speed = mState.speed; }
-  if (mState.stunTimer > 0) { mState.stunTimer -= dt; boat.speed *= 0.35; } // clotheslined by the chain
   
   boat.z -= boat.speed * dt;
   mState.dist += (boat.speed * dt) / 100;
@@ -4877,7 +4965,7 @@ function updateMistral(dt, time) {
   // ~0.45s — taps give small corrections, long holds build into a hard carve.
   // Progressive response curve: velocity follows lean·(0.35+0.65·|lean|).
   const steer = (input.right ? 1 : 0) - (input.left ? 1 : 0);
-  if (input.drag !== null && !steer) mState.lean += (input.drag - mState.lean) * Math.min(1, 13 * dt);   // thumb drag: lean follows the thumb
+  if (input.drag !== null && !steer) mState.lean += (input.drag - mState.lean) * Math.min(1, 13 * dt);   // slider: lean follows the knob (analog)
   else if (steer !== 0) mState.lean = Math.max(-1, Math.min(1, mState.lean + steer * dt / (steer * mState.lean < 0 ? 0.15 : 0.3)));   // snappy, and reversing is extra quick
   else mState.lean += (0 - mState.lean) * Math.min(1, 7 * dt);   // settles gently on release
   const agility = 1 - Math.min(0.45, mState.tourists * 0.06);
@@ -4956,7 +5044,7 @@ function updateMistral(dt, time) {
       }
       else if ((obj.type === 'coin' || obj.type === 'knot') && dist < boatHitR + obj.r + (obj.airY ? 2 : 0) && reachY(obj)) {
         obj.hit = true; obj.mesh.visible = false;
-        if (obj.type === 'coin') mState.coins += coinValue(MC.coinValue); else mState.knots += 1;                 // knots are premium: never multiplied
+        if (obj.type === 'coin') { addEuros(coinValue(MC.coinValue)); mState.streak++; refreshMult(); } else mState.knots += 1;   // knots are premium: never multiplied
         playCoinSound(); Platform.haptics.impact('LIGHT');
         updateMistralHUD();
       }
@@ -4969,10 +5057,9 @@ function updateMistral(dt, time) {
       }
       else if (obj.type === 'flamingo' && dist < boatHitR + obj.r && mState.jumpY < 5) {
         obj.hit = true; obj.mesh.visible = false; mState.tourists++; playRescueSound();
-        mState.mult = Math.min(MC.maxMult, mState.mult + 1); mState.multTimer = M_MULT_TIME; mState.maxMult = Math.max(mState.maxMult, mState.mult); // temporary, Subway Surfers style — refreshes on each rescue
+        mState.score += 100;                                                   // rescues score points (the € multiplier comes from your streak)
         const p = makePerson({c: 0xffffff, bucketHat:true}); p.position.set((Math.random()-0.5)*3, 2, (Math.random()-0.5)*6); p.userData = {baseY: 2, phase: Math.random()*6, dance:true}; p.traverse(o => { o.renderOrder = 10; }); boatGroup.add(p); tourists.push(p);
-        const box = document.getElementById('mMultBox'); box.classList.add('bump'); setTimeout(()=>box.classList.remove('bump'), 200);
-        updateMistralHUD(); showToast(`🛟 Tourist Saved! ×${mState.mult} for ${M_MULT_TIME}s — keep the chain alive!`);
+        updateMistralHUD(); showToast('🛟 Tourist saved! +100 score');
       }
       else if (obj.type === 'ramp') {
         // Ride the face: the boat follows the exact wave surface, then launches off the crest
@@ -4988,8 +5075,8 @@ function updateMistral(dt, time) {
       }
       else if (obj.type === 'chain' && !obj.hit && Math.abs(dz) < 6) {
         obj.hit = true;
-        if (mState.jumpY >= 4.5) { const bonus = coinValue(MC.chainBonus); mState.coins += bonus; mState.score += MC.chainScore * mState.mult; Platform.haptics.success(); mState.chains++; showBanner(`⛓️ CHAIN JUMPED! +${bonus} €`, 'good'); updateMistralHUD(); }
-        else { mState.stunTimer = 1.3; mHit(MC.damage.chain, 'chain', "⛓️ CLOTHESLINED by the harbor chain! Hit the ramp and JUMP it!"); }
+        if (mState.jumpY >= 4.5) { mState.score += MC.chainScore; Platform.haptics.success(); mState.chains++; precisionPass(MC.streak.chainJump, '⛓️ CHAIN JUMPED!'); }
+        else { mHit(MC.damage.chain, 'chain', "⛓️ CLOTHESLINED by the harbor chain! Hit the ramp and JUMP it!"); }
       }
       else if (obj.type === 'whirlpool' && dist < WP.R + 8 && mState.jumpY < 2) {
         const pull = 1 - dist / (WP.R + 8);                                   // stronger near the eye
@@ -5010,7 +5097,22 @@ function updateMistral(dt, time) {
         // Near miss: slipped past alongside without touching → reward the skill
         if (!obj.passed && dz < -(Y.halfLen + Y.playerHalfLen)) {
           obj.passed = true;
-          if (Math.abs(dx) < Y.nearMiss && !obj.hit) { mState.score += Y.nearMissScore; mState.coins += coinValue(Y.nearMissCoins); mState.closeCalls++; showBanner('😎 CLOSE CALL!', 'good'); updateMistralHUD(); }
+          if (Math.abs(dx) < Y.nearMiss && !obj.hit) { mState.score += Y.nearMissScore; mState.closeCalls++; precisionPass(MC.streak.closeCall, '😎 CLOSE CALL!'); }
+        }
+      }
+      else if (obj.type === 'horseshoe' && Math.abs(dz) < HS.R + 10) {
+        obj.cd = Math.max(0, (obj.cd || 0) - dt);
+        const seg = mState.jumpY < 4 && horseshoeHit(dx, dz, hitR);
+        if (seg) {
+          boat.x = obj.x + seg.x + Math.sign(dx - seg.x || 1) * (hitR + HS.segR + 0.2);   // pushed off the rock you touched
+          if (!obj.cd) { obj.cd = 0.8; obj.bumped = true; mHit(MC.damage.rock, 'rock', '💥 Scraped the horseshoe rock!'); }
+        }
+        if (!obj.passed && dz < -HS.R) {                                                   // came out the back
+          obj.passed = true;
+          if (!obj.bumped && Math.abs(dx) < HS.slotHalf && mState.jumpY < 4) {
+            mState.score += 300; mState.horseshoes = (mState.horseshoes || 0) + 1; Platform.haptics.success(); playRescueSound();
+            precisionPass(MC.streak.horseshoe, '🐎 THREADED THE HORSESHOE!');
+          }
         }
       }
       else if ((obj.type === 'rock' || obj.type === 'buoy' || obj.type === 'edgerock') && dist < hitR + obj.r && mState.jumpY < 4) {
@@ -5040,18 +5142,18 @@ function updateMistral(dt, time) {
       const camping = Math.abs(boat.x) > M_WIDTH * 0.3;
       const spread = camping ? 8 : 55;
       const tx = Math.max(-M_WIDTH / 2, Math.min(M_WIDTH / 2, boat.x + (Math.random() - 0.5) * spread));
-      mState.strike = { x: tx, t: 1.25, marker: makeStrikeMarker() };
+      mState.strike = { x: tx, t: 1.25, marker: makeStrikeMarker(), r: strikeRadius() };
       mState.strikeTimer = (camping ? 3.5 : 7) + Math.random() * 5;
     }
     if (mState.strike) {
       const s = mState.strike; s.t -= dt;
       s.marker.position.set(s.x, waveHeight(s.x, boat.z - 4, time) + 0.6, boat.z - 4);
-      const pu = 0.75 + Math.abs(Math.sin(time * 10)) * 0.5; s.marker.scale.set(pu, pu, pu);
+      const pu = (0.75 + Math.abs(Math.sin(time * 10)) * 0.5) * s.r / MC.lightning.radius; s.marker.scale.set(pu, pu, pu);   // the warning ring shows the real (radar-shrunk) size
       if (s.t <= 0) {
         mState.bolts.push({ mesh: makeBolt(s.x, boat.z - 4), life: 0.3 });
         mState.flash = 1;
         mGroup.remove(s.marker);
-        const struck = Math.abs(boat.x - s.x) < 13 && mState.jumpY < 20; playThunder(true, struck);   // every strike booms; a hit adds the zap
+        const struck = Math.abs(boat.x - s.x) < strikeRadius() && mState.jumpY < 20; playThunder(true, struck);   // every strike booms; a hit adds the zap
         if (struck) { showToast("⚡ STRUCK BY LIGHTNING!"); mDamage(MC.damage.lightning, 'lightning'); }
         mState.strike = null;
       }
@@ -5101,7 +5203,8 @@ function updateMistral(dt, time) {
   
   // Speed feel: FOV stretches wide as you accelerate, boosts punch it further,
   // and a fine shake creeps in at high speed
-  const targetFov = 62 + 12 * Math.min(1, Math.max(0, (mState.speed - MC.startSpeed) / (MC.maxSpeed - MC.startSpeed))) + (mState.boostTimer > 0 ? 6 : 0);   // feel the speed: 62° → 74° (+6° boosting)
+  flashFov = Math.max(0, flashFov - dt * 10);
+  const targetFov = flashFov + 62 + 12 * Math.min(1, Math.max(0, (mState.speed - MC.startSpeed) / (MC.maxSpeed - MC.startSpeed))) + (mState.boostTimer > 0 ? 6 : 0);   // feel the speed: 62° → 74° (+6° boosting)
   camera.fov += (targetFov - camera.fov) * Math.min(1, 6 * dt); camera.updateProjectionMatrix();
   const shake = settings.shake ? Math.max(0, (boat.speed - 75) * 0.004) + (mState.boostTimer > 0 ? 0.3 : 0) : 0;
   camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake;
@@ -5117,9 +5220,10 @@ function updateMistral(dt, time) {
 }
 
 function endMistralRun(sank) {
+  $('cometBtn').classList.remove('show');
   if (!mState.active) return;
   mState.active = false; boatGroup.scale.setScalar(1);
-  $('left').classList.remove('show'); $('right').classList.remove('show'); $('btnPause').classList.remove('show');
+  SteerSlider.show(false); $('btnPause').classList.remove('show');
   $('mistralHUD').style.display = 'none'; input.left = input.right = false;
   const totE = mState.coins, totK = mState.knots;
   Wallet.earn(totE, true); Wallet.addKnots(totK);
@@ -5165,7 +5269,7 @@ function leaveMistralWorld() {
   camera.fov = 60; camera.updateProjectionMatrix();
   hideRunBackdrop(); shieldBubble.visible = false; mState.shieldT = mState.magnetT = mState.doubleT = 0; Game.emit('hull', { delta: 0 });
   mState.active = false; boatGroup.scale.setScalar(1);
-  $('mistralHUD').style.display = 'none'; $('left').classList.remove('show'); $('right').classList.remove('show'); $('btnPause').classList.remove('show');
+  $('mistralHUD').style.display = 'none'; SteerSlider.show(false); $('btnPause').classList.remove('show');
   worldGroup.visible = true; mGroup.visible = false;
   while (mGroup.children.length) mGroup.remove(mGroup.children[0]); mState.objs = []; mState.bolts = []; mState.strike = null;
   scene.fog.near = WORLD_FOG_NEAR; scene.fog.far = WORLD_FOG_FAR;
@@ -5428,6 +5532,7 @@ const PROPS = {
   stella:    { label: '🚢 The STELLA MARIS', make: () => { const cs = buildCruiseShip(); [cs.beam, cs.flare, ...cs.smoke].forEach(o => cs.ship.remove(o)); cs.ship.rotation.set(0, 0, 0.08); return cs.ship; }, view: [1, 0.32, -0.5], zoom: 1.2 },  // no searchlight/smoke: they'd blow up the framing
   wave:      { label: '🌊 Jump wave — ride up the arrows', make: () => makeJumpWave(), view: [0.7, 0.6, 1], zoom: 1.85 },
   chain:     { label: '⛓️ Harbor chain — jump it!', make: () => makeChain(), view: [0.35, 0.55, 1], zoom: 0.95 },
+  horseshoe: { label: '🐎 Thread the gap = streak +1×', make: () => makeHorseshoe(), view: [0, 0.9, 1.2], zoom: 1.2 },
   flamingo:  { label: '🦩 Tourist on a float = RESCUE', make: () => makeFlamingo(), view: [0.8, 0.5, -1], zoom: 2.0 },
   coins:     { label: '💰 Coins  ·  🪢 Knots', make: () => { const g = new THREE.Group(); for (let i = 0; i < 3; i++) { const c = new THREE.Mesh(coinGeo, matCoin); c.position.set(i * 4 - 6, 0, 0); g.add(c); } const k = new THREE.Mesh(knotGeo, matKnot); k.position.set(7, 0, 0); g.add(k); return g; }, view: [0.2, 0.3, 1], zoom: 1.9 },
   hazards:   { label: '🪨 Rocks & 🔴 red buoys hurt · 🟡 yellow buoys hurt less', make: () => { const g = new THREE.Group(); const rk = makeMistralRock(); rk.position.x = -8; g.add(rk); const b = makeMistralBuoy(); b.position.x = 4; g.add(b); const y = makeMistralBuoy(true); y.position.x = 11; g.add(y); return g; }, view: [0.4, 0.6, 1], zoom: 1.7 },
@@ -5878,8 +5983,6 @@ function refreshSettingsUI() {
   $('setSfx').value = settings.sfx * 100; $('setSfxVal').textContent = Math.round(settings.sfx * 100) + '%';
   $('setQHigh').classList.toggle('on', settings.quality === 'high'); $('setQLow').classList.toggle('on', settings.quality === 'low');
   const tog = (id, v) => { const b = $(id); b.textContent = v ? 'ON' : 'OFF'; b.classList.toggle('on', v); };
-  $('setCtlBoth').classList.toggle('on', settings.controls !== 'swipe'); $('setCtlSwipe').classList.toggle('on', settings.controls === 'swipe');
-  document.body.classList.toggle('swipe-only', settings.controls === 'swipe');
   tog('setAudio', settings.audioEnabled); tog('setShake', settings.shake); tog('setFx', settings.fx); tog('setHaptics', settings.haptics); tog('setReminders', settings.reminders);
   $('versionLabel').textContent = 'Sardinia Skipper · v' + CONFIG.VERSION + (Platform.isNative ? ' · ' + Platform.os : ' · web');
 }
@@ -5891,8 +5994,6 @@ function initSettingsUI() {
   $('setAudio').addEventListener('click', () => { settings.audioEnabled = !settings.audioEnabled; setAudioVolumes(); if (settings.audioEnabled && !isAudioInit) initAudio(); refreshSettingsUI(); });
   $('setQHigh').addEventListener('click', () => { settings.quality = 'high'; applyQuality(); refreshSettingsUI(); });
   $('setQLow').addEventListener('click', () => { settings.quality = 'low'; applyQuality(); refreshSettingsUI(); });
-  $('setCtlBoth').addEventListener('click', () => { settings.controls = 'both'; refreshSettingsUI(); });
-  $('setCtlSwipe').addEventListener('click', () => { settings.controls = 'swipe'; refreshSettingsUI(); });
   $('setShake').addEventListener('click', () => { settings.shake = !settings.shake; refreshSettingsUI(); });
   $('setFx').addEventListener('click', () => { settings.fx = !settings.fx; applyFx(); refreshSettingsUI(); });
   $('setHaptics').addEventListener('click', () => { settings.haptics = !settings.haptics; Platform.haptics.enabled = settings.haptics; Platform.haptics.impact('MEDIUM'); refreshSettingsUI(); });
@@ -6129,6 +6230,7 @@ function resumeGame() {
 }
 function initPauseUI() {
   $('btnPause').addEventListener('pointerdown', e => { e.preventDefault(); pauseGame(); });
+  $('cometBtn').addEventListener('pointerdown', e => { e.preventDefault(); launchComet(); });
   $('pauseResume').addEventListener('click', () => { playMenuClick(); resumeGame(); });
   $('pauseQuit').addEventListener('click', async () => {
     const run = state === 'mistral_run';
@@ -6266,14 +6368,17 @@ function typeLine(text) {
 function updateNextHint() { const q = sceneQueue; if (!q) return; $('sceneNext').textContent = q.locked ? '' : q.i === q.lines.length - 1 ? 'SET SAIL ▸' : 'TAP ▸'; }
 function setupSteerTest() {
   const q = sceneQueue; q.locked = true; const done = { left: false, right: false };
-  $('sceneSteer').innerHTML = '<button class="vn-steer" data-k="left">⟲<small>LEFT</small></button><button class="vn-steer" data-k="right">⟳<small>RIGHT</small></button>';
+  $('sceneSteer').innerHTML = '<div class="vn-slider"><span data-k="left">◀ LEFT</span><input type="range" min="-1" max="1" step="0.01" value="0" aria-label="Steering"><span data-k="right">RIGHT ▶</span></div>';
   const hit = k => {
     if (!sceneQueue || done[k]) return; done[k] = true; playCoinSound(); Platform.haptics.impact('LIGHT');
-    const b = $('sceneSteer').querySelector(`[data-k=${k}]`); b.classList.add('ok'); b.innerHTML = '✓<small>' + k.toUpperCase() + '</small>';
+    const b = $('sceneSteer').querySelector(`[data-k=${k}]`); b.classList.add('ok'); b.textContent = '✓ ' + k.toUpperCase();
     $('vnYou').style.transform = k === 'left' ? 'rotate(-8deg)' : 'rotate(8deg)'; setTimeout(() => $('vnYou').style.transform = '', 300);
     if (done.left && done.right) { q.locked = false; setTimeout(() => { if (sceneQueue === q) { $('sceneSteer').innerHTML = ''; advanceScene(); } }, 500); }
   };
-  $('sceneSteer').querySelectorAll('.vn-steer').forEach(b => b.onclick = e => { e.stopPropagation(); hit(b.dataset.k); });
+  const sl = $('sceneSteer').querySelector('input');                    // slide all the way left and all the way right
+  sl.addEventListener('input', e => { e.stopPropagation(); const v = +sl.value; if (v < -0.85) hit('left'); if (v > 0.85) hit('right'); });
+  const spring = () => { sl.value = 0; }; sl.addEventListener('pointerup', spring); sl.addEventListener('touchend', spring); sl.addEventListener('change', spring);
+  ['pointerdown', 'click'].forEach(ev => sl.addEventListener(ev, e => e.stopPropagation()));
   q.keyHandler = e => { if (e.key === 'ArrowLeft' || e.key === 'a') hit('left'); if (e.key === 'ArrowRight' || e.key === 'd') hit('right'); };
   window.addEventListener('keydown', q.keyHandler);
 }
@@ -6436,11 +6541,12 @@ const Retention = (() => {
   function rewardText(r) {
     const it = r.item && ITEMS.find(i => i.id === r.item);
     return [r.money ? '+' + r.money.toLocaleString() + ' €' : '', r.knots ? '+' + r.knots + ' 🪢' : '',
-      r.miles ? '🚀 +' + r.miles + ' NM head start' : '', it ? (it.icon || it.emoji) + ' ' + it.name : ''].filter(Boolean).join(' ');
+      r.miles ? '🚀 +' + r.miles + ' NM head start' : '', r.comet ? '☄️ Mistral Comet' : '', it ? (it.icon || it.emoji) + ' ' + it.name : ''].filter(Boolean).join(' ');
   }
   function pay(r) {
     if (r.money) Wallet.earn(r.money); if (r.knots) Wallet.addKnots(r.knots);
-    if (r.miles) pStats.headStart = (pStats.headStart || 0) + r.miles;
+    if (r.miles) pStats.headStart = (pStats.headStart || 0) + r.miles;          // older saves
+    if (r.comet) pStats.comets = (pStats.comets || 0) + r.comet;
     if (r.item) { if (ownedItems.has(r.item)) Wallet.addKnots(5); else ownedItems.add(r.item); }
   }
   /* Head start: consumed by the next run */
@@ -6663,6 +6769,7 @@ function loop(now) {
   frameAcc += now - lastTime; lastTime = now;
   if (frameAcc < FRAME_MS) return;
   frameAcc = frameAcc % FRAME_MS; const dt = FRAME_MS / 1000; const t = now / 1000;
+  SteerSlider.render();
   if (loop.last) autoRes(Math.min(1000, now - loop.last), dt); loop.last = now;
   if (Game.paused) { renderer.render(scene, camera); return; }
 
