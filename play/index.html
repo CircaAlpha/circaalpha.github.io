@@ -1202,7 +1202,7 @@ const CONFIG = {
     trackWidth: 140, chunkLen: 300, spawnAhead: 780,
     /* € multiplier = Collection Streak + precision passes. Any damage → back to ×1. */
     streak: { coinsPerStep: 12, step: 0.25, coinCap: 2,          // +0.25× per 12 € collected in a row, up to ×2 from coins alone
-              horseshoe: 1.0, closeCall: 0.25, chainJump: 0.25,     // clean precision passes add on top…
+              horseshoe: 1.0, closeCall: 0.25, chainJump: 0.25, tourist: 0.25,   // clean passes & rescues add on top…
               maxMult: 2.5 },                                       // …up to ×2.5 in total
     comet: { price: 400, skipTime: 60, skipDist: 2, invincible: 5, boost: 3 },   // ☄️ Mistral Comet head start
     coinValue: 1, chainScore: 150,   /* 1 € per coin; the streak multiplies it */
@@ -1273,10 +1273,10 @@ const FLEET = [
     run: { hitR: 2.6, handling: 1.18, armor: 0.15, loot: 1.35, magnet: 6 } },
   /* Premium boats: bought with knots, outside the unlock chain.
      By design they beat the Golden Yacht on every Mistral stat (HP, armor, handling, hitbox, loot, magnet). */
-  { id: 'jetski',      name: 'Jet Ski',          price: 1800, cur: 'knots', premium: true, mult: 1.1, maxSpeed: 60, turn: 2.2, sail: false, tier: 4, len: 8, seats: 2, maxHp: 230,
+  { id: 'jetski',      name: 'Jet Ski',          price: 1500, cur: 'knots', premium: true, mult: 1.1, maxSpeed: 60, turn: 2.2, sail: false, tier: 4, len: 8, seats: 2, maxHp: 230,
     desc: 'Tiny, twitchy and armoured like a racing car. The hardest thing on the water to hit.',
     run: { hitR: 2.2, handling: 1.45, armor: 0.18, loot: 1.40, magnet: 10 } },
-  { id: 'galleon',     name: 'Corsair Galleon',  price: 4800, cur: 'knots', premium: true, mult: 2.0, maxSpeed: 50, turn: 0.75, sail: true, tier: 4, len: 26, seats: 8, maxHp: 300,
+  { id: 'galleon',     name: 'Corsair Galleon',  price: 4500, cur: 'knots', premium: true, mult: 2.0, maxSpeed: 50, turn: 0.75, sail: true, tier: 4, len: 26, seats: 8, maxHp: 300,
     desc: 'Three masts, black sails, a hull like a fortress.',
     run: { hitR: 2.6, handling: 1.20, armor: 0.25, loot: 1.45, magnet: 12 } },
 ];
@@ -1288,10 +1288,10 @@ const ADDONS = [
   { id: 'addon_rod',     kind: 'perk',     name: 'Lightning Rod',     icon: '⚡', price: 950, cur: 'money', desc: 'Lightning strikes do 60% less damage.' },
   { id: 'addon_bumper',  kind: 'perk',     name: 'Rubber Bumpers',    icon: '🛟', price: 1200, cur: 'money', desc: 'Rocks, buoys and yachts do 25% less damage.' },
   { id: 'addon_turbo',   kind: 'perk',     name: 'Turbo Wake',        icon: '🚀', price: 500, cur: 'money', desc: 'Yacht-wake boosts last twice as long.' },
-  { id: 'addon_glow',    kind: 'cosmetic', name: 'Neon Underglow',    icon: '🌈', price: 450, desc: 'A colour-cycling glow under your hull.' },
-  { id: 'addon_dog',     kind: 'cosmetic', name: 'Ship’s Dog',   icon: '🐕', price: 350, desc: 'A loyal first mate who barks at waves.' },
-  { id: 'addon_parrot',  kind: 'cosmetic', name: 'Pirate Parrot',     icon: '🦜', price: 400, desc: 'Perches on your bow. Judges your steering.' },
-  { id: 'addon_rainbow', kind: 'cosmetic', name: 'Rainbow Wake',      icon: '✨', price: 550, desc: 'Your foam trail sparkles in every colour.' },
+  { id: 'addon_glow',    kind: 'cosmetic', name: 'Neon Underglow',    icon: '🌈', price: 100, desc: 'A colour-cycling glow under your hull.' },
+  { id: 'addon_dog',     kind: 'cosmetic', name: 'Ship’s Dog',   icon: '🐕', price: 100, desc: 'A loyal first mate who barks at waves.' },
+  { id: 'addon_parrot',  kind: 'cosmetic', name: 'Pirate Parrot',     icon: '🦜', price: 100, desc: 'Perches on your bow. Judges your steering.' },
+  { id: 'addon_rainbow', kind: 'cosmetic', name: 'Rainbow Wake',      icon: '✨', price: 100, desc: 'Your foam trail sparkles in every colour.' },
 ];
 
 
@@ -1301,7 +1301,7 @@ const UPGRADE_DEFS = [
   { id: 'hull',   icon: '🛡️', name: 'Armored Hull',  costFactor: 0.35, desc: '+12% max HP per level', look: 'Steel bow ram → armor plates → gold armor' },
   { id: 'fins',   icon: '🏁', name: 'Racing Wing',   costFactor: 0.3,  desc: '+6% steering per level (Mistral + Story)', look: 'Carbon wing → red end plates → neon wing' },
   { id: 'radar',  icon: '📡', name: 'Radar Mast',    costFactor: 0.25, desc: '−10% lightning strike size per level (Mistral)', look: 'Spinning radar → dome → lights & beacon' },
-  { id: 'cargo',  icon: '📦', name: 'Cargo Hold',    costFactor: 0.35, desc: '+5% coin value (Mistral) & tips (Story) per level', look: 'A crate per level → treasure chest' },
+  { id: 'cargo',  icon: '📦', name: 'Cargo Hold',    costFactor: 0.35, desc: '+10% coin value (Mistral) & tips (Story) per level', look: 'A crate per level → treasure chest' },
 ];
 const UPGRADE_TIER_COST = [0.02, 0.03, 0.045, 0.06, 0.085];   // all 5 lines maxed ≈ 40% of the boat's price
 /* Upgrade prices scale with the boat's value in euros (min 1,000 €; knot boats count 3 € per knot) */
@@ -1323,41 +1323,42 @@ function repairFrac(lvl = pwrLevel('repair')) { return POWERUP_UPG.repairBase + 
 function pwrUpgradeCost(id) { const l = pwrLevel(id); return l >= POWERUP_UPG.maxLevel ? null : POWERUP_UPG.cost[l]; }
 function pwrEffect(id, lvl = pwrLevel(id)) { return id === 'repair' ? '+' + Math.round(repairFrac(lvl) * 100) + '% HP' : (POWERUP_UPG.baseTime + POWERUP_UPG.timePerLevel * lvl) + ' s'; }
 
-/* Cosmetics. type 'sail' skins also cover the deck of motorboats. */
+/* Cosmetics. type 'sail' skins also cover the deck (hull) of motorboats.
+   Knot prices: flags 25 · sails/hull skins 100 · cosmetic add-ons 100 — reachable with free knots. */
 const ITEMS = [
-  { id: 'flag_pirate',   type: 'flag', name: 'Pirate Flag',   price: 400,  bg: '#14141c', emoji: '💀', desc: 'Fly the Jolly Roger.' },
-  { id: 'flag_football', type: 'flag', name: 'Football Flag', price: 300,  bg: '#f5f5f5', emoji: '⚽', desc: 'Forza! For the true fan.' },
-  { id: 'flag_beer',     type: 'flag', name: 'Beer Flag',     price: 500,  bg: '#f0a63c', emoji: '🍺', desc: 'Proost! Sets the mood.' },
-  { id: 'flag_pizza',    type: 'flag', name: 'Pizza Flag',    price: 350,  bg: '#d94f3a', emoji: '🍕', desc: 'Margherita on the high seas.' },
-  { id: 'flag_dolphin',  type: 'flag', name: 'Dolphin Flag',  price: 450,  bg: '#5ce1e6', emoji: '🐬', desc: 'For friends of the pod.' },
-  { id: 'flag_italy',    type: 'flag', name: 'Italia Flag',   price: 300,  bg: '#f5f5f5', emoji: '🇮🇹', desc: 'Bella vita.' },
+  { id: 'flag_pirate',   type: 'flag', name: 'Pirate Flag',   price: 25,  bg: '#14141c', emoji: '💀', desc: 'Fly the Jolly Roger.' },
+  { id: 'flag_football', type: 'flag', name: 'Football Flag', price: 25,  bg: '#f5f5f5', emoji: '⚽', desc: 'Forza! For the true fan.' },
+  { id: 'flag_beer',     type: 'flag', name: 'Beer Flag',     price: 25,  bg: '#f0a63c', emoji: '🍺', desc: 'Proost! Sets the mood.' },
+  { id: 'flag_pizza',    type: 'flag', name: 'Pizza Flag',    price: 25,  bg: '#d94f3a', emoji: '🍕', desc: 'Margherita on the high seas.' },
+  { id: 'flag_dolphin',  type: 'flag', name: 'Dolphin Flag',  price: 25,  bg: '#5ce1e6', emoji: '🐬', desc: 'For friends of the pod.' },
+  { id: 'flag_italy',    type: 'flag', name: 'Italia Flag',   price: 25,  bg: '#f5f5f5', emoji: '🇮🇹', desc: 'Bella vita.' },
   { id: 'flag_anchor',   type: 'flag', name: 'Anchor Flag',   price: 200, cur: 'money', bg: '#1d3557', emoji: '⚓', desc: 'A classic. Paid in honest euros.' },
-  { id: 'flag_crown',    type: 'flag', name: 'Crown Flag',    price: 750,  bg: '#7a1e6e', emoji: '👑', desc: 'For catamaran royalty.' },
-  { id: 'flag_sun',      type: 'flag', name: 'Sunshine Flag', price: 250,  bg: '#ffd166', emoji: '☀️', desc: 'Endless summer.' },
-  { id: 'sail_stripes',   type: 'sail', name: 'Regatta Stripes', price: 600, icon: '🟥', bg: '#f5f0e6', color2: '#d94f3a', pattern: 'stripes', desc: 'Classic racing stripes.' },
-  { id: 'sail_waves',     type: 'sail', name: 'Ocean Waves',     price: 600, icon: '🌊', bg: '#bfe8ff', color2: '#1d6fa8', pattern: 'waves', desc: 'The sea, on the sea.' },
-  { id: 'sail_sunset',    type: 'sail', name: 'Sunset Sail',     price: 750, icon: '🌅', bg: '#ffb84d', color2: '#d9488a', pattern: 'gradient', desc: 'Golden hour, always.' },
-  { id: 'sail_skull',     type: 'sail', name: 'Corsair Sail',    price: 900, icon: '💀', bg: '#1a1a22', emoji: '💀', desc: 'Terror of the Bocche.' },
-  { id: 'sail_heart',     type: 'sail', name: 'Amore Sail',      price: 700, icon: '❤️', bg: '#ffe0ea', emoji: '❤️', desc: 'For the romantics.' },
-  { id: 'sail_shark',     type: 'sail', name: 'Shark Sail',      price: 800, icon: '🦈', bg: '#5ce1e6', emoji: '🦈', desc: 'Something in the water.' },
-  { id: 'sail_lightning', type: 'sail', name: 'Storm Sail',      price: 800, icon: '⚡', bg: '#1d3557', emoji: '⚡', desc: 'Ride the tempest.' },
-  { id: 'flag_cocktail', type: 'flag', name: 'Cocktail Flag',  price: 350,  bg: '#ff7a5c', emoji: '🍹', desc: 'Aperitivo hour, always.' },
-  { id: 'flag_cat',      type: 'flag', name: 'Ship’s Cat', price: 450, bg: '#f5efe0', emoji: '🐈', desc: 'First mate. Sleeps on duty.' },
-  { id: 'flag_guitar',   type: 'flag', name: 'Guitar Flag',    price: 400,  bg: '#7f5539', emoji: '🎸', desc: 'Beach jams at anchor.' },
-  { id: 'flag_rainbow',  type: 'flag', name: 'Rainbow Flag',   price: 500,  bg: '#f5f5f5', emoji: '🌈', desc: 'After the mistral, colors.' },
-  { id: 'flag_moon',     type: 'flag', name: 'Luna Flag',      price: 550,  bg: '#1a2340', emoji: '🌙', desc: 'For the night sailors.' },
-  { id: 'flag_fish',     type: 'flag', name: 'Fisherman Flag', price: 250,  bg: '#5ce1e6', emoji: '🐟', desc: 'Fresh catch aboard.' },
-  { id: 'flag_gelato',   type: 'flag', name: 'Gelato Flag',    price: 300,  bg: '#ffe0ea', emoji: '🍦', desc: 'Stracciatella speed.' },
-  { id: 'flag_star',     type: 'flag', name: 'Stella Flag',    price: 600,  bg: '#1d3557', emoji: '⭐', desc: 'Navigate by it.' },
+  { id: 'flag_crown',    type: 'flag', name: 'Crown Flag',    price: 25,  bg: '#7a1e6e', emoji: '👑', desc: 'For catamaran royalty.' },
+  { id: 'flag_sun',      type: 'flag', name: 'Sunshine Flag', price: 25,  bg: '#ffd166', emoji: '☀️', desc: 'Endless summer.' },
+  { id: 'sail_stripes',   type: 'sail', name: 'Regatta Stripes', price: 100, icon: '🟥', bg: '#f5f0e6', color2: '#d94f3a', pattern: 'stripes', desc: 'Classic racing stripes.' },
+  { id: 'sail_waves',     type: 'sail', name: 'Ocean Waves',     price: 100, icon: '🌊', bg: '#bfe8ff', color2: '#1d6fa8', pattern: 'waves', desc: 'The sea, on the sea.' },
+  { id: 'sail_sunset',    type: 'sail', name: 'Sunset Sail',     price: 100, icon: '🌅', bg: '#ffb84d', color2: '#d9488a', pattern: 'gradient', desc: 'Golden hour, always.' },
+  { id: 'sail_skull',     type: 'sail', name: 'Corsair Sail',    price: 100, icon: '💀', bg: '#1a1a22', emoji: '💀', desc: 'Terror of the Bocche.' },
+  { id: 'sail_heart',     type: 'sail', name: 'Amore Sail',      price: 100, icon: '❤️', bg: '#ffe0ea', emoji: '❤️', desc: 'For the romantics.' },
+  { id: 'sail_shark',     type: 'sail', name: 'Shark Sail',      price: 100, icon: '🦈', bg: '#5ce1e6', emoji: '🦈', desc: 'Something in the water.' },
+  { id: 'sail_lightning', type: 'sail', name: 'Storm Sail',      price: 100, icon: '⚡', bg: '#1d3557', emoji: '⚡', desc: 'Ride the tempest.' },
+  { id: 'flag_cocktail', type: 'flag', name: 'Cocktail Flag',  price: 25,  bg: '#ff7a5c', emoji: '🍹', desc: 'Aperitivo hour, always.' },
+  { id: 'flag_cat',      type: 'flag', name: 'Ship’s Cat', price: 25, bg: '#f5efe0', emoji: '🐈', desc: 'First mate. Sleeps on duty.' },
+  { id: 'flag_guitar',   type: 'flag', name: 'Guitar Flag',    price: 25,  bg: '#7f5539', emoji: '🎸', desc: 'Beach jams at anchor.' },
+  { id: 'flag_rainbow',  type: 'flag', name: 'Rainbow Flag',   price: 25,  bg: '#f5f5f5', emoji: '🌈', desc: 'After the mistral, colors.' },
+  { id: 'flag_moon',     type: 'flag', name: 'Luna Flag',      price: 25,  bg: '#1a2340', emoji: '🌙', desc: 'For the night sailors.' },
+  { id: 'flag_fish',     type: 'flag', name: 'Fisherman Flag', price: 25,  bg: '#5ce1e6', emoji: '🐟', desc: 'Fresh catch aboard.' },
+  { id: 'flag_gelato',   type: 'flag', name: 'Gelato Flag',    price: 25,  bg: '#ffe0ea', emoji: '🍦', desc: 'Stracciatella speed.' },
+  { id: 'flag_star',     type: 'flag', name: 'Stella Flag',    price: 25,  bg: '#1d3557', emoji: '⭐', desc: 'Navigate by it.' },
   { id: 'flag_octopus',  type: 'flag', name: 'Polpo Flag',     price: 270, cur: 'money', bg: '#7a1e6e', emoji: '🐙', desc: 'Eight arms. Honest euros.' },
-  { id: 'sail_citrus',   type: 'sail', name: 'Limone Sail',    price: 650, icon: '🍋', bg: '#fff3b0', color2: '#7ac74f', pattern: 'gradient', desc: 'Zest for the open sea.' },
-  { id: 'sail_night',    type: 'sail', name: 'Notte Sail',     price: 850, icon: '🌙', bg: '#101828', emoji: '🌙', desc: 'Sail the midnight blue.' },
-  { id: 'sail_flamingo', type: 'sail', name: 'Fenicottero',    price: 750, icon: '🦩', bg: '#ffd1e8', emoji: '🦩', desc: 'Stands on one hull.' },
-  { id: 'sail_espresso', type: 'sail', name: 'Espresso Sail',  price: 700, icon: '☕', bg: '#f1e3d3', color2: '#6f4e37', pattern: 'stripes', desc: 'Doppio knots.' },
-  { id: 'sail_lagoon',   type: 'sail', name: 'Laguna Sail',    price: 600, icon: '🐢', bg: '#eafff7', color2: '#06d6a0', pattern: 'waves', desc: 'Slow water, fast boat.' },
-  { id: 'sail_vino',     type: 'sail', name: 'Cannonau Sail',  price: 900, icon: '🍷', bg: '#a83a52', color2: '#3a0f1e', pattern: 'gradient', desc: 'Sardinia’s finest red.' },
+  { id: 'sail_citrus',   type: 'sail', name: 'Limone Sail',    price: 100, icon: '🍋', bg: '#fff3b0', color2: '#7ac74f', pattern: 'gradient', desc: 'Zest for the open sea.' },
+  { id: 'sail_night',    type: 'sail', name: 'Notte Sail',     price: 100, icon: '🌙', bg: '#101828', emoji: '🌙', desc: 'Sail the midnight blue.' },
+  { id: 'sail_flamingo', type: 'sail', name: 'Fenicottero',    price: 100, icon: '🦩', bg: '#ffd1e8', emoji: '🦩', desc: 'Stands on one hull.' },
+  { id: 'sail_espresso', type: 'sail', name: 'Espresso Sail',  price: 100, icon: '☕', bg: '#f1e3d3', color2: '#6f4e37', pattern: 'stripes', desc: 'Doppio knots.' },
+  { id: 'sail_lagoon',   type: 'sail', name: 'Laguna Sail',    price: 100, icon: '🐢', bg: '#eafff7', color2: '#06d6a0', pattern: 'waves', desc: 'Slow water, fast boat.' },
+  { id: 'sail_vino',     type: 'sail', name: 'Cannonau Sail',  price: 100, icon: '🍷', bg: '#a83a52', color2: '#3a0f1e', pattern: 'gradient', desc: 'Sardinia’s finest red.' },
   { id: 'sail_honey',    type: 'sail', name: 'Honey Sail',      price: 0, exclusive: true, icon: '🍯', bg: '#ffc53d', color2: '#d98a04', pattern: 'honeycomb', emoji: '🐝', desc: 'Exclusive to the No-Ads Honey Bundle. Sweet on sails and decks alike.' },
-  { id: 'sail_regina',   type: 'sail', name: 'Regina Sail',    price: 1000, icon: '👑', bg: '#ffd166', emoji: '👑', desc: 'The queen of the marina.' },
+  { id: 'sail_regina',   type: 'sail', name: 'Regina Sail',    price: 100, icon: '👑', bg: '#ffd166', emoji: '👑', desc: 'The queen of the marina.' },
 ];
 
 /* Tour groups (Story mode) */
@@ -1799,10 +1800,10 @@ const MISTRAL_INTRO = [
   { who: 'old',   text: 'First, the rudder. You steer with the **slider** at the bottom: slide it left and right, or just drag your thumb across the water. One hand is enough! Go on, slide it all the way **left** and all the way **right**.', action: 'steer' },
   { who: 'old',   text: 'Good hands. Now the big swells: ride **UP the wave** where the white arrows point, and you\'ll fly.', show: 'wave' },
   { who: 'old',   text: 'You\'ll need that air. The harbor has strung **chains** across the water. Only a jump off a wave gets you over them.', show: 'chain' },
-  { who: 'radio', text: 'Survivors spotted on **flamingo floats**! Every one you pick up is a **rescue**: big points for your score. Bring them home!', show: 'flamingo' },
+  { who: 'radio', text: 'Survivors spotted on **flamingo floats**! Every one you pick up is a **rescue**: big points, and it pushes your **🔥 streak** up. Bring them home!', show: 'flamingo' },
   { who: 'you',   text: 'And all that money floating around?' },
   { who: 'old',   text: '**Coins** washed off the ship: **1 € each**. Grab them **in a row** without getting hit and your **🔥 streak** multiplies them, up to ×2. One scrape and it\'s back to ×1!', show: 'coins' },
-  { who: 'old',   text: 'And the **horseshoe rocks**: thread the narrow gap at the back without touching the stone, and your streak jumps **+1×**. Close calls past yachts and clean chain jumps help too.', show: 'horseshoe' },
+  { who: 'old',   text: 'And the **horseshoe rocks**: thread the narrow gap at the back without touching the stone, and your streak jumps **+1×**. Rescues, close calls past yachts and clean chain jumps help too.', show: 'horseshoe' },
   { who: 'old',   text: '**Rocks** and **red buoys** eat your hull (**yellow buoys** only scratch it). Keep an eye on the **❤️ HP bar** in the top-right corner. At zero, you sink.', show: 'hazards' },
   { who: 'radio', text: 'Storm cell overhead! A **yellow ring** on the water means lightning is about to strike right there. **Move!**', show: 'lightning' },
   { who: 'old',   text: 'Luck floats too. A **🔧 repair kit** patches up **10%** of your hull…', show: 'repair' },
@@ -3436,7 +3437,7 @@ const UPG = {
   engineBoost: 0.10,   // Mistral: +10% yacht-wake boost time per engine level
   finsHandling: 0.06,  // +6% steering per wing level (Mistral + Story)
   radarStrike: 0.1,    // −10% lightning strike radius per radar level (Mistral)
-  cargoLoot: 0.05,     // +5% coin value per cargo level (Mistral + Story tips)
+  cargoLoot: 0.10,     // +10% coin value per cargo level (Mistral + Story tips) → +50% maxed
 };
 
 const UMAT = (() => {
@@ -5083,9 +5084,9 @@ function updateMistral(dt, time) {
       }
       else if (obj.type === 'flamingo' && dist < boatHitR + obj.r && mState.jumpY < 5) {
         obj.hit = true; obj.mesh.visible = false; mState.tourists++; playRescueSound();
-        mState.score += 100;                                                   // rescues score points (the € multiplier comes from your streak)
+        mState.score += 100;                                                   // a rescue also builds your 🔥 streak (below)
         const p = makePerson({c: 0xffffff, bucketHat:true}); p.position.set((Math.random()-0.5)*3, 2, (Math.random()-0.5)*6); p.userData = {baseY: 2, phase: Math.random()*6, dance:true}; p.traverse(o => { o.renderOrder = 10; }); boatGroup.add(p); tourists.push(p);
-        updateMistralHUD(); showToast('🛟 Tourist saved! +100 score');
+        precisionPass(MC.streak.tourist, '🛟 TOURIST SAVED!');
       }
       else if (obj.type === 'ramp') {
         // Ride the face: the boat follows the exact wave surface, then launches off the crest
@@ -5559,7 +5560,7 @@ const PROPS = {
   wave:      { label: '🌊 Jump wave — ride up the arrows', make: () => makeJumpWave(), view: [0.7, 0.6, 1], zoom: 1.85 },
   chain:     { label: '⛓️ Harbor chain — jump it!', make: () => makeChain(), view: [0.35, 0.55, 1], zoom: 0.95 },
   horseshoe: { label: '🐎 Thread the gap = streak +1×', make: () => makeHorseshoe(), view: [0, 0.9, 1.2], zoom: 1.2 },
-  flamingo:  { label: '🦩 Tourist on a float = RESCUE', make: () => makeFlamingo(), view: [0.8, 0.5, -1], zoom: 2.0 },
+  flamingo:  { label: '🦩 Rescue a tourist = streak +0.25×', make: () => makeFlamingo(), view: [0.8, 0.5, -1], zoom: 2.0 },
   coins:     { label: '💰 Coins  ·  🪢 Knots', make: () => { const g = new THREE.Group(); for (let i = 0; i < 3; i++) { const c = new THREE.Mesh(coinGeo, matCoin); c.position.set(i * 4 - 6, 0, 0); g.add(c); } const k = new THREE.Mesh(knotGeo, matKnot); k.position.set(7, 0, 0); g.add(k); return g; }, view: [0.2, 0.3, 1], zoom: 1.9 },
   hazards:   { label: '🪨 Rocks & 🔴 red buoys hurt · 🟡 yellow buoys hurt less', make: () => { const g = new THREE.Group(); const rk = makeMistralRock(); rk.position.x = -8; g.add(rk); const b = makeMistralBuoy(); b.position.x = 4; g.add(b); const y = makeMistralBuoy(true); y.position.x = 11; g.add(y); return g; }, view: [0.4, 0.6, 1], zoom: 1.7 },
   lightning: { label: '⚡ Yellow ring = lightning incoming', make: () => { const g = new THREE.Group(); const m = makeStrikeMarker(); g.add(m); const bolt = makeBolt(0, 0); bolt.scale.setScalar(0.22); bolt.position.set(0, 2, 0); g.add(bolt); return g; }, view: [0.3, 0.6, 1], zoom: 1.5 },
