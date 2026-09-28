@@ -842,7 +842,7 @@ body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: no
 
 <!-- ============ MISTRAL HUD ============ -->
 <div id="mistralHUD">
-  <div class="hud-box score-box">⭐ <span class="big" id="mScore">0</span><br><span class="tiny">🌊 <span id="mDist">0.0</span> NM · 🏆 <span id="mBest">0</span></span></div>
+  <div class="hud-box score-box">⭐ <span class="big" id="mScore">0</span><br><span class="tiny">🌊 <span id="mDist">0.0</span> NM · 🏆 <span id="mBest">0</span><br>⏱️ <span id="mTime">0:00</span></span></div>
   <div class="hud-box" id="mMultBox">👥 x<span class="big" id="mMult">1</span><br><span class="tiny">TOURISTS</span><div id="mMultBar"><div id="mMultFill"></div></div></div>
   <div class="hud-box hud-right">
     💰 <span id="mEuro">0</span> € · 🪢 <span id="mKnot">0</span>
@@ -4621,7 +4621,7 @@ function startMistralRun() {
   hideAllOverlays(); hideTourHud();
   state = 'mistral_run'; mState.active = true; pStats.runs = (pStats.runs || 0) + 1;
   mState.dist = 0; mState.speed = 50; mState.velX = 0; mState.lean = 0; mState.coins = 0; mState.knots = 0; mState.tourists = 0; mState.mult = 1; mState.multTimer = 0; mState.maxMult = 1; mState.stunTimer = 0; mState.score = 0; mState.chains = 0; mState.repairs = 0; mState.closeCalls = 0; mState.shieldT = mState.magnetT = mState.doubleT = 0; pwrShown = null; clearTrail(); Retention.onRunStart();
-  mState.runTime = 0; const headStart = Retention.takeHeadStart(); if (headStart) { mState.dist = headStart; mState.runTime = headStart * 4; } // mission prize: start further in (faster, busier water)
+  mState.clock = 0; mState.clockShown = -1; mState.runTime = 0; const headStart = Retention.takeHeadStart(); if (headStart) { mState.dist = headStart; mState.runTime = headStart * 4; } // mission prize: start further in (faster, busier water)
   mState.jumpY = 0; mState.jumpVy = 0; mState.objs = []; mState.nextZ = 400; mState.boostTimer = 0; // start generating BEHIND the boat: the wave tunnel surrounds you from frame one
   
   Hull.restore(); boat.x = 0; boat.z = 0; boat.speed = mState.speed; boat.heading = 0;
@@ -4778,7 +4778,12 @@ function updateMistralHUD() {
   document.getElementById('mMult').textContent = mState.mult;
 }
 
+/* TEMPORARY (balancing): real run length on the HUD and in the summary. Set to false to hide it. */
+const SHOW_RUN_TIME = true;
+const fmtTime = s => Math.floor(s / 60) + ':' + String(Math.floor(s % 60)).padStart(2, '0');
 function updateMistral(dt, time) {
+  if (mState.active && !Game.paused) { mState.clock = (mState.clock || 0) + dt; const sec = Math.floor(mState.clock);
+    if (SHOW_RUN_TIME && sec !== mState.clockShown) { mState.clockShown = sec; const el = $('mTime'); if (el) el.textContent = fmtTime(sec); } }
   if (mState.stunTimer <= 0) mState.runTime = (mState.runTime || 0) + dt;   // the clock that drives the difficulty
   mState.speed = MC.startSpeed + (MC.maxSpeed - MC.startSpeed) * (1 - Math.exp(-mState.runTime / MC.rampTime));
   // feel the speed: the view widens a little as you go faster
@@ -5073,6 +5078,7 @@ function endMistralRun(sank) {
     <div class="big-score"><span class="count" data-to="${score}">0</span><small>SCORE</small></div>
     <div class="best-track"><div class="best-fill ${newRecord ? 'record' : ''}" style="width:0%" data-w="${pct}%"></div><span class="best-mark">🏆 ${Math.floor(Math.max(prevBest, score))}</span></div>
     <div class="best-line">${bestLine}</div>
+    ${SHOW_RUN_TIME ? `<div class="best-line">⏱️ Run time: <b>${fmtTime(mState.clock || 0)}</b></div>` : ''}
     <div class="loot-row">
       <div class="loot"><span class="count" data-to="${totE}">0</span> €<small>EUROS</small></div>
       <div class="loot"><span class="count" data-to="${totK}">0</span> 🪢<small>KNOTS</small></div>
