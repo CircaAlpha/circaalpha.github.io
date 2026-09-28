@@ -821,6 +821,9 @@ body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: no
 .dock-dir { font-size: 10px; font-weight: 900; letter-spacing: 1px; color: var(--cyan); }
 .shop-grid.powerups .tile-img { position: relative; font-size: 44px; }
 .shop-grid.powerups .pips { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 12px; color: var(--sun); text-shadow: 0 1px 3px #000; }
+.code-row input { flex: 1; min-width: 0; margin: 0 8px; padding: 7px 10px; border-radius: 10px; border: 2px solid var(--violet); background: rgba(10,5,30,0.7); color: #fff; font: inherit; font-size: 14px; font-weight: 800; letter-spacing: 1px; text-transform: uppercase; font-size: 16px; }
+.code-row input::placeholder { color: rgba(255,255,255,0.4); letter-spacing: 0; text-transform: none; font-weight: 600; }
+#devPanel { flex-wrap: wrap; gap: 4px; max-width: 260px; }
 
 </style>
 
@@ -909,7 +912,10 @@ body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: no
       <div id="devPanel" style="display:none;">
         <button class="btn small" id="devXpBtn">+5 days</button>
         <button class="btn small" id="devMoneyBtn">+50k €</button>
-        <button class="btn small" id="devKnotBtn">+100 🪢</button>
+        <button class="btn small" id="devKnotBtn">+1,000 🪢</button>
+        <button class="btn small" id="devInfBtn">∞ wallet: ON</button>
+        <button class="btn small" id="devZeroBtn">Wallet → 0</button>
+        <button class="btn small danger" id="devExitBtn">Exit dev mode</button>
       </div>
     </div>
     <h1 class="hero-title">Sardinia Skipper</h1>
@@ -1050,6 +1056,7 @@ body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: no
     <button class="btn wide" id="btnAdPrivacy">🛡️ Ad privacy settings</button>
     <button class="btn wide danger" id="settingsReset">🗑️ Reset everything (keeps No-Ads)</button>
     <button class="btn wide danger" id="settingsResetWallet">💸 Reset money &amp; knots</button>
+    <div class="set-row code-row"><span>🎟️ Code</span><input id="codeInput" type="text" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Enter a code"><button class="btn seg" id="codeRedeem">OK</button></div>
     <div class="sub version" id="versionLabel">Sardinia Skipper</div>
   </div>
 </div>
@@ -1138,6 +1145,9 @@ const CONFIG = {
   // Developer cheats panel. Leave false for store builds.
   // (Tap the version label in Settings 5 times to enable it on a device.)
   DEV_MODE: false,
+  /* Developer code (Settings → Redeem code). Only a stretched SHA-256 fingerprint is stored,
+     never the code itself. To change the code, generate a new fingerprint (see SECURITY.md). */
+  DEV_CODE_HASH: '07f05927202d5d58f1e35d6d7b8613e06bf40cc4524ec7172a808c3dbf4f76e9',
   FPS: 30,                        // fixed simulation rate
 
   start: { money: 100, knots: 0, boat: 'dinghy' },
@@ -1206,22 +1216,22 @@ const FLEET = [
        magnet   coin pull radius (0 = none)                                                     */
   { id: 'dinghy',      name: 'Little Dinghy',    price: 0,     mult: 1.0, maxSpeed: 20,  turn: 1.5, sail: false, tier: 1, len: 12, seats: 2,  maxHp: 80,  desc: 'Coastal waters only.',
     run: { hitR: 3.0, handling: 1.00, armor: 0.00, loot: 1.00, magnet: 0 } },
-  { id: 'speedboat',   name: 'Speedboat',        price: 450,   mult: 1.2, maxSpeed: 42,  turn: 1.7, sail: false, tier: 2, len: 16, seats: 4,  maxHp: 100, desc: 'Fast, nimble, fun.',
+  { id: 'speedboat',   name: 'Speedboat',        price: 4500,   mult: 1.2, maxSpeed: 42,  turn: 1.7, sail: false, tier: 2, len: 16, seats: 4,  maxHp: 100, desc: 'Fast, nimble, fun.',
     run: { hitR: 2.9, handling: 1.12, armor: 0.00, loot: 1.05, magnet: 0 } },
-  { id: 'sailboat',    name: 'Sailing Yacht',    price: 2800,  mult: 1.4, maxSpeed: 52,  turn: 1.0, sail: true,  tier: 3, len: 19, seats: 6,  maxHp: 125, desc: 'Crosses the strait.',
+  { id: 'sailboat',    name: 'Sailing Yacht',    price: 28000,  mult: 1.4, maxSpeed: 52,  turn: 1.0, sail: true,  tier: 3, len: 19, seats: 6,  maxHp: 125, desc: 'Crosses the strait.',
     run: { hitR: 2.9, handling: 1.05, armor: 0.05, loot: 1.10, magnet: 0 } },
-  { id: 'schooner',    name: 'Classic Schooner', price: 8500,  mult: 1.6, maxSpeed: 58,  turn: 0.9, sail: true,  tier: 4, len: 23, seats: 7,  maxHp: 150, desc: 'Teak decks, twin masts, timeless lines.',
+  { id: 'schooner',    name: 'Classic Schooner', price: 85000,  mult: 1.6, maxSpeed: 58,  turn: 0.9, sail: true,  tier: 4, len: 23, seats: 7,  maxHp: 150, desc: 'Teak decks, twin masts, timeless lines.',
     run: { hitR: 2.8, handling: 1.05, armor: 0.12, loot: 1.15, magnet: 0 } },
-  { id: 'catamaran',   name: 'Grand Catamaran',  price: 22000, mult: 1.8, maxSpeed: 64,  turn: 0.8, sail: true,  tier: 4, len: 26, seats: 8,  maxHp: 175, desc: 'The flagship. Its wide nets scoop up nearby coins.',
+  { id: 'catamaran',   name: 'Grand Catamaran',  price: 220000, mult: 1.8, maxSpeed: 64,  turn: 0.8, sail: true,  tier: 4, len: 26, seats: 8,  maxHp: 175, desc: 'The flagship. Its wide nets scoop up nearby coins.',
     run: { hitR: 2.8, handling: 1.10, armor: 0.12, loot: 1.20, magnet: 10 } },
-  { id: 'goldenyacht', name: 'The Golden Yacht', price: 65000, mult: 2.2, maxSpeed: 136, turn: 0.7, sail: false, tier: 4, len: 30, seats: 10, maxHp: 220, desc: '75 knots of solid gold. Throttle lever included.',
+  { id: 'goldenyacht', name: 'The Golden Yacht', price: 650000, mult: 2.2, maxSpeed: 136, turn: 0.7, sail: false, tier: 4, len: 30, seats: 10, maxHp: 220, desc: '75 knots of solid gold. Throttle lever included.',
     run: { hitR: 2.6, handling: 1.18, armor: 0.15, loot: 1.35, magnet: 6 } },
   /* Premium boats: bought with knots, outside the unlock chain.
      By design they beat the Golden Yacht on every Mistral stat (HP, armor, handling, hitbox, loot, magnet). */
-  { id: 'jetski',      name: 'Jet Ski',          price: 180, cur: 'knots', premium: true, mult: 1.1, maxSpeed: 60, turn: 2.2, sail: false, tier: 4, len: 8, seats: 2, maxHp: 230,
+  { id: 'jetski',      name: 'Jet Ski',          price: 1800, cur: 'knots', premium: true, mult: 1.1, maxSpeed: 60, turn: 2.2, sail: false, tier: 4, len: 8, seats: 2, maxHp: 230,
     desc: 'Tiny, twitchy and armoured like a racing car. The hardest thing on the water to hit.',
     run: { hitR: 2.2, handling: 1.45, armor: 0.18, loot: 1.40, magnet: 10 } },
-  { id: 'galleon',     name: 'Corsair Galleon',  price: 480, cur: 'knots', premium: true, mult: 2.0, maxSpeed: 50, turn: 0.75, sail: true, tier: 4, len: 26, seats: 8, maxHp: 300,
+  { id: 'galleon',     name: 'Corsair Galleon',  price: 4800, cur: 'knots', premium: true, mult: 2.0, maxSpeed: 50, turn: 0.75, sail: true, tier: 4, len: 26, seats: 8, maxHp: 300,
     desc: 'Three masts, black sails, a hull like a fortress.',
     run: { hitR: 2.6, handling: 1.20, armor: 0.25, loot: 1.45, magnet: 12 } },
 ];
@@ -1229,14 +1239,14 @@ const FLEET = [
 /* ADD-ONS: bought once, always active once owned (cosmetics can be switched off).
    Perks cost euros (earned by playing); cosmetics cost knots.                  */
 const ADDONS = [
-  { id: 'addon_magnet',  kind: 'perk',     name: 'Coin Magnet',       icon: '🧲', price: 2000, cur: 'money', desc: 'Pulls in coins and knots within reach during the Mistral Run.' },
-  { id: 'addon_rod',     kind: 'perk',     name: 'Lightning Rod',     icon: '⚡', price: 2800, cur: 'money', desc: 'Lightning strikes do 60% less damage.' },
-  { id: 'addon_bumper',  kind: 'perk',     name: 'Rubber Bumpers',    icon: '🛟', price: 3500, cur: 'money', desc: 'Rocks, buoys and yachts do 25% less damage.' },
-  { id: 'addon_turbo',   kind: 'perk',     name: 'Turbo Wake',        icon: '🚀', price: 1500, cur: 'money', desc: 'Yacht-wake boosts last twice as long.' },
-  { id: 'addon_glow',    kind: 'cosmetic', name: 'Neon Underglow',    icon: '🌈', price: 45, desc: 'A colour-cycling glow under your hull.' },
-  { id: 'addon_dog',     kind: 'cosmetic', name: 'Ship’s Dog',   icon: '🐕', price: 35, desc: 'A loyal first mate who barks at waves.' },
-  { id: 'addon_parrot',  kind: 'cosmetic', name: 'Pirate Parrot',     icon: '🦜', price: 40, desc: 'Perches on your bow. Judges your steering.' },
-  { id: 'addon_rainbow', kind: 'cosmetic', name: 'Rainbow Wake',      icon: '✨', price: 55, desc: 'Your foam trail sparkles in every colour.' },
+  { id: 'addon_magnet',  kind: 'perk',     name: 'Coin Magnet',       icon: '🧲', price: 20000, cur: 'money', desc: 'Pulls in coins and knots within reach during the Mistral Run.' },
+  { id: 'addon_rod',     kind: 'perk',     name: 'Lightning Rod',     icon: '⚡', price: 28000, cur: 'money', desc: 'Lightning strikes do 60% less damage.' },
+  { id: 'addon_bumper',  kind: 'perk',     name: 'Rubber Bumpers',    icon: '🛟', price: 35000, cur: 'money', desc: 'Rocks, buoys and yachts do 25% less damage.' },
+  { id: 'addon_turbo',   kind: 'perk',     name: 'Turbo Wake',        icon: '🚀', price: 15000, cur: 'money', desc: 'Yacht-wake boosts last twice as long.' },
+  { id: 'addon_glow',    kind: 'cosmetic', name: 'Neon Underglow',    icon: '🌈', price: 450, desc: 'A colour-cycling glow under your hull.' },
+  { id: 'addon_dog',     kind: 'cosmetic', name: 'Ship’s Dog',   icon: '🐕', price: 350, desc: 'A loyal first mate who barks at waves.' },
+  { id: 'addon_parrot',  kind: 'cosmetic', name: 'Pirate Parrot',     icon: '🦜', price: 400, desc: 'Perches on your bow. Judges your steering.' },
+  { id: 'addon_rainbow', kind: 'cosmetic', name: 'Rainbow Wake',      icon: '✨', price: 550, desc: 'Your foam trail sparkles in every colour.' },
 ];
 
 
@@ -1249,8 +1259,8 @@ const UPGRADE_DEFS = [
   { id: 'cargo',  icon: '📦', name: 'Cargo Hold',    costFactor: 0.35, desc: '+5% coin value (Mistral) & tips (Story) per level', look: 'A crate per level → treasure chest' },
 ];
 const UPGRADE_TIER_COST = [0.15, 0.25, 0.4, 0.6, 0.85];
-/* Upgrade prices scale with the boat's value in euros (min 400 €; knot boats count 100 € per knot) */
-function upgradeBase(def) { return Math.max(400, def.cur === 'knots' ? def.price * 100 : def.price); }
+/* Upgrade prices scale with the boat's value in euros (min 4,000 €; knot boats count 100 € per knot) */
+function upgradeBase(def) { return Math.max(4000, def.cur === 'knots' ? def.price * 100 : def.price); }
 const UPGRADE_MAX_LEVEL = 5;
 
 /* Mistral power-ups: every one lasts 5 s (repair heals 10% of max HP).
@@ -1261,7 +1271,7 @@ const POWERUP_DEFS = [
   { id: 'double', icon: '💰', name: 'Double Coins', desc: 'Every coin is worth twice as much.' },
   { id: 'repair', icon: '🔧', name: 'Repair Kit',   desc: 'Instantly fixes part of your hull.' },
 ];
-const POWERUP_UPG = { baseTime: 5, timePerLevel: 1, repairBase: 0.10, repairPerLevel: 0.04, maxLevel: 5, cost: [600, 1200, 2000, 3200, 5000] };
+const POWERUP_UPG = { baseTime: 5, timePerLevel: 1, repairBase: 0.10, repairPerLevel: 0.04, maxLevel: 5, cost: [6000, 12000, 20000, 32000, 50000] };
 function pwrLevel(id) { return (pStats.pwr && pStats.pwr[id]) || 0; }
 function pwrTime(id) { return POWERUP_UPG.baseTime + POWERUP_UPG.timePerLevel * pwrLevel(id); }
 function repairFrac(lvl = pwrLevel('repair')) { return POWERUP_UPG.repairBase + POWERUP_UPG.repairPerLevel * lvl; }
@@ -1270,39 +1280,39 @@ function pwrEffect(id, lvl = pwrLevel(id)) { return id === 'repair' ? '+' + Math
 
 /* Cosmetics. type 'sail' skins also cover the deck of motorboats. */
 const ITEMS = [
-  { id: 'flag_pirate',   type: 'flag', name: 'Pirate Flag',   price: 40,  bg: '#14141c', emoji: '💀', desc: 'Fly the Jolly Roger.' },
-  { id: 'flag_football', type: 'flag', name: 'Football Flag', price: 30,  bg: '#f5f5f5', emoji: '⚽', desc: 'Forza! For the true fan.' },
-  { id: 'flag_beer',     type: 'flag', name: 'Beer Flag',     price: 50,  bg: '#f0a63c', emoji: '🍺', desc: 'Proost! Sets the mood.' },
-  { id: 'flag_pizza',    type: 'flag', name: 'Pizza Flag',    price: 35,  bg: '#d94f3a', emoji: '🍕', desc: 'Margherita on the high seas.' },
-  { id: 'flag_dolphin',  type: 'flag', name: 'Dolphin Flag',  price: 45,  bg: '#5ce1e6', emoji: '🐬', desc: 'For friends of the pod.' },
-  { id: 'flag_italy',    type: 'flag', name: 'Italia Flag',   price: 30,  bg: '#f5f5f5', emoji: '🇮🇹', desc: 'Bella vita.' },
-  { id: 'flag_anchor',   type: 'flag', name: 'Anchor Flag',   price: 600, cur: 'money', bg: '#1d3557', emoji: '⚓', desc: 'A classic. Paid in honest euros.' },
-  { id: 'flag_crown',    type: 'flag', name: 'Crown Flag',    price: 75,  bg: '#7a1e6e', emoji: '👑', desc: 'For catamaran royalty.' },
-  { id: 'flag_sun',      type: 'flag', name: 'Sunshine Flag', price: 25,  bg: '#ffd166', emoji: '☀️', desc: 'Endless summer.' },
-  { id: 'sail_stripes',   type: 'sail', name: 'Regatta Stripes', price: 60, icon: '🟥', bg: '#f5f0e6', color2: '#d94f3a', pattern: 'stripes', desc: 'Classic racing stripes.' },
-  { id: 'sail_waves',     type: 'sail', name: 'Ocean Waves',     price: 60, icon: '🌊', bg: '#bfe8ff', color2: '#1d6fa8', pattern: 'waves', desc: 'The sea, on the sea.' },
-  { id: 'sail_sunset',    type: 'sail', name: 'Sunset Sail',     price: 75, icon: '🌅', bg: '#ffb84d', color2: '#d9488a', pattern: 'gradient', desc: 'Golden hour, always.' },
-  { id: 'sail_skull',     type: 'sail', name: 'Corsair Sail',    price: 90, icon: '💀', bg: '#1a1a22', emoji: '💀', desc: 'Terror of the Bocche.' },
-  { id: 'sail_heart',     type: 'sail', name: 'Amore Sail',      price: 70, icon: '❤️', bg: '#ffe0ea', emoji: '❤️', desc: 'For the romantics.' },
-  { id: 'sail_shark',     type: 'sail', name: 'Shark Sail',      price: 80, icon: '🦈', bg: '#5ce1e6', emoji: '🦈', desc: 'Something in the water.' },
-  { id: 'sail_lightning', type: 'sail', name: 'Storm Sail',      price: 80, icon: '⚡', bg: '#1d3557', emoji: '⚡', desc: 'Ride the tempest.' },
-  { id: 'flag_cocktail', type: 'flag', name: 'Cocktail Flag',  price: 35,  bg: '#ff7a5c', emoji: '🍹', desc: 'Aperitivo hour, always.' },
-  { id: 'flag_cat',      type: 'flag', name: 'Ship’s Cat', price: 45, bg: '#f5efe0', emoji: '🐈', desc: 'First mate. Sleeps on duty.' },
-  { id: 'flag_guitar',   type: 'flag', name: 'Guitar Flag',    price: 40,  bg: '#7f5539', emoji: '🎸', desc: 'Beach jams at anchor.' },
-  { id: 'flag_rainbow',  type: 'flag', name: 'Rainbow Flag',   price: 50,  bg: '#f5f5f5', emoji: '🌈', desc: 'After the mistral, colors.' },
-  { id: 'flag_moon',     type: 'flag', name: 'Luna Flag',      price: 55,  bg: '#1a2340', emoji: '🌙', desc: 'For the night sailors.' },
-  { id: 'flag_fish',     type: 'flag', name: 'Fisherman Flag', price: 25,  bg: '#5ce1e6', emoji: '🐟', desc: 'Fresh catch aboard.' },
-  { id: 'flag_gelato',   type: 'flag', name: 'Gelato Flag',    price: 30,  bg: '#ffe0ea', emoji: '🍦', desc: 'Stracciatella speed.' },
-  { id: 'flag_star',     type: 'flag', name: 'Stella Flag',    price: 60,  bg: '#1d3557', emoji: '⭐', desc: 'Navigate by it.' },
-  { id: 'flag_octopus',  type: 'flag', name: 'Polpo Flag',     price: 800, cur: 'money', bg: '#7a1e6e', emoji: '🐙', desc: 'Eight arms. Honest euros.' },
-  { id: 'sail_citrus',   type: 'sail', name: 'Limone Sail',    price: 65, icon: '🍋', bg: '#fff3b0', color2: '#7ac74f', pattern: 'gradient', desc: 'Zest for the open sea.' },
-  { id: 'sail_night',    type: 'sail', name: 'Notte Sail',     price: 85, icon: '🌙', bg: '#101828', emoji: '🌙', desc: 'Sail the midnight blue.' },
-  { id: 'sail_flamingo', type: 'sail', name: 'Fenicottero',    price: 75, icon: '🦩', bg: '#ffd1e8', emoji: '🦩', desc: 'Stands on one hull.' },
-  { id: 'sail_espresso', type: 'sail', name: 'Espresso Sail',  price: 70, icon: '☕', bg: '#f1e3d3', color2: '#6f4e37', pattern: 'stripes', desc: 'Doppio knots.' },
-  { id: 'sail_lagoon',   type: 'sail', name: 'Laguna Sail',    price: 60, icon: '🐢', bg: '#eafff7', color2: '#06d6a0', pattern: 'waves', desc: 'Slow water, fast boat.' },
-  { id: 'sail_vino',     type: 'sail', name: 'Cannonau Sail',  price: 90, icon: '🍷', bg: '#a83a52', color2: '#3a0f1e', pattern: 'gradient', desc: 'Sardinia’s finest red.' },
+  { id: 'flag_pirate',   type: 'flag', name: 'Pirate Flag',   price: 400,  bg: '#14141c', emoji: '💀', desc: 'Fly the Jolly Roger.' },
+  { id: 'flag_football', type: 'flag', name: 'Football Flag', price: 300,  bg: '#f5f5f5', emoji: '⚽', desc: 'Forza! For the true fan.' },
+  { id: 'flag_beer',     type: 'flag', name: 'Beer Flag',     price: 500,  bg: '#f0a63c', emoji: '🍺', desc: 'Proost! Sets the mood.' },
+  { id: 'flag_pizza',    type: 'flag', name: 'Pizza Flag',    price: 350,  bg: '#d94f3a', emoji: '🍕', desc: 'Margherita on the high seas.' },
+  { id: 'flag_dolphin',  type: 'flag', name: 'Dolphin Flag',  price: 450,  bg: '#5ce1e6', emoji: '🐬', desc: 'For friends of the pod.' },
+  { id: 'flag_italy',    type: 'flag', name: 'Italia Flag',   price: 300,  bg: '#f5f5f5', emoji: '🇮🇹', desc: 'Bella vita.' },
+  { id: 'flag_anchor',   type: 'flag', name: 'Anchor Flag',   price: 6000, cur: 'money', bg: '#1d3557', emoji: '⚓', desc: 'A classic. Paid in honest euros.' },
+  { id: 'flag_crown',    type: 'flag', name: 'Crown Flag',    price: 750,  bg: '#7a1e6e', emoji: '👑', desc: 'For catamaran royalty.' },
+  { id: 'flag_sun',      type: 'flag', name: 'Sunshine Flag', price: 250,  bg: '#ffd166', emoji: '☀️', desc: 'Endless summer.' },
+  { id: 'sail_stripes',   type: 'sail', name: 'Regatta Stripes', price: 600, icon: '🟥', bg: '#f5f0e6', color2: '#d94f3a', pattern: 'stripes', desc: 'Classic racing stripes.' },
+  { id: 'sail_waves',     type: 'sail', name: 'Ocean Waves',     price: 600, icon: '🌊', bg: '#bfe8ff', color2: '#1d6fa8', pattern: 'waves', desc: 'The sea, on the sea.' },
+  { id: 'sail_sunset',    type: 'sail', name: 'Sunset Sail',     price: 750, icon: '🌅', bg: '#ffb84d', color2: '#d9488a', pattern: 'gradient', desc: 'Golden hour, always.' },
+  { id: 'sail_skull',     type: 'sail', name: 'Corsair Sail',    price: 900, icon: '💀', bg: '#1a1a22', emoji: '💀', desc: 'Terror of the Bocche.' },
+  { id: 'sail_heart',     type: 'sail', name: 'Amore Sail',      price: 700, icon: '❤️', bg: '#ffe0ea', emoji: '❤️', desc: 'For the romantics.' },
+  { id: 'sail_shark',     type: 'sail', name: 'Shark Sail',      price: 800, icon: '🦈', bg: '#5ce1e6', emoji: '🦈', desc: 'Something in the water.' },
+  { id: 'sail_lightning', type: 'sail', name: 'Storm Sail',      price: 800, icon: '⚡', bg: '#1d3557', emoji: '⚡', desc: 'Ride the tempest.' },
+  { id: 'flag_cocktail', type: 'flag', name: 'Cocktail Flag',  price: 350,  bg: '#ff7a5c', emoji: '🍹', desc: 'Aperitivo hour, always.' },
+  { id: 'flag_cat',      type: 'flag', name: 'Ship’s Cat', price: 450, bg: '#f5efe0', emoji: '🐈', desc: 'First mate. Sleeps on duty.' },
+  { id: 'flag_guitar',   type: 'flag', name: 'Guitar Flag',    price: 400,  bg: '#7f5539', emoji: '🎸', desc: 'Beach jams at anchor.' },
+  { id: 'flag_rainbow',  type: 'flag', name: 'Rainbow Flag',   price: 500,  bg: '#f5f5f5', emoji: '🌈', desc: 'After the mistral, colors.' },
+  { id: 'flag_moon',     type: 'flag', name: 'Luna Flag',      price: 550,  bg: '#1a2340', emoji: '🌙', desc: 'For the night sailors.' },
+  { id: 'flag_fish',     type: 'flag', name: 'Fisherman Flag', price: 250,  bg: '#5ce1e6', emoji: '🐟', desc: 'Fresh catch aboard.' },
+  { id: 'flag_gelato',   type: 'flag', name: 'Gelato Flag',    price: 300,  bg: '#ffe0ea', emoji: '🍦', desc: 'Stracciatella speed.' },
+  { id: 'flag_star',     type: 'flag', name: 'Stella Flag',    price: 600,  bg: '#1d3557', emoji: '⭐', desc: 'Navigate by it.' },
+  { id: 'flag_octopus',  type: 'flag', name: 'Polpo Flag',     price: 8000, cur: 'money', bg: '#7a1e6e', emoji: '🐙', desc: 'Eight arms. Honest euros.' },
+  { id: 'sail_citrus',   type: 'sail', name: 'Limone Sail',    price: 650, icon: '🍋', bg: '#fff3b0', color2: '#7ac74f', pattern: 'gradient', desc: 'Zest for the open sea.' },
+  { id: 'sail_night',    type: 'sail', name: 'Notte Sail',     price: 850, icon: '🌙', bg: '#101828', emoji: '🌙', desc: 'Sail the midnight blue.' },
+  { id: 'sail_flamingo', type: 'sail', name: 'Fenicottero',    price: 750, icon: '🦩', bg: '#ffd1e8', emoji: '🦩', desc: 'Stands on one hull.' },
+  { id: 'sail_espresso', type: 'sail', name: 'Espresso Sail',  price: 700, icon: '☕', bg: '#f1e3d3', color2: '#6f4e37', pattern: 'stripes', desc: 'Doppio knots.' },
+  { id: 'sail_lagoon',   type: 'sail', name: 'Laguna Sail',    price: 600, icon: '🐢', bg: '#eafff7', color2: '#06d6a0', pattern: 'waves', desc: 'Slow water, fast boat.' },
+  { id: 'sail_vino',     type: 'sail', name: 'Cannonau Sail',  price: 900, icon: '🍷', bg: '#a83a52', color2: '#3a0f1e', pattern: 'gradient', desc: 'Sardinia’s finest red.' },
   { id: 'sail_honey',    type: 'sail', name: 'Honey Sail',      price: 0, exclusive: true, icon: '🍯', bg: '#ffc53d', color2: '#d98a04', pattern: 'honeycomb', emoji: '🐝', desc: 'Exclusive to the No-Ads Honey Bundle. Sweet on sails and decks alike.' },
-  { id: 'sail_regina',   type: 'sail', name: 'Regina Sail',    price: 100, icon: '👑', bg: '#ffd166', emoji: '👑', desc: 'The queen of the marina.' },
+  { id: 'sail_regina',   type: 'sail', name: 'Regina Sail',    price: 1000, icon: '👑', bg: '#ffd166', emoji: '👑', desc: 'The queen of the marina.' },
 ];
 
 /* Tour groups (Story mode) */
@@ -1327,25 +1337,25 @@ const OLD_MAN_ADVICE = [
 /* Real-money knot bundles. `sku` must match the product id you create
    in Google Play Console / App Store Connect. */
 const KNOT_IAP = [
-  { sku: 'knots_25',   eur: '€0.99',  price: 0.99,  knots: 25,   bonusMoney: 150,   art: '🪢' },
-  { sku: 'knots_150',  eur: '€4.99',  price: 4.99,  knots: 150,  bonusMoney: 2500,  art: '🪢🪢',   tag: 'MOST POPULAR' },
-  { sku: 'knots_325',  eur: '€9.99',  price: 9.99,  knots: 325,  bonusMoney: 5000,  art: '🪢🪢🪢' },
-  { sku: 'knots_700',  eur: '€19.99', price: 19.99, knots: 700,  bonusMoney: 12000, art: '🧰' },
-  { sku: 'knots_2000', eur: '€49.99', price: 49.99, knots: 2000, bonusMoney: 35000, art: '💰',     tag: 'BEST VALUE' },
+  { sku: 'knots_250',   eur: '€0.99',  price: 0.99,  knots: 250, bonusMoney: 1500,   art: '🪢' },
+  { sku: 'knots_1500',  eur: '€4.99',  price: 4.99,  knots: 1500, bonusMoney: 25000,  art: '🪢🪢',   tag: 'MOST POPULAR' },
+  { sku: 'knots_3250',  eur: '€9.99',  price: 9.99,  knots: 3250, bonusMoney: 50000,  art: '🪢🪢🪢' },
+  { sku: 'knots_7000',  eur: '€19.99', price: 19.99, knots: 7000, bonusMoney: 120000, art: '🧰' },
+  { sku: 'knots_20000', eur: '€49.99', price: 49.99, knots: 20000, bonusMoney: 350000, art: '💰',     tag: 'BEST VALUE' },
 ];
 /* One-time "No Ads" bundle: removes the forced ad breaks (the interstitial
    after every Nth run / story day) and unlocks the exclusive Honey sail skin.
    Optional rewarded ads (free gift, bonuses) still play a video. */
 const NOADS_BUNDLE = { sku: 'noads_honey', eur: '€4.99', price: 4.99, item: 'sail_honey', knots: 0, bonusMoney: 0 };
 /* One-time starter bundle, shown at the top of the store until bought. */
-const STARTER_PACK = { sku: 'starter_pack', eur: '€1.99', price: 1.99, knots: 60, bonusMoney: 2000, item: 'sail_stripes' };
+const STARTER_PACK = { sku: 'starter_pack', eur: '€1.99', price: 1.99, knots: 600, bonusMoney: 20000, item: 'sail_stripes' };
 
 /* ---- ADS & PAYMENTS ----
    testAds: true  → Google's official test ads (safe to click, pay nothing).
    Before release: set testAds to false and paste YOUR ad unit IDs from
    admob.google.com into `ads` (and your AdMob App ID into ../monetization.json).
    Store products: create in Play Console → Monetize → Products → In-app products
-   with exactly these IDs: knots_25, knots_150, knots_325, knots_700, knots_2000
+   with exactly these IDs: knots_250, knots_1500, knots_3250, knots_7000, knots_20000
    (consumable) and starter_pack, noads_honey (one-time). */
 const MONETIZATION = {
   testAds: true,   // ← keep true while YOU play/test (never tap your own real ads). Set false only for the store release build.
@@ -1569,13 +1579,13 @@ const SPEAKERS = {
 
 const CHAPTERS = [
   {
-    id: 1, days: [1, 15], title: 'A Borrowed Dinghy', goal: 'Save up for the Speedboat (450 €).',
+    id: 1, days: [1, 15], title: 'A Borrowed Dinghy', goal: 'Save up for the Speedboat (4,500 €).',
     intro: [
       { who: 'narr', text: 'Spring, on the strait between Sardinia and Corsica. You step off the ferry with one bag and a signed lease for a **leaky rubber dinghy**.', show: 'boat_dinghy' },
       { who: 'old',  text: "So you're the new skipper. Hm. That boat has seen better decades." },
       { who: 'you',  choices: ["It floats. That's a start.", 'It has character.', 'Where do I bail the water out?'] },
       { who: 'old',  text: 'Take the **families** out first. They pay little, but they never rush you. Keep them dry and bring them back.', show: 'tourists' },
-      { who: 'old',  text: 'Save your euros. **450 €** buys the **Speedboat** in the Shop, and a faster boat reaches the sights further out.', show: 'boat_speedboat' },
+      { who: 'old',  text: 'Save your euros. **4,500 €** buys the **Speedboat** in the Shop, and a faster boat reaches the sights further out.', show: 'boat_speedboat' },
     ],
     outro: [
       { who: 'old',  text: "Two weeks and you haven't drowned a single tourist. People at the bar are saying your **name**." },
@@ -1942,7 +1952,7 @@ const Platform = (() => {
       return { ok: false, error: msg };
     }
   }
-  /* Localised store prices, e.g. { knots_25: '€0.99' } (falls back to config prices) */
+  /* Localised store prices, e.g. { knots_250: '€0.99' } (falls back to config prices) */
   async function loadPrices(skus) {
     if (!has('NativePurchases')) return billing.prices;
     try {
@@ -3049,7 +3059,7 @@ function attachFlag() {
 /* ---- FLEET / UPGRADE HELPERS ---- */
 function upgradeCost(u) { const lvl = upgLevel(u.id); if (lvl >= UPGRADE_MAX_LEVEL) return null; return Math.round(upgradeBase(currentBoat) * u.costFactor * UPGRADE_TIER_COST[lvl] / 5) * 5; }
 function effMaxSpeed() { return currentBoat.maxSpeed * (1 + 0.04 * upgLevel('engine')); }
-function priceTag(price, cur) { return cur === 'knots' ? price + ' 🪢' : price.toLocaleString() + ' €'; }
+function priceTag(price, cur) { return cur === 'knots' ? price.toLocaleString() + ' 🪢' : price.toLocaleString() + ' €'; }
 function itemCur(it) { return it.cur === 'money' ? 'money' : (it.cur === 'knots' || it.type === 'flag' || it.type === 'sail' || it.kind === 'cosmetic') ? 'knots' : 'money'; }
 function boatCur(def) { return def.cur === 'knots' ? 'knots' : 'money'; }
 /* Buying something you can't afford in knots sends you to the Store instead of a dead end */
@@ -3155,7 +3165,7 @@ function boatStats(def) {
 }
 
 function renderItemShop() {
-  $('seagullBal').innerHTML = `<span class="bal-chip">💰 ${Wallet.money.toLocaleString()} €</span><span class="bal-chip knots">🪢 ${Wallet.knots}<button id="balPlus" aria-label="Get knots">+</button></span>`;
+  $('seagullBal').innerHTML = `<span class="bal-chip">💰 ${Wallet.money.toLocaleString()} €</span><span class="bal-chip knots">🪢 ${Wallet.knots.toLocaleString()}<button id="balPlus" aria-label="Get knots">+</button></span>`;
   $('balPlus').onclick = () => { playMenuClick(); openStore(); };
   $('shopTabs').innerHTML = SHOP_TABS.map(([id, label]) => `<button class="stab ${id === shopTab ? 'on' : ''}" data-tab="${id}">${label}</button>`).join('');
   $('shopTabs').querySelectorAll('.stab').forEach(b => b.onclick = () => { playMenuClick(); shopTab = b.dataset.tab; renderItemShop(); });
@@ -5369,11 +5379,11 @@ const PROPS = {
   yacht:     { label: '🛥️ Ride the cyan wake = BOOST', make: () => { const y = makeRivalYacht(); y.children.filter(c => c.geometry && c.geometry.type === 'PlaneGeometry').forEach(c => { c.geometry = new THREE.PlaneGeometry(c.geometry.parameters.width, 26); c.position.z = MC.yacht.halfLen + 13; }); return y; }, view: [0.8, 0.7, 0.9], zoom: 1.6 },
   // ---- Story mode & menus ----
   boat_dinghy:      { label: '⛵ Little Dinghy', url: () => boatPicture('dinghy') },
-  boat_speedboat:   { label: '🚤 Speedboat · 450 €', url: () => boatPicture('speedboat') },
-  boat_sailboat:    { label: '⛵ Sailing Yacht · 2,800 €', url: () => boatPicture('sailboat') },
-  boat_schooner:    { label: '⛵ Classic Schooner · 8,500 €', url: () => boatPicture('schooner') },
-  boat_catamaran:   { label: '⛵ Grand Catamaran · 22,000 €', url: () => boatPicture('catamaran') },
-  boat_goldenyacht: { label: '🛥️ The Golden Yacht · 65,000 €', url: () => boatPicture('goldenyacht') },
+  boat_speedboat:   { label: '🚤 Speedboat · 4,500 €', url: () => boatPicture('speedboat') },
+  boat_sailboat:    { label: '⛵ Sailing Yacht · 28,000 €', url: () => boatPicture('sailboat') },
+  boat_schooner:    { label: '⛵ Classic Schooner · 85,000 €', url: () => boatPicture('schooner') },
+  boat_catamaran:   { label: '⛵ Grand Catamaran · 220,000 €', url: () => boatPicture('catamaran') },
+  boat_goldenyacht: { label: '🛥️ The Golden Yacht · 650,000 €', url: () => boatPicture('goldenyacht') },
   tourists:  { label: '👨‍👩‍👧 Your booked guests', make: () => { const g = new THREE.Group(); [{ c: 0xd95f4d }, { c: 0x4d7dd9 }, { c: 0xf0c94d, kid: true }, { c: 0xff5c8a }].forEach((sp, i) => { const p = makePerson(sp); p.position.x = (i - 1.5) * 1.3; p.rotation.y = (i - 1.5) * -0.25; g.add(p); }); return g; }, view: [0.2, 0.35, -1], zoom: 1.6 },
   beacon:    { label: '🟡 Beacon = a sight to visit', make: () => { const g = new THREE.Group(); const m = new THREE.MeshLambertMaterial({ color: 0xffd166, flatShading: true }); const p = new THREE.Mesh(new THREE.BoxGeometry(3, 40, 3), m); p.position.y = 20; g.add(p); const r = new THREE.Mesh(new THREE.TorusGeometry(10, 1.5, 4, 8), m); r.rotation.x = Math.PI / 2; r.position.y = 2; g.add(r); return g; }, view: [0.5, 0.45, 1], zoom: 1.5 },
   dock:      { label: '⚓ Dock close = bigger tip', make: () => { const g = new THREE.Group(); const wood = new THREE.MeshLambertMaterial({ color: 0x8a6a45, flatShading: true }); const d = new THREE.Mesh(new THREE.BoxGeometry(22, 2, 8), wood); g.add(d); for (const x of [-10, 10]) { const post = new THREE.Mesh(new THREE.BoxGeometry(2, 6, 2), new THREE.MeshLambertMaterial({ color: 0x5a4a35 })); post.position.set(x, 1, 0); g.add(post); } const b = new THREE.Mesh(stampedeHullGeometry(12, 4.4, 1.6, { bow: 0.4, sternW: 0.8, taper: 0.6 }), matWhite); b.position.set(0, -0.5, 11); g.add(b); return g; }, view: [0.9, 0.8, 1], zoom: 1.45 },
@@ -5760,9 +5770,9 @@ Game.on('hull', e => {
 });
 
 /* ---- WALLET DISPLAYS ---- */
-function walletLine() { return '💰 ' + Wallet.money.toLocaleString() + ' € · 🪢 ' + Wallet.knots + ' knots'; }
+function walletLine() { return '💰 ' + Wallet.money.toLocaleString() + ' € · 🪢 ' + Wallet.knots.toLocaleString() + ' knots'; }
 Game.on('wallet', () => {
-  $('money').textContent = Wallet.money; $('menuWallet').innerHTML = walletLine();
+  $('money').textContent = Wallet.money.toLocaleString(); $('menuWallet').innerHTML = walletLine();
   if ($('storyOverlay').classList.contains('open')) $('shWallet').innerHTML = walletLine();
   if ($('itemsOverlay').classList.contains('open')) $('seagullBal').innerHTML = walletLine();
   Save.queue();
@@ -5862,6 +5872,7 @@ function offlineBlock(what) { if (navigator.onLine === false) { showToast(`📡 
    also for No-Ads owners: they chose to watch it for a prize. */
 function watchAdFor() {
   if (offlineBlock('Watching an ad')) return Promise.resolve(false);
+  if (pStats.dev) { showToast('🛠️ Dev: ad skipped'); return Promise.resolve(true); }
   showToast('📺 Loading ad…');
   return Platform.showRewardedAd();
 }
@@ -6060,13 +6071,52 @@ function initPauseUI() {
 /* ==============================================================
    DEV PANEL (hidden unless CONFIG.DEV_MODE or unlocked)
 ================================================================ */
+/* Dev mode: unlocked with the secret code in Settings (or on test builds).
+   Owns everything, no ads (rewarded ads are skipped too), and an optional
+   infinite wallet you can switch off to test real earning rates. */
+const devAllowed = () => !!pStats.dev || (CONFIG.DEV_MODE && Platform.isTestBuild);
+const DEV_WALLET = { money: 9999999, knots: 999999 };
+function devTopUp() { if (pStats.dev && pStats.devInf !== false && (Wallet.money < 1e6 || Wallet.knots < 1e5)) { Wallet.money = Math.max(Wallet.money, DEV_WALLET.money); Wallet.knots = Math.max(Wallet.knots, DEV_WALLET.knots); Game.emit('wallet'); } }
+function codeHash(code) {
+  let h = new TextEncoder().encode('sskdev:' + code);
+  for (let i = 0; i < 5000; i++) h = Secure.sha256(h);                    // key stretching: slow to brute-force
+  return [...h].map(b => b.toString(16).padStart(2, '0')).join('');
+}
+let codeFails = 0, codeLockUntil = 0;
+function redeemCode(raw) {
+  const code = String(raw || '').trim().toUpperCase().replace(/\s+/g, ''); if (!code) return;
+  if (Date.now() < codeLockUntil) { showToast('⏳ Too many tries. Wait a minute.'); return; }
+  if (codeHash(code) === CONFIG.DEV_CODE_HASH) { codeFails = 0; enableDevMode(); return; }
+  if (++codeFails >= 5) { codeFails = 0; codeLockUntil = Date.now() + 60000; }
+  showToast('❌ That code doesn\'t work.');
+}
+function enableDevMode() {
+  pStats.dev = true; pStats.devInf = true; pStats.noAds = true;
+  FLEET.forEach(b => owned.add(b.id)); ITEMS.forEach(i => ownedItems.add(i.id)); ADDONS.forEach(a => ownedItems.add(a.id));
+  Wallet.money = DEV_WALLET.money; Wallet.knots = DEV_WALLET.knots; Game.emit('wallet');
+  Save.write(); initDevUI(); refreshMainMenu(); $('settingsOverlay').classList.remove('open');
+  showToast('🛠️ Dev mode ON: everything unlocked, no ads, ∞ money. Dev tools: 🛠️ button on the menu.', 4500);
+}
+async function exitDevMode() {
+  if (!(await confirmDialog('Leave dev mode? This does a full reset (like "Reset everything"). Things you really paid for are kept.'))) return;
+  pStats.dev = false; pStats.devInf = false;
+  pStats.noAds = !!(pStats.purchases && pStats.purchases.includes(NOADS_BUNDLE.sku));
+  await Save.resetCollection(); initDevUI(); refreshMainMenu(); showToast('👋 Dev mode off. Fresh start.', 3000);
+}
 function initDevUI() {
-  $('devToggle').style.display = CONFIG.DEV_MODE && Platform.isTestBuild ? 'inline-block' : 'none';
+  const on = devAllowed();
+  $('devToggle').style.display = on ? 'inline-block' : 'none'; if (!on) $('devPanel').style.display = 'none';
   $('devToggle').onclick = () => { const p = $('devPanel'); p.style.display = p.style.display === 'none' ? 'block' : 'none'; };
-  if (!Platform.isTestBuild) { $('devPanel').remove(); $('devToggle').remove(); return; }   // no cheat buttons in real builds
-  $('devMoneyBtn').onclick = () => { Wallet.earn(50000); refreshMainMenu(); };
-  $('devKnotBtn').onclick = () => { Wallet.addKnots(100); refreshMainMenu(); };
-  $('devXpBtn').onclick = () => { pStats.maxDay = Math.min(CONFIG.story.totalDays, pStats.maxDay + 5); pStats.day = pStats.maxDay; ensureWorld(); refreshMainMenu(); Save.queue(); };
+  const guard = fn => () => { if (devAllowed()) fn(); };
+  const infLabel = () => { $('devInfBtn').textContent = '∞ wallet: ' + (pStats.devInf !== false && pStats.dev ? 'ON' : 'OFF'); };
+  $('devMoneyBtn').onclick = guard(() => { Wallet.earn(50000); refreshMainMenu(); });
+  $('devKnotBtn').onclick = guard(() => { Wallet.addKnots(1000); refreshMainMenu(); });
+  $('devXpBtn').onclick = guard(() => { pStats.maxDay = Math.min(CONFIG.story.totalDays, pStats.maxDay + 5); pStats.day = pStats.maxDay; ensureWorld(); refreshMainMenu(); Save.queue(); });
+  $('devInfBtn').onclick = guard(() => { pStats.devInf = !(pStats.devInf !== false); if (pStats.devInf) devTopUp(); Game.emit('wallet'); infLabel(); refreshMainMenu(); Save.queue(); });
+  $('devZeroBtn').onclick = guard(() => { pStats.devInf = false; Wallet.money = 0; Wallet.knots = 0; Game.emit('wallet'); infLabel(); refreshMainMenu(); Save.queue(); showToast('Wallet at 0 · ∞ off: play to test real earning.'); });
+  $('devExitBtn').onclick = guard(exitDevMode);
+  $('devInfBtn').style.display = $('devZeroBtn').style.display = $('devExitBtn').style.display = pStats.dev ? '' : 'none';
+  infLabel();
 }
 
 </script>
@@ -6574,7 +6624,7 @@ async function boot() {
   const startBoat = (loaded && savedBoatId && owned.has(savedBoatId) && FLEET.find(b => b.id === savedBoatId)) || FLEET[0];
   selectBoat(startBoat);
 
-  initShopUI(); initSettingsUI(); initStoreUI(); initPauseUI(); initDevUI(); initStoryUI(); initMistralUI(); initLegalUI();
+  initShopUI(); initSettingsUI(); initStoreUI(); initPauseUI(); initDevUI(); initStoryUI(); $('codeRedeem').onclick = () => { playMenuClick(); redeemCode($('codeInput').value); $('codeInput').value = ''; }; $('codeInput').onkeydown = e => { if (e.key === 'Enter') $('codeRedeem').click(); }; Game.on('wallet', devTopUp); initMistralUI(); initLegalUI();
   applyQuality(); refreshSettingsUI();
 
   Platform.app.onBack(onBackButton);
