@@ -819,6 +819,8 @@ body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: no
 .ev-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--lime)); border-radius: 4px; transition: width .2s; }
 .dock-labels, .dock-labels.show { display: none; }   /* labels now sit inside the docking panel */
 .dock-dir { font-size: 10px; font-weight: 900; letter-spacing: 1px; color: var(--cyan); }
+.shop-grid.powerups .tile-img { position: relative; font-size: 44px; }
+.shop-grid.powerups .pips { position: absolute; left: 0; right: 0; bottom: 2px; text-align: center; font-size: 12px; color: var(--sun); text-shadow: 0 1px 3px #000; }
 
 </style>
 
@@ -1160,10 +1162,9 @@ const CONFIG = {
     damage: {                     // HP lost per hit
       rock: 20, buoy: 30, edgerock: 35, chain: 20, yacht: 40, lightning: 25, surf: 6, whirlpool: 5,
     },
-    repair: {                     // 🔧 repair kit pickups
-      heal: 30,                   // HP restored
-      baseChance: 0.06,           // per chunk at full HP
-      lowHpBonus: 0.26,           // extra chance as HP drops (at 0 HP → 0.32)
+    repair: {                     // 🔧 repair kit pickups (heal % comes from POWERUP_DEFS / shop level)
+      baseChance: 0.025,          // per chunk at full HP
+      lowHpBonus: 0.1,            // extra chance as HP drops (at 0 HP → 0.125)
       fullHpScore: 100,           // score bonus if you grab one at full HP
     },
     wave: { launch: 26, launchPerSpeed: 0.18, maxLaunch: 55 },  // jump wave: take-off speed off the crest (grows with boat speed)
@@ -1175,9 +1176,8 @@ const CONFIG = {
       nearMiss: 11, nearMissScore: 60, nearMissCoins: 6,
     },
     powerups: {                   // floating pickups: shield / magnet / double coins
-      chance: 0.09,               // per chunk
-      shieldHp: 100, shieldMax: 100,   // shield = 100 extra HP that soaks damage before your hull
-      magnetTime: 10, doubleTime: 10,
+      chance: 0.04,               // per chunk
+      airArcChance: 0.3,          // chance the top of a jump arc holds a power-up (else a coin)
       magnetRadius: 30, addonMagnetRadius: 14, pullSpeed: 140,
     },
     lightning: { warnTime: 1.25, radius: 13, idleDelay: 7, campDelay: 3.5 },
@@ -1252,6 +1252,21 @@ const UPGRADE_TIER_COST = [0.15, 0.25, 0.4, 0.6, 0.85];
 /* Upgrade prices scale with the boat's value in euros (min 400 €; knot boats count 100 € per knot) */
 function upgradeBase(def) { return Math.max(400, def.cur === 'knots' ? def.price * 100 : def.price); }
 const UPGRADE_MAX_LEVEL = 5;
+
+/* Mistral power-ups: every one lasts 5 s (repair heals 10% of max HP).
+   Each can be upgraded 5× in the shop's ⚡ Power-ups tab: +1 s per level (→ 10 s), repair +4% per level (→ 30%). */
+const POWERUP_DEFS = [
+  { id: 'shield', icon: '🛡️', name: 'Shield',       desc: 'Nothing can hurt your boat while it lasts.' },
+  { id: 'magnet', icon: '🧲', name: 'Coin Magnet',  desc: 'Pulls every coin and knot nearby toward you.' },
+  { id: 'double', icon: '💰', name: 'Double Coins', desc: 'Every coin is worth twice as much.' },
+  { id: 'repair', icon: '🔧', name: 'Repair Kit',   desc: 'Instantly fixes part of your hull.' },
+];
+const POWERUP_UPG = { baseTime: 5, timePerLevel: 1, repairBase: 0.10, repairPerLevel: 0.04, maxLevel: 5, cost: [600, 1200, 2000, 3200, 5000] };
+function pwrLevel(id) { return (pStats.pwr && pStats.pwr[id]) || 0; }
+function pwrTime(id) { return POWERUP_UPG.baseTime + POWERUP_UPG.timePerLevel * pwrLevel(id); }
+function repairFrac(lvl = pwrLevel('repair')) { return POWERUP_UPG.repairBase + POWERUP_UPG.repairPerLevel * lvl; }
+function pwrUpgradeCost(id) { const l = pwrLevel(id); return l >= POWERUP_UPG.maxLevel ? null : POWERUP_UPG.cost[l]; }
+function pwrEffect(id, lvl = pwrLevel(id)) { return id === 'repair' ? '+' + Math.round(repairFrac(lvl) * 100) + '% HP' : (POWERUP_UPG.baseTime + POWERUP_UPG.timePerLevel * lvl) + ' s'; }
 
 /* Cosmetics. type 'sail' skins also cover the deck of motorboats. */
 const ITEMS = [
@@ -1732,7 +1747,7 @@ const MISTRAL_INTRO = [
   { who: 'old',   text: '**Rocks** and **buoys** eat your hull. Keep an eye on the **❤️ HP bar** in the top-right corner. At zero, you sink.', show: 'hazards' },
   { who: 'radio', text: 'Storm cell overhead! A **yellow ring** on the water means lightning is about to strike right there. **Move!**', show: 'lightning' },
   { who: 'old',   text: 'Luck floats too. A **🔧 repair kit** patches up **30 HP**…', show: 'repair' },
-  { who: 'old',   text: '…and power-ups: a **🛡️ shield** soaks up **100 damage**, a **🧲 magnet** pulls coins to you, and **💰 ×2** doubles them.', show: 'powerups' },
+  { who: 'old',   text: '…and power-ups: a **🛡️ shield** makes you untouchable, a **🧲 magnet** pulls coins to you, and **💰 ×2** doubles them. Each lasts **5 seconds**, and a **🔧 repair kit** fixes 10% of your hull. Upgrade them in the Shop!', show: 'powerups' },
   { who: 'old',   text: 'See a yacht? Tuck into its **cyan wake** for a speed boost, then swerve out before you hit its stern.', show: 'yacht' },
   { who: 'you',   choices: ['How far is the Stella Maris?', 'When does the storm stop?'] },
   { who: 'old',   text: 'Nobody reaches her, and this storm never stops. Just go **as far as you can**. Every mile, somebody gets home.', show: 'stella' },
@@ -2273,7 +2288,7 @@ const Save = {
   resetCollection() {
     owned.clear(); owned.add(CONFIG.start.boat);
     Object.keys(upgrades).forEach(k => delete upgrades[k]);
-    ownedItems.clear(); equippedFlag = null; equippedSail = null; pStats.addonsOff = [];
+    ownedItems.clear(); equippedFlag = null; equippedSail = null; pStats.addonsOff = []; pStats.pwr = {};
     for (const sku of pStats.purchases || []) { const p = [NOADS_BUNDLE, STARTER_PACK].find(x => x.sku === sku); if (p && p.item) ownedItems.add(p.item); }   // paid items are never taken away
     mBestScore = 0; pStats.bestDist = 0;
     Wallet.money = CONFIG.start.money; Wallet.knots = CONFIG.start.knots; Game.emit('wallet');   // earn it all again (premium boats need knots again)
@@ -3129,7 +3144,7 @@ function skinPreviewURL(item) { return skinURLCache[item.id] = skinURLCache[item
    SHOP SCREEN — tabs of big visual tiles + a detail sheet
 ================================================================ */
 let shopTab = 'boats';
-const SHOP_TABS = [['boats', '⛵ Boats'], ['addons', '🧩 Add-ons'], ['sails', '🎨 Sails'], ['flags', '🚩 Flags'], ['upgrades', '🔧 Upgrades']];
+const SHOP_TABS = [['boats', '⛵ Boats'], ['addons', '🧩 Add-ons'], ['sails', '🎨 Sails'], ['flags', '🚩 Flags'], ['upgrades', '🔧 Upgrades'], ['powerups', '⚡ Power-ups']];
 function thumbAttr(o) { return `data-thumb='${JSON.stringify(o)}'`; }
 function statBar(label, v, max, cls) { return `<div class="stat-row"><span>${label}</span><div class="sbar"><div class="${cls || ''}" style="width:${Math.round(Math.min(1, v / max) * 100)}%"></div></div></div>`; }
 function boatStats(def) {
@@ -3144,6 +3159,7 @@ function renderItemShop() {
   $('balPlus').onclick = () => { playMenuClick(); openStore(); };
   $('shopTabs').innerHTML = SHOP_TABS.map(([id, label]) => `<button class="stab ${id === shopTab ? 'on' : ''}" data-tab="${id}">${label}</button>`).join('');
   $('shopTabs').querySelectorAll('.stab').forEach(b => b.onclick = () => { playMenuClick(); shopTab = b.dataset.tab; renderItemShop(); });
+  { const on = $('shopTabs').querySelector('.stab.on'); if (on) $('shopTabs').scrollLeft = on.offsetLeft - ($('shopTabs').clientWidth - on.offsetWidth) / 2; }
   $('stockNote').style.display = (shopTab === 'sails' || shopTab === 'flags') ? 'block' : 'none';
   const g = $('shopGrid'); g.innerHTML = ''; g.className = 'shop-grid ' + shopTab;
   const tile = (o) => {
@@ -3170,6 +3186,13 @@ function renderItemShop() {
       tile({ img: `<img alt="" ${thumbAttr({ boat: currentBoat.id, upg: { id: u.id, lvl: show }, view: 'stern' })}><span class="pips">${'●'.repeat(lvl)}${'○'.repeat(UPGRADE_MAX_LEVEL - lvl)}</span>`, name: u.icon + ' ' + u.name,
         sub: price === null ? 'MAX LEVEL' : priceTag(price, 'money'), badge: 'Lv ' + lvl, badgeCls: 'own',
         open: () => openUpgradeDetail(u) });
+    }
+  } else if (shopTab === 'powerups') {
+    head('⚡ Mistral power-ups — for every boat');
+    for (const p of POWERUP_DEFS) {
+      const lvl = pwrLevel(p.id), price = pwrUpgradeCost(p.id), M = POWERUP_UPG.maxLevel;
+      tile({ img: p.icon + `<span class="pips">${'●'.repeat(lvl)}${'○'.repeat(M - lvl)}</span>`, imgCls: 'emoji perk pwr', name: p.name + ' · ' + pwrEffect(p.id),
+        sub: price === null ? 'MAX LEVEL' : priceTag(price, 'money'), badge: 'Lv ' + lvl, badgeCls: 'own', open: () => openPowerupDetail(p) });
     }
   } else if (shopTab === 'addons') {
     head('⚙️ Perks — boost every Mistral Run');
@@ -3225,6 +3248,17 @@ function openUpgradeDetail(u) {
     body: statBar('Level ' + lvl + ' / ' + UPGRADE_MAX_LEVEL, lvl, UPGRADE_MAX_LEVEL, 'gold') + (u.id === 'hull' ? `<div class="perks">Max HP now: ❤️ ${Hull.max()}</div>` : '') +
       `<div class="perks dim">👀 ${price === null ? 'Fully upgraded' : 'Preview: level ' + show} · ${u.look}</div>`,
     actions: price === null ? [{ label: 'MAX LEVEL', disabled: true }] : [{ label: 'UPGRADE · ' + priceTag(price, 'money'), cls: 'go', run: () => { buyUpgrade(u); if (currentBoat) buildBoatModel(currentBoat); openUpgradeDetail(u); } }] });
+}
+function buyPowerup(p) {
+  const price = pwrUpgradeCost(p.id); if (price === null || !tryPay(price, 'money', p.name)) return;
+  pStats.pwr = pStats.pwr || {}; pStats.pwr[p.id] = pwrLevel(p.id) + 1; Save.queue();
+}
+function openPowerupDetail(p) {
+  const lvl = pwrLevel(p.id), price = pwrUpgradeCost(p.id), M = POWERUP_UPG.maxLevel;
+  openDetail({ img: `<span class="big-emoji">${p.icon}</span>`, title: p.icon + ' ' + p.name, sub: p.desc,
+    body: statBar('Level ' + lvl + ' / ' + M, lvl, M, 'gold') + `<div class="perks">Now: <b>${pwrEffect(p.id)}</b>${price === null ? '' : ' → next level: <b>' + pwrEffect(p.id, lvl + 1) + '</b>'}</div>` +
+      `<div class="perks dim">Max: ${pwrEffect(p.id, M)} · works on every boat</div>`,
+    actions: price === null ? [{ label: 'MAX LEVEL', disabled: true }] : [{ label: 'UPGRADE · ' + priceTag(price, 'money'), cls: 'go', run: () => { buyPowerup(p); openPowerupDetail(p); } }] });
 }
 function openAddonDetail(a) {
   const own = ownedItems.has(a.id), on = hasAddon(a.id), cur = itemCur(a);
@@ -4533,10 +4567,8 @@ function mDamage(amount, source) {
   if (hasAddon('addon_bumper') && ['rock', 'buoy', 'edgerock', 'yacht', 'chain'].includes(source)) k *= 0.75;
   if (hasAddon('addon_rod') && source === 'lightning') k *= 0.4;
   let dmg = Math.max(1, Math.round(amount * k));
-  if (mState.shieldHp > 0) {                                   // shield soaks damage first
-    const soak = Math.min(mState.shieldHp, dmg); mState.shieldHp -= soak; dmg -= soak;
-    Game.emit('hull', { delta: 0 }); Platform.haptics.impact('MEDIUM');
-    if (dmg <= 0) { showBanner(mState.shieldHp > 0 ? '🛡️ −' + soak + ' shield' : '🛡️ SHIELD BROKEN!', 'boost', 900); return false; }
+  if (mState.shieldT > 0) {                                    // shield: untouchable while it lasts
+    Platform.haptics.impact('LIGHT'); showBanner('🛡️ BLOCKED!', 'boost', 700); return false;
   }
   Hull.damage(dmg, source); return true;
 }
@@ -4566,26 +4598,29 @@ const shieldBubble = new THREE.Mesh(new THREE.SphereGeometry(11, 20, 14), new TH
 shieldBubble.visible = false; scene.add(shieldBubble);
 function grabPowerup(kind) {
   playRescueSound(); Platform.haptics.success();
-  if (kind === 'shield') { playShieldSound(); mState.shieldHp = Math.min(PU.shieldMax, (mState.shieldHp || 0) + PU.shieldHp); Game.emit('hull', { delta: 0 }); showBanner('🛡️ +' + PU.shieldHp + ' SHIELD', 'boost'); }
-  if (kind === 'magnet') { playCoinSound(); mState.magnetT = PU.magnetTime; showBanner('🧲 MAGNET! ' + PU.magnetTime + 's', 'good'); }
-  if (kind === 'double') { mState.doubleT = PU.doubleTime; showBanner('💰 DOUBLE COINS! ' + PU.doubleTime + 's', 'record'); }
+  const T = pwrTime(kind);
+  if (kind === 'shield') { playShieldSound(); mState.shieldT = T; Game.emit('hull', { delta: 0 }); showBanner('🛡️ SHIELD! ' + T + 's', 'boost'); }
+  if (kind === 'magnet') { playCoinSound(); mState.magnetT = T; showBanner('🧲 MAGNET! ' + T + 's', 'good'); }
+  if (kind === 'double') { mState.doubleT = T; showBanner('💰 DOUBLE COINS! ' + T + 's', 'record'); }
 }
 let pwrShown = '';
 function updatePowerups(dt, time) {
-  for (const k of ['magnetT', 'doubleT']) if (mState[k] > 0) mState[k] = Math.max(0, mState[k] - dt);
-  shieldBubble.visible = mState.shieldHp > 0 && mState.active;
+  const hadShield = mState.shieldT > 0;
+  for (const k of ['shieldT', 'magnetT', 'doubleT']) if (mState[k] > 0) mState[k] = Math.max(0, mState[k] - dt);
+  if (hadShield && !(mState.shieldT > 0)) Game.emit('hull', { delta: 0 });
+  shieldBubble.visible = mState.shieldT > 0 && mState.active && (mState.shieldT > 1.5 || Math.sin(time * 18) > 0);   // blinks in the last 1.5 s
   if (shieldBubble.visible) {
     shieldBubble.position.set(boat.x, boatGroup.position.y + 3, boat.z);
-    shieldBubble.material.opacity = (0.08 + 0.14 * mState.shieldHp / PU.shieldMax) + Math.sin(time * 4) * 0.03;   // fades as it weakens // flickers when ending
+    shieldBubble.material.opacity = 0.2 + Math.sin(time * 4) * 0.04;
   }
-  const chips = [['🛡️', mState.shieldHp], ['🧲', mState.magnetT], ['💰×2', mState.doubleT]].filter(c => c[1] > 0).map(c => `<span>${c[0]} ${Math.ceil(c[1])}</span>`).join('');
+  const chips = [['🛡️', mState.shieldT], ['🧲', mState.magnetT], ['💰×2', mState.doubleT]].filter(c => c[1] > 0).map(c => `<span>${c[0]} ${Math.ceil(c[1])}</span>`).join('');
   if (chips !== pwrShown) { pwrShown = chips; $('pwrRow').innerHTML = chips; }
 }
 
 function startMistralRun() {
   hideAllOverlays(); hideTourHud();
   state = 'mistral_run'; mState.active = true; pStats.runs = (pStats.runs || 0) + 1;
-  mState.dist = 0; mState.speed = 50; mState.velX = 0; mState.lean = 0; mState.coins = 0; mState.knots = 0; mState.tourists = 0; mState.mult = 1; mState.multTimer = 0; mState.maxMult = 1; mState.stunTimer = 0; mState.score = 0; mState.chains = 0; mState.repairs = 0; mState.closeCalls = 0; mState.shieldHp = mState.magnetT = mState.doubleT = 0; pwrShown = null; clearTrail(); Retention.onRunStart();
+  mState.dist = 0; mState.speed = 50; mState.velX = 0; mState.lean = 0; mState.coins = 0; mState.knots = 0; mState.tourists = 0; mState.mult = 1; mState.multTimer = 0; mState.maxMult = 1; mState.stunTimer = 0; mState.score = 0; mState.chains = 0; mState.repairs = 0; mState.closeCalls = 0; mState.shieldT = mState.magnetT = mState.doubleT = 0; pwrShown = null; clearTrail(); Retention.onRunStart();
   mState.runTime = 0; const headStart = Retention.takeHeadStart(); if (headStart) { mState.dist = headStart; mState.runTime = headStart * 4; } // mission prize: start further in (faster, busier water)
   mState.jumpY = 0; mState.jumpVy = 0; mState.objs = []; mState.nextZ = 400; mState.boostTimer = 0; // start generating BEHIND the boat: the wave tunnel surrounds you from frame one
   
@@ -4676,7 +4711,7 @@ function spawnAirArc(ramp, x) {
   const n = 7, apex = Math.floor(n / 2);
   for (let i = 1; i <= n; i++) {
     const t = tAir * i / (n + 1), y = vy * t - 40 * t * t, d = rel * t;
-    const type = i === apex + 1 ? (Math.random() < 0.35 ? 'repair' : ['shield', 'magnet', 'double'][Math.floor(Math.random() * 3)]) : 'coin';
+    const type = i === apex + 1 && Math.random() < PU.airArcChance ? (Math.random() < 0.3 ? 'repair' : ['shield', 'magnet', 'double'][Math.floor(Math.random() * 3)]) : 'coin';
     const o = spawnMistralObj(type, x, ramp.z + RAMP.CREST - d);
     o.airY = Math.max(0, y); o.follow = ramp; o.offZ = RAMP.CREST - d;
   }
@@ -4854,7 +4889,7 @@ function updateMistral(dt, time) {
       }
       else if (obj.type === 'repair' && dist < boatHitR + obj.r + 1 + (obj.airY ? 2 : 0) && reachY(obj)) {
         obj.hit = true; obj.mesh.visible = false; playRepairSound(); mState.repairs++;
-        const healed = Hull.heal(MC.repair.heal);
+        const healed = Hull.heal(Math.max(1, Math.round(Hull.max() * repairFrac())));
         if (healed > 0) showToast(`🔧 Repair kit! +${healed} HP`);
         else { mState.score += MC.repair.fullHpScore; showToast(`🔧 Hull already solid — +${MC.repair.fullHpScore} score`); }
         updateMistralHUD();
@@ -5054,7 +5089,7 @@ function endMistralRun(sank) {
 /* Put the calm open world back after a run (storm off, fog out, boat home). */
 function leaveMistralWorld() {
   camera.fov = 60; camera.updateProjectionMatrix();
-  hideRunBackdrop(); shieldBubble.visible = false; mState.shieldHp = mState.magnetT = mState.doubleT = 0; Game.emit('hull', { delta: 0 });
+  hideRunBackdrop(); shieldBubble.visible = false; mState.shieldT = mState.magnetT = mState.doubleT = 0; Game.emit('hull', { delta: 0 });
   mState.active = false; boatGroup.scale.setScalar(1);
   $('mistralHUD').style.display = 'none'; $('left').classList.remove('show'); $('right').classList.remove('show'); $('btnPause').classList.remove('show');
   worldGroup.visible = true; mGroup.visible = false;
@@ -5324,7 +5359,7 @@ const PROPS = {
   hazards:   { label: '🪨 Rocks & 🔴 buoys hurt your hull', make: () => { const g = new THREE.Group(); const rk = makeMistralRock(); rk.position.x = -6; g.add(rk); const b = makeMistralBuoy(); b.position.x = 7; g.add(b); return g; }, view: [0.4, 0.6, 1], zoom: 1.7 },
   lightning: { label: '⚡ Yellow ring = lightning incoming', make: () => { const g = new THREE.Group(); const m = makeStrikeMarker(); g.add(m); const bolt = makeBolt(0, 0); bolt.scale.setScalar(0.22); bolt.position.set(0, 2, 0); g.add(bolt); return g; }, view: [0.3, 0.6, 1], zoom: 1.5 },
   repair:    { label: '🔧 Repair kit: +30 HP', make: () => noBeam(makeRepairKit()), view: [0.8, 0.6, 1], zoom: 1.7 },
-  powerups:  { label: '🛡️ Shield +100 · 🧲 Magnet · 💰 ×2', make: () => { const g = new THREE.Group(); ['shield', 'magnet', 'double'].forEach((k, i) => { const p = noBeam(makePowerup(k)); p.position.x = (i - 1) * 12; g.add(p); }); return g; }, view: [0.2, 0.4, 1], zoom: 1.8 },
+  powerups:  { label: '🛡️ Shield · 🧲 Magnet · 💰 ×2 — 5 s each', make: () => { const g = new THREE.Group(); ['shield', 'magnet', 'double'].forEach((k, i) => { const p = noBeam(makePowerup(k)); p.position.x = (i - 1) * 12; g.add(p); }); return g; }, view: [0.2, 0.4, 1], zoom: 1.8 },
   yacht:     { label: '🛥️ Ride the cyan wake = BOOST', make: () => { const y = makeRivalYacht(); y.children.filter(c => c.geometry && c.geometry.type === 'PlaneGeometry').forEach(c => { c.geometry = new THREE.PlaneGeometry(c.geometry.parameters.width, 26); c.position.z = MC.yacht.halfLen + 13; }); return y; }, view: [0.8, 0.7, 0.9], zoom: 1.6 },
   // ---- Story mode & menus ----
   boat_dinghy:      { label: '⛵ Little Dinghy', url: () => boatPicture('dinghy') },
@@ -5701,9 +5736,9 @@ function renderHpBars() {
   document.querySelectorAll('.hpbar').forEach(bar => {
     bar.className = 'hpbar ' + cls;
     bar.querySelector('.hpfill').style.width = (f * 100) + '%';
-    const sh = (state === 'mistral_run' && mState.shieldHp) || 0;          // shield shown as a cyan layer on top
-    bar.querySelector('.hpshield').style.width = Math.min(100, sh / Hull.max() * 100) + '%';
-    bar.querySelector('.hptxt').textContent = '❤️ ' + Hull.hp + ' / ' + Hull.max() + (sh ? '  🛡️ ' + sh : '');
+    const sh = state === 'mistral_run' && mState.shieldT > 0;             // shield active: cyan layer over the whole bar
+    bar.querySelector('.hpshield').style.width = sh ? '100%' : '0%';
+    bar.querySelector('.hptxt').textContent = '❤️ ' + Hull.hp + ' / ' + Hull.max() + (sh ? '  🛡️' : '');
   });
 }
 let dmgFlashTimer = null;
