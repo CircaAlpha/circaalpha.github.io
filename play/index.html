@@ -915,6 +915,8 @@ body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: no
         <button class="btn small" id="devKnotBtn">+1,000 🪢</button>
         <button class="btn small" id="devInfBtn">∞ wallet: ON</button>
         <button class="btn small" id="devZeroBtn">Wallet → 0</button>
+        <button class="btn small" id="devNoneBtn">🔒 Own nothing</button>
+        <button class="btn small" id="devAllBtn">🔓 Own all</button>
         <button class="btn small danger" id="devExitBtn">Exit dev mode</button>
       </div>
     </div>
@@ -3073,7 +3075,8 @@ function tryPay(price, cur, what) {
   return false;
 }
 function prevChainBoat(def) { const chain = FLEET.filter(b => !b.premium); const i = chain.indexOf(def); return i > 0 ? chain[i - 1] : null; }
-function boatLocked(def) { if (def.premium) return false; const p = prevChainBoat(def); return p && !owned.has(p.id); }
+function boatLocked(def) { if (def.premium || pStats.dev) return false;   // dev mode: buy any boat to check prices
+  const p = prevChainBoat(def); return p && !owned.has(p.id); }
 function buyBoat(def) { if (boatLocked(def)) return; if (!tryPay(def.price, boatCur(def), def.name)) return; owned.add(def.id); selectBoat(def); Save.queue(); }
 function buyUpgrade(u) {
   const price = upgradeCost(u); if (price === null || !tryPay(price, 'money', u.name)) return;
@@ -6098,11 +6101,10 @@ function redeemCode(raw) {
   showToast('❌ That code doesn\'t work.');
 }
 function enableDevMode() {
-  pStats.dev = true; pStats.devInf = true; pStats.noAds = true;
-  FLEET.forEach(b => owned.add(b.id)); ITEMS.forEach(i => ownedItems.add(i.id)); ADDONS.forEach(a => ownedItems.add(a.id));
+  pStats.dev = true; pStats.devInf = true; pStats.noAds = true;   // nothing is given for free: buy things to check the prices
   Wallet.money = DEV_WALLET.money; Wallet.knots = DEV_WALLET.knots; Game.emit('wallet');
   Save.write(); initDevUI(); refreshMainMenu(); $('settingsOverlay').classList.remove('open');
-  showToast('🛠️ Dev mode ON: everything unlocked, no ads, ∞ money. Dev tools: 🛠️ button on the menu.', 4500);
+  showToast('🛠️ Dev mode ON: no ads, ∞ money. Buy anything to check prices. Dev tools: 🛠️ on the menu.', 4500);
 }
 async function exitDevMode() {
   if (!(await confirmDialog('Leave dev mode? This does a full reset (like "Reset everything"). Things you really paid for are kept.'))) return;
@@ -6122,7 +6124,15 @@ function initDevUI() {
   $('devInfBtn').onclick = guard(() => { pStats.devInf = !(pStats.devInf !== false); if (pStats.devInf) devTopUp(); Game.emit('wallet'); infLabel(); refreshMainMenu(); Save.queue(); });
   $('devZeroBtn').onclick = guard(() => { pStats.devInf = false; Wallet.money = 0; Wallet.knots = 0; Game.emit('wallet'); infLabel(); refreshMainMenu(); Save.queue(); showToast('Wallet at 0 · ∞ off: play to test real earning.'); });
   $('devExitBtn').onclick = guard(exitDevMode);
-  $('devInfBtn').style.display = $('devZeroBtn').style.display = $('devExitBtn').style.display = pStats.dev ? '' : 'none';
+  // own everything / nothing (wallet, dev mode and No-Ads stay as they are)
+  $('devAllBtn').onclick = guard(() => { FLEET.forEach(b => owned.add(b.id)); ITEMS.forEach(i => ownedItems.add(i.id)); ADDONS.forEach(a => ownedItems.add(a.id)); Save.queue(); Thumbs.clear && Thumbs.clear(); refreshMainMenu(); showToast('🔓 Everything owned'); });
+  $('devNoneBtn').onclick = guard(() => {
+    owned.clear(); owned.add(CONFIG.start.boat); Object.keys(upgrades).forEach(k => delete upgrades[k]); pStats.pwr = {};
+    ownedItems.clear(); equippedFlag = null; equippedSail = null; pStats.addonsOff = [];
+    for (const sku of pStats.purchases || []) { const p = [NOADS_BUNDLE, STARTER_PACK].find(x => x.sku === sku); if (p && p.item) ownedItems.add(p.item); }
+    selectBoat(FLEET.find(b => b.id === CONFIG.start.boat)); Save.queue(); Thumbs.clear && Thumbs.clear(); refreshMainMenu(); showToast('🔒 Back to the Little Dinghy: buy things to test prices');
+  });
+  $('devInfBtn').style.display = $('devZeroBtn').style.display = $('devExitBtn').style.display = $('devAllBtn').style.display = $('devNoneBtn').style.display = pStats.dev ? '' : 'none';
   infLabel();
 }
 
