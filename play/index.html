@@ -1168,7 +1168,10 @@ const CONFIG = {
     multTime: 12, maxMult: 8,     // tourist multiplier chain
     coinValue: 3, chainBonus: 12, chainScore: 150,
     multCoinFactor: 0.25,         // each ×1 of tourist multiplier adds +25% coin value (score still gets the full ×)
-    knotChance: 0.07,             // per chunk
+    knots: {                      // knots are rare AND risky: never just lying in open water
+      arcChance: 0.06,            // top of a jump arc (only reachable mid-air)
+      rockChance: 0.012,          // per chunk: tucked right against a rock / buoy (skim it or crash)
+    },
     damage: {                     // HP lost per hit
       rock: 20, buoy: 30, edgerock: 35, chain: 20, yacht: 40, lightning: 25, surf: 6, whirlpool: 5,
     },
@@ -1397,7 +1400,7 @@ const MISSIONS = [
    beforehand). weight = how often each kind comes up. `tier` 0..4. */
 const MISSION_REWARDS = [
   { kind: 'money',    weight: 40, amount: tier => 120 + tier * 180 + Math.round(Math.random() * 4) * 25 },
-  { kind: 'knots',    weight: 30, amount: tier => 3 + tier * 2 + Math.floor(Math.random() * 3) },
+  { kind: 'knots',    weight: 30, amount: tier => 5 * (3 + tier * 2 + Math.floor(Math.random() * 3)) },   // 15–65 knots
   { kind: 'miles',    weight: 20, amount: tier => 1 + tier },     // head start: next run begins this many NM in
   { kind: 'cosmetic', weight: 10 },                              // a random flag or sail you don't own yet
 ];
@@ -4721,7 +4724,8 @@ function spawnAirArc(ramp, x) {
   const n = 7, apex = Math.floor(n / 2);
   for (let i = 1; i <= n; i++) {
     const t = tAir * i / (n + 1), y = vy * t - 40 * t * t, d = rel * t;
-    const type = i === apex + 1 && Math.random() < PU.airArcChance ? (Math.random() < 0.3 ? 'repair' : ['shield', 'magnet', 'double'][Math.floor(Math.random() * 3)]) : 'coin';
+    const top = i === apex + 1, roll = top ? Math.random() : 1;
+    const type = roll < MC.knots.arcChance ? 'knot' : roll < MC.knots.arcChance + PU.airArcChance ? (Math.random() < 0.3 ? 'repair' : ['shield', 'magnet', 'double'][Math.floor(Math.random() * 3)]) : 'coin';
     const o = spawnMistralObj(type, x, ramp.z + RAMP.CREST - d);
     o.airY = Math.max(0, y); o.follow = ramp; o.offZ = RAMP.CREST - d;
   }
@@ -4764,8 +4768,11 @@ function genMistralChunk(zStart) {
   // Curling wave crests arching over the track from both walls — the tunnel
   for (const s of [-1, 1]) spawnMistralObj('curl', s * (M_WIDTH / 2 + 2), zStart);
   
-  // Knots are rare treasures now: a single one, occasionally, anywhere on the track
-  if (!sceneryOnly && Math.random() < MC.knotChance) spawnMistralObj('knot', rx(), zStart - Math.random() * M_CHUNK_LEN);
+  // Knots are rare AND risky: now and then one sits tight against a hazard, so you have to skim it
+  if (!sceneryOnly && Math.random() < MC.knots.rockChance) {
+    const hz = mState.objs.filter(o => (o.type === 'rock' || o.type === 'buoy') && o.z <= zStart && o.z > zStart - M_CHUNK_LEN && Math.abs(o.x) < M_WIDTH / 2 - 16);
+    if (hz.length) { const h = hz[Math.floor(Math.random() * hz.length)], side = h.x > 0 ? -1 : 1; spawnMistralObj('knot', h.x + side * (h.r + 3.5), h.z); }
+  }
   
   // Power-ups
   if (!sceneryOnly && Math.random() < PU.chance) spawnMistralObj(['shield', 'magnet', 'double'][Math.floor(Math.random() * 3)], rx() * 0.7, zStart - 60 - Math.random() * 180);
