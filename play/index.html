@@ -39,27 +39,6 @@ canvas { display: block; }
 #mMultBar { height: 4px; background: rgba(255,255,255,0.25); border-radius: 2px; margin-top: 3px; overflow: hidden; }
 #mMultFill { height: 100%; width: 0%; background: linear-gradient(90deg, #ffd166, #ff66b2); border-radius: 2px; }
 
-#mission {
-  display: none;
-  position: fixed; top: calc(10px + env(safe-area-inset-top)); left: 50%; transform: translateX(-50%);
-  background: rgba(10, 30, 60, 0.85); border: 2px solid #5bc0eb;
-  color: #fff; padding: 6px 16px; border-radius: 8px;
-  font-size: 13px; text-align: center; pointer-events: none; max-width: 52vw; z-index: 5;
-  font-weight: bold;
-}
-#mission.active { display: block; }
-#mission .dest { font-size: 15px; color: #ffd166; }
-#mission .dist { color: #06d6a0; }
-
-#compass {
-  display: none;
-  position: fixed; top: 68px; left: 50%; transform: translateX(-50%);
-  color: #fff; font-size: 13px; font-weight: bold; pointer-events: none;
-  gap: 18px; z-index: 5; text-shadow: 1px 1px 2px #000;
-}
-#compass.active { display: flex; }
-.needle { display: inline-block; transition: transform 0.15s linear; color: #ffd166; }
-
 .steer {
   display: none;
   position: fixed; bottom: 26px; width: 92px; height: 92px;
@@ -112,19 +91,12 @@ body.mistral #toast.show { transform: translate(-50%, 0); }
 }
 
 /* MINIGAMES */
-#minigameUI, #dockingUI {
-  display: none; position: fixed; z-index: 5; box-shadow: 0 8px 0 rgba(0,0,0,0.3);
-}
-#minigameUI {
-  bottom: 140px; left: 50%; transform: translateX(-50%);
-  width: 70vw; max-width: 400px; background: #1d3557;
-  border: 4px solid #f4a261; border-radius: 12px; padding: 12px;
-}
 #mgBar { position: relative; width: 100%; height: 28px; background: #0b1a2e; border-radius: 6px; overflow: hidden; border: 2px solid #06d6a0; }
 #mgTarget { position: absolute; top: 0; left: 35%; width: 30%; height: 100%; background: rgba(6, 214, 160, 0.6); }
 #mgCursor { position: absolute; top: 0; left: 50%; width: 8px; height: 100%; background: #ffd166; transform: translateX(-50%); box-shadow: 0 0 4px #000; }
 
 #dockingUI {
+  display: none; position: fixed; box-shadow: 0 8px 0 rgba(0,0,0,0.3);
   right: 20px; top: 50%; transform: translateY(-50%);
   background: #1d3557; border: 4px solid #ffd166; border-radius: 12px;
   padding: 16px 12px; flex-direction: column; align-items: center; gap: 10px; z-index: 10;
@@ -291,7 +263,7 @@ body.mistral #toast.show { transform: translate(-50%, 0); }
 .hpbar.bad { border-color: #e63946; animation: hpPulse 0.8s infinite; } .hpbar.bad .hpfill { background: linear-gradient(90deg, #e63946, #ff7a5c); }
 .hpbar.hit { transform: scale(1.12); }
 @keyframes hpPulse { 50% { box-shadow: 0 0 12px rgba(230,57,70,0.9); } }
-#dmgFlash { position: fixed; inset: 0; pointer-events: none; z-index: 8; opacity: 0; box-shadow: inset 0 0 120px 40px rgba(230,57,70,0.85); transition: opacity 0.35s; }
+#dmgFlash { position: fixed; inset: 0; pointer-events: none; z-index: 8; opacity: 0; box-shadow: inset 0 0 50px 6px rgba(230,57,70,0.7); transition: opacity 0.45s; }
 #dmgFlash.show { opacity: 1; transition: none; }
 
 /* Pause button */
@@ -365,7 +337,6 @@ body:not(.mistral) #btnPause { top: auto; bottom: calc(40px + env(safe-area-inse
 #speedLever { display: none; position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(36px + env(safe-area-inset-bottom)); width: 44vw; z-index: 4; text-align: center; }
 #speedLever input { width: 100%; }
 .lever-label { color: #ffd166; font-size: 10px; letter-spacing: 2px; margin-bottom: 2px; text-shadow: 0 1px 2px rgba(0,0,0,0.6); }
-#minimap { top: calc(104px + env(safe-area-inset-top)); right: calc(12px + env(safe-area-inset-right)); }
 
 /* Narrow phones in portrait: tighten the HUDs */
 @media (max-width: 520px) {
@@ -373,9 +344,6 @@ body:not(.mistral) #btnPause { top: auto; bottom: calc(40px + env(safe-area-inse
   .hud-box .big { font-size: 15px; }
   .hud-right { min-width: 110px; }
   #audioIndicator, #audioIndicatorMain { display: none; }
-  #mission { top: calc(92px + env(safe-area-inset-top)); max-width: 70vw; }
-  #compass { top: calc(166px + env(safe-area-inset-top)); }
-  #minimap { top: calc(196px + env(safe-area-inset-top)); width: 104px; height: 104px; }
   .steer { width: 80px; height: 80px; }
   .hero-title { font-size: 34px; }
 }
@@ -489,7 +457,6 @@ body { background: #3fb4e6; }
 .steer.active-btn { background: rgba(34,228,255,0.45); }
 #btnPause { background: rgba(23,10,64,0.8); border-color: var(--violet); }
 #toast { background: linear-gradient(180deg, var(--panel-a), var(--panel-b)); border-color: var(--sun); border-radius: 16px; }
-#mission { background: rgba(23,10,64,0.88); border-color: var(--violet); border-radius: 12px; }
 
 /* run summary */
 .sum-title { color: var(--sun) !important; }
@@ -779,18 +746,79 @@ body:not(.mistral) #pwrRow { display: none; }
 .dc-wait { margin-top: 8px; font-size: 12px; font-weight: 700; color: var(--muted); text-align: center; }
 @media (prefers-reduced-motion: reduce) { .store-btn.gift-ready, .dc-claim, .store-badge { animation: none; } }
 
-/* ---- Story-mode event chip (dolphins, overboard, speed bonus) ---- */
-#eventChip { position: fixed; left: 50%; top: calc(198px + env(safe-area-inset-top)); transform: translateX(-50%) translateY(-6px); z-index: 30; opacity: 0; pointer-events: none;
-  max-width: 92vw; padding: 7px 14px; border-radius: 999px; font-size: 13px; font-weight: 800; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  background: rgba(20,10,51,0.85); border: 2px solid var(--cyan); box-shadow: 0 4px 14px rgba(0,0,0,0.35); transition: opacity .2s, transform .2s; }
-#eventChip.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-#eventChip small { font-weight: 700; opacity: 0.85; }
-#eventChip.good { border-color: var(--lime); } #eventChip.warn { border-color: var(--sun); } #eventChip.bad { border-color: var(--pink); animation: dotPulse 0.8s infinite; } #eventChip.dim { border-color: rgba(255,255,255,0.25); opacity: .75; }
-
 /* ---- Phones: fast taps must never select text, zoom, or pop the iOS callout ---- */
 *, *::before, *::after { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; -webkit-tap-highlight-color: transparent; }
 button, a, .tile, [onclick], input[type=range] { touch-action: manipulation; }
 input[type=text], textarea { -webkit-user-select: text; user-select: text; }
+
+/* ================================================================
+   STORY HUD v4 — fixed slots so nothing can pile up:
+   top row: money | speed+HP · left column: goal card → event card →
+   wake minigame · right: minimap · bottom: message feed above the
+   steering buttons. The canvas always fills the whole screen.
+================================================================ */
+:root { --mm: 104px; --hud-top: calc(62px + env(safe-area-inset-top)); }
+@media (min-width: 521px) { :root { --mm: 130px; --hud-top: calc(70px + env(safe-area-inset-top)); } }
+#gl { position: fixed; inset: 0; width: 100%; height: 100%; }   /* iPhone home-screen app: no empty strip at the bottom */
+@keyframes softPulse { 50% { box-shadow: 0 0 0 3px rgba(255,61,127,0.45), 0 3px 10px rgba(0,0,0,0.35); } }
+
+#minimap { top: var(--hud-top); right: calc(10px + env(safe-area-inset-right)); width: var(--mm); height: var(--mm); border-width: 3px; border-color: rgba(184,107,255,0.9); }
+body.docking #minimap { display: none; }
+
+#storyStack { display: none; position: fixed; z-index: 6; pointer-events: none; flex-direction: column; gap: 6px;
+  top: var(--hud-top); left: calc(10px + env(safe-area-inset-left)); width: calc(100vw - var(--mm) - 30px - env(safe-area-inset-left) - env(safe-area-inset-right)); max-width: 420px; }
+#storyStack.active { display: flex; }
+body.docking #storyStack { width: calc(100vw - 150px); }
+
+#mission { display: flex; align-items: center; gap: 9px; padding: 7px 9px; border-radius: 14px; color: #fff;
+  background: linear-gradient(180deg, rgba(45,22,120,0.92), rgba(23,10,64,0.92)); border: 2px solid var(--violet); box-shadow: 0 3px 0 rgba(0,0,0,0.3); }
+.goal-dial, .wind-dial { flex: none; display: grid; place-items: center; border-radius: 50%; }
+.goal-dial { width: 42px; height: 42px; background: radial-gradient(circle at 50% 40%, #3b2590, #1a0c4a); border: 2px solid var(--sun); box-shadow: 0 0 10px rgba(255,210,63,0.45); }
+.goal-dial svg { width: 32px; height: 32px; transition: transform 0.15s linear; filter: drop-shadow(0 1px 1px rgba(0,0,0,0.5)); }
+.wind-dial { width: 38px; height: 44px; border-radius: 10px; gap: 0; }
+.wind-dial svg { width: 26px; height: 26px; transition: transform 0.3s linear; }
+.wind-dial small { font-size: 8px; font-weight: 900; letter-spacing: 1px; color: var(--cyan); line-height: 1; }
+.goal-txt { flex: 1; min-width: 0; }
+.goal-top { display: flex; align-items: center; gap: 5px; font-weight: 900; font-size: 14px; line-height: 1.15; }
+.goal-top .dest { color: var(--sun); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.goal-top #groupTag:empty { display: none; }
+.goal-sub { display: flex; align-items: center; gap: 6px; margin-top: 2px; font-size: 12px; font-weight: 800; }
+.goal-sub .dist { color: var(--lime); font-variant-numeric: tabular-nums; }
+#legTimer { font-size: 11px; padding: 1px 7px; border-radius: 999px; font-variant-numeric: tabular-nums; }
+#legTimer:empty { display: none; }
+#legTimer.good { background: rgba(124,255,107,0.18); color: var(--lime); }
+#legTimer.warn { background: rgba(255,210,63,0.3); color: var(--sun); }
+
+#eventChip { display: none; padding: 7px 10px; border-radius: 14px; font-size: 13px; font-weight: 800; color: #fff; line-height: 1.3;
+  background: rgba(20,10,51,0.9); border: 2px solid var(--cyan); box-shadow: 0 3px 10px rgba(0,0,0,0.35); }
+#eventChip.show { display: block; animation: feedIn .2s ease-out; }
+#eventChip b { font-size: 13.5px; }
+#eventChip small { display: block; font-weight: 700; opacity: 0.85; font-size: 11.5px; }
+#eventChip.good { border-color: var(--lime); } #eventChip.warn { border-color: var(--sun); }
+#eventChip.bad { border-color: var(--pink); animation: softPulse 0.9s infinite; }
+
+#minigameUI { display: none; position: static; width: auto; max-width: none; transform: none; background: rgba(20,10,51,0.92); border: 2px solid var(--orange, #f4a261); border-radius: 14px; padding: 8px 10px; box-shadow: 0 3px 10px rgba(0,0,0,0.35); }
+#minigameUI .mg-title { font-size: 12px; margin-bottom: 6px; }
+#mgBar { height: 22px; }
+
+#feed { position: fixed; z-index: 7; pointer-events: none; left: 50%; transform: translateX(-50%); bottom: calc(118px + env(safe-area-inset-bottom));
+  width: min(92vw, 420px); display: flex; flex-direction: column; align-items: center; gap: 5px; }
+body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: none; width: calc(100vw - 150px); align-items: flex-start; }
+.feed-item { max-width: 100%; padding: 6px 12px; border-radius: 12px; font-size: 13px; font-weight: 800; color: #fff; text-align: center; line-height: 1.3;
+  background: rgba(20,10,51,0.9); border: 2px solid rgba(255,210,63,0.85); box-shadow: 0 3px 10px rgba(0,0,0,0.3); animation: feedIn .22s ease-out; transition: opacity .25s, transform .25s; }
+.feed-item.multi { text-align: left; padding: 7px 12px; border-color: var(--sun); }
+.feed-item.multi b { display: block; font-size: 14px; color: var(--sun); margin-bottom: 1px; }
+.feed-item.multi span { display: block; font-size: 12px; font-weight: 700; }
+.feed-item.out { opacity: 0; transform: translateY(6px); }
+@keyframes feedIn { from { opacity: 0; transform: translateY(8px) scale(0.96); } to { opacity: 1; transform: none; } }
+
+#speechBubble { max-width: 58vw; font-size: 13px; padding: 8px 12px; }
+#dockingUI { right: calc(12px + env(safe-area-inset-right)); padding: 10px 10px; gap: 6px; }
+@media (prefers-reduced-motion: reduce) { .feed-item, #eventChip.show { animation: none; } #legTimer.warn, #eventChip.bad { animation: none; } }
+.ev-bar { display: inline-block; vertical-align: middle; width: 64px; height: 7px; margin-left: 4px; border-radius: 4px; background: rgba(255,255,255,0.18); overflow: hidden; }
+.ev-bar i { display: block; height: 100%; background: linear-gradient(90deg, var(--cyan), var(--lime)); border-radius: 4px; transition: width .2s; }
+.dock-labels, .dock-labels.show { display: none; }   /* labels now sit inside the docking panel */
+.dock-dir { font-size: 10px; font-weight: 900; letter-spacing: 1px; color: var(--cyan); }
 
 </style>
 
@@ -823,22 +851,27 @@ input[type=text], textarea { -webkit-user-select: text; user-select: text; }
 <button id="btnPause" aria-label="Pause">⏸</button>
 <div id="pwrRow"></div>
 
-<div id="mission">
-  <span id="groupTag"></span> Sail to <span class="dest" id="destName">…</span><br>
-  <span class="dist" id="destDist"></span>
+<!-- Story HUD: one left-hand column (goal card → event card → minigame) that
+     never overlaps the minimap, plus a message feed above the steering buttons. -->
+<div id="storyStack">
+  <div id="mission">
+    <div class="goal-dial"><svg id="goalNeedle" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 4 L31 32 L20 25.5 L9 32 Z" fill="#ffd23f" stroke="#5a3000" stroke-width="2" stroke-linejoin="round"/><path d="M20 4 L20 25.5 L9 32 Z" fill="#fff1a8"/></svg></div>
+    <div class="goal-txt">
+      <div class="goal-top"><span id="groupTag"></span><span class="dest" id="destName">…</span></div>
+      <div class="goal-sub"><span class="dist" id="destDist"></span><span id="legTimer"></span></div>
+    </div>
+    <div class="wind-dial" title="Wind"><svg id="windNeedle" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 6 L27 17 L22.5 17 L22.5 34 L17.5 34 L17.5 17 L13 17 Z" fill="#22e4ff" stroke="#0b3a4a" stroke-width="1.6" stroke-linejoin="round"/></svg><small>WIND</small></div>
+  </div>
+  <div id="eventChip"></div>
+  <div id="minigameUI">
+    <div class="mg-title">🌊 Wake Balance! Use Steering!</div>
+    <div id="mgBar"><div id="mgTarget"></div><div id="mgCursor"></div></div>
+  </div>
 </div>
-<div id="compass">
-  <span>WIND <span class="needle" id="windNeedle">⬆</span></span>
-  <span>GOAL <span class="needle" id="goalNeedle">⬆</span></span>
-</div>
+<div id="feed" aria-live="polite"></div>
 <div id="toast"></div>
 <div id="speechBubble"><span class="who">🎣 THE OLD FISHERMAN</span><span id="bubbleText"></span></div>
 
-<!-- MINIGAMES -->
-<div id="minigameUI">
-  <div class="mg-title">🌊 Wake Balance! Use Steering!</div>
-  <div id="mgBar"><div id="mgTarget"></div><div id="mgCursor"></div></div>
-</div>
 <div class="dock-labels" id="dockLabels"><span>FWD</span><span>REV</span></div>
 <div id="dockingUI">
   <div class="title">DOCKING</div>
@@ -849,7 +882,7 @@ input[type=text], textarea { -webkit-user-select: text; user-select: text; }
     <span style="color:#e63946">■</span> razor close · big tip<br>
     💥 touch = crash!
   </div>
-  <div class="slider-wrapper"><input type="range" id="dockThrottle" min="-1" max="1" step="0.05" value="0"></div>
+  <div class="dock-dir">▲ FWD</div><div class="slider-wrapper"><input type="range" id="dockThrottle" min="-1" max="1" step="0.05" value="0"></div><div class="dock-dir">▼ REV</div>
 </div>
 
 <canvas id="minimap"></canvas>
@@ -2275,7 +2308,13 @@ window.addEventListener('keyup', e => { if (e.key === 'ArrowLeft'  || e.key === 
 const scene = new THREE.Scene(); const SKY = 0x5bc0eb; scene.background = new THREE.Color(SKY); scene.fog = new THREE.Fog(SKY, 500, 2200);
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.5, 4000);
 const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5)); document.body.appendChild(renderer.domElement);
-window.addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); renderer.setSize(innerWidth, innerHeight); sizeBigMap(); });
+renderer.domElement.id = 'gl'; renderer.domElement.style.width = renderer.domElement.style.height = '';
+/* Size from the canvas' CSS box (it is pinned to the full screen), not innerHeight:
+   iOS home-screen apps report a short innerHeight at launch, which left a blue strip. */
+function fitRenderer() { const c = renderer.domElement, w = c.clientWidth || innerWidth, h = c.clientHeight || innerHeight; camera.aspect = w / h; camera.updateProjectionMatrix(); renderer.setSize(w, h, false); if (typeof sizeBigMap === 'function') sizeBigMap(); }
+window.addEventListener('resize', fitRenderer); window.addEventListener('orientationchange', () => setTimeout(fitRenderer, 250));
+if (window.visualViewport) visualViewport.addEventListener('resize', fitRenderer);
+window.addEventListener('load', () => { fitRenderer(); setTimeout(fitRenderer, 500); });
 
 const sun = new THREE.DirectionalLight(0xfffdf5, 1.1); sun.position.set(300, 500, -200); scene.add(sun); scene.add(new THREE.HemisphereLight(0xffffff, 0x1d3557, 0.75));
 const clouds = []; const cloudMat = new THREE.MeshLambertMaterial({ color: 0xffffff, flatShading: true });
@@ -3590,7 +3629,7 @@ function sailPower(heading) { let diff = Math.abs(normalizeAngle(heading - wind.
 function startDocking(dest) {
   state = 'docking'; dockingTargetDest = dest; dockingTimer = 15.0; dockSettle = 0; dockResultLine = '';
   if (mgActive) { mgActive = false; $('minigameUI').style.display = 'none'; }
-  $('dockingUI').style.display = 'flex'; $('speedLever').style.display = 'none'; $('dockLabels').classList.add('show'); $('dockThrottle').value = 0;
+  $('dockingUI').style.display = 'flex'; document.body.classList.add('docking'); $('speedLever').style.display = 'none'; $('dockLabels').classList.add('show'); $('dockThrottle').value = 0;
   boat.speed = Math.min(boat.speed, 8);
   const halfLen = (currentBoat && currentBoat.len ? currentBoat.len : 16) / 2; dockZones = { crash: 4 + halfLen + 1, perfect: 4 + halfLen + 9, clean: 4 + halfLen + 19 };
   if (dest) {
@@ -3602,11 +3641,11 @@ function startDocking(dest) {
   showToast('⚓ Docking! Ease off — the closer you stop, the bigger the tip.', 3200);
 }
 function finishDocking(distance, crashed) {
-  $('dockingUI').style.display = 'none'; $('dockLabels').classList.remove('show');
+  $('dockingUI').style.display = 'none'; $('dockLabels').classList.remove('show'); document.body.classList.remove('docking');
   if (currentBoat && currentBoat.id === 'goldenyacht') $('speedLever').style.display = 'block';
   boat.speed = 0; let xpBonus = 0;
   const tipFor = base => Math.round(base * (currentBoat ? currentBoat.mult : 1) * (1 + UPG.cargoLoot * upgLevel('cargo')) * (getRating() / 2));
-  if (crashed) { const dmg = CONFIG.story.damage.dockCrash; playCrashSound(); Hull.damage(dmg, 'dock'); dockResultLine = `<br>💥 Crashed into the dock! −${dmg} HP, no tip.`; showToast('💥 CRASHED into the dock!', 2500); if (state === 'sinking') return; }
+  if (crashed) { const dmg = CONFIG.story.damage.dockCrash; playCrashSound(); Hull.damage(dmg, 'dock'); dockResultLine = `<br>💥 Crashed into the dock! −${dmg} HP, no tip.`; if (!dockingTargetDest) showToast('💥 CRASHED into the dock!', 2500); if (state === 'sinking') return; }
   else if (distance > 90) { showToast('⌛ Drifted off — circle around and try the approach again.', 3000); state = 'sailing'; portArmed = false; return; }
   else if (distance <= dockZones.perfect) { const tip = tipFor(CONFIG.story.dockTip.perfect); if (tour) { tour.tips += tip; Wallet.earn(tip); } xpBonus = 50; dockResultLine = `<br>🧈 Razor-sharp docking! Tip +${tip} €`; }
   else if (distance <= dockZones.clean) { const tip = tipFor(CONFIG.story.dockTip.clean); if (tour) { tour.tips += tip; Wallet.earn(tip); } xpBonus = 20; dockResultLine = `<br>⚓ Clean docking. Tip +${tip} €`; }
@@ -3673,11 +3712,11 @@ function showSummary() {
 
 /* ---- HUD for tours ---- */
 function showTourHud() {
-  $('hud').style.display = 'flex'; $('mission').classList.add('active'); $('compass').classList.add('active'); $('minimap').classList.add('show');
+  $('hud').style.display = 'flex'; $('storyStack').classList.add('active'); $('minimap').classList.add('show'); document.body.classList.add('story');
   $('left').classList.add('show'); $('right').classList.add('show'); $('btnPause').classList.add('show');
 }
 function hideTourHud() {
-  $('hud').style.display = 'none'; $('mission').classList.remove('active'); $('compass').classList.remove('active'); $('minimap').classList.remove('show');
+  $('hud').style.display = 'none'; $('storyStack').classList.remove('active'); $('minimap').classList.remove('show'); hideToast(); document.body.classList.remove('story', 'docking');
   $('left').classList.remove('show'); $('right').classList.remove('show'); $('speedLever').style.display = 'none'; $('btnPause').classList.remove('show');
   $('dockingUI').style.display = 'none'; $('dockLabels').classList.remove('show'); $('minigameUI').style.display = 'none'; mgActive = false;
   bubbleEl.classList.remove('show'); bubbleTimer = 0;
@@ -3806,11 +3845,11 @@ const TourEvents = (() => {
 
   function ensureGroup() {
     if (!group) { group = new THREE.Group(); scene.add(group); }
-    if (!chip) { chip = document.createElement('div'); chip.id = 'eventChip'; document.body.appendChild(chip); }
+    if (!chip) { chip = $('eventChip'); if (!chip) { chip = document.createElement('div'); chip.id = 'eventChip'; document.body.appendChild(chip); } }
   }
   function showChip(html, cls) { chip.innerHTML = html; chip.className = 'show ' + (cls || ''); }
   function hideChip() { if (chip) chip.className = ''; }
-  function bar(f) { const n = 8, k = Math.round(Math.max(0, Math.min(1, f)) * n); return '▰'.repeat(k) + '▱'.repeat(n - k); }
+  function bar(f) { const n = 8, k = Math.round(Math.max(0, Math.min(1, f)) * n); return `<span class="ev-bar"><i style="width:${Math.round(Math.max(0, Math.min(1, f)) * 100)}%"></i></span>`; }
   function inWater(x, z, pad) {
     if (islands.some(i => Math.hypot(x - i.x, z - i.z) < i.r * 1.1 + pad)) return false;
     if (rocks.some(r => Math.hypot(x - r.x, z - r.z) < r.r + pad)) return false;
@@ -3892,7 +3931,7 @@ const TourEvents = (() => {
     s.ringFx.scale.setScalar(1 + (t * 1.5 % 1) * 1.5); s.ringFx.material.opacity = 0.6 * (1 - (t * 1.5 % 1));
     const d = Math.hypot(boat.x - s.x, boat.z - s.z);
     // point the HUD at the swimmer while they're in the water
-    $('destName').textContent = '🆘 Tourist in the water!'; $('destDist').textContent = Math.round(d * 3) + ' m';
+    $('destName').textContent = '🆘 Swimmer!'; $('destDist').textContent = Math.round(d * 3) + ' m';
     setNeedle('goalNeedle', Math.atan2(-(s.x - boat.x), -(s.z - boat.z)) - boat.heading);
     showChip(`🆘 <b>Tourist overboard!</b> ${Math.round(d * 3)} m <small>· ${Math.ceil(s.time)}s left</small>`, s.time < 10 ? 'bad' : 'warn');
     s.grace -= dt;
@@ -4017,12 +4056,11 @@ const TourEvents = (() => {
       updateCrates(dt, t); updateShortcuts();
     }
     updatePod(dt, t); updateSwimmer(dt, t);
-    if (sailing && !st.pod && !st.swimmer) {
-      const left = legLeft();
-      if (st.legPar && left > 0) showChip(`⏱️ Speed bonus <b>${Math.ceil(left)}s</b> <small>reach ${nextGoal() ? nextGoal().name : 'the sight'} in time</small>`, left < 10 ? 'warn' : 'good');
-      else if (st.legPar) showChip('⏱️ <small>No speed bonus this leg</small>', 'dim');
-      else hideChip();
-    }
+    // the speed-bonus countdown lives in the goal card, so it never fights the event card for space
+    const lt = $('legTimer');
+    if (lt) { const left = sailing && st.legPar ? legLeft() : 0;
+      if (sailing && st.legPar && left > 0) { lt.textContent = '⏱ ' + Math.ceil(left) + 's bonus'; lt.className = left < 10 ? 'warn' : 'good'; }
+      else { lt.textContent = ''; lt.className = ''; } }
   }
   /* Called by arriveAt (wrapped below) before the payout toast is shown */
   function onArrive(dest) {
@@ -5621,8 +5659,21 @@ document.addEventListener('visibilitychange', () => { if (document.hidden && sil
 
 /* ---- TOASTS ---- */
 let toastTimer = null;
-function showToast(html, ms = 2600) { const t = $('toast'); t.innerHTML = html; t.classList.add('show'); clearTimeout(toastTimer); if (ms > 0) toastTimer = setTimeout(() => t.classList.remove('show'), ms); }
-function hideToast() { clearTimeout(toastTimer); $('toast').classList.remove('show'); }
+/* In story mode messages go to a small feed above the steering buttons (max 3,
+   newest at the bottom) instead of a big card over the boat. Elsewhere: the classic toast. */
+function feedPush(html, ms) {
+  const feed = $('feed'); const last = feed.lastElementChild;
+  if (last && last.dataset.html === html) { clearTimeout(last._t); last._t = setTimeout(() => feedDrop(last), ms > 0 ? ms : 7000); return; }
+  const el = document.createElement('div'); el.className = 'feed-item'; el.dataset.html = html;
+  const lines = html.split(/<br\s*\/?>/i).filter(l => l.trim());
+  if (lines.length > 1) { el.classList.add('multi'); el.innerHTML = '<b>' + lines[0] + '</b>' + lines.slice(1).map(l => '<span>' + l + '</span>').join(''); }
+  else el.innerHTML = html;
+  feed.appendChild(el); while (feed.children.length > 3) feed.firstElementChild.remove();
+  el._t = setTimeout(() => feedDrop(el), ms > 0 ? ms : 7000);
+}
+function feedDrop(el) { if (!el.isConnected) return; el.classList.add('out'); setTimeout(() => el.remove(), 250); }
+function showToast(html, ms = 2600) { if (document.body.classList.contains('story')) { feedPush(html, ms); return; } const t = $('toast'); t.innerHTML = html; t.classList.add('show'); clearTimeout(toastTimer); if (ms > 0) toastTimer = setTimeout(() => t.classList.remove('show'), ms); }
+function hideToast() { clearTimeout(toastTimer); $('toast').classList.remove('show'); const f = $('feed'); if (f) [...f.children].forEach(el => { clearTimeout(el._t); el.remove(); }); }
 
 /* ---- OVERLAYS ---- */
 function hideAllOverlays() { document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open')); $('bigmapWrap').classList.remove('open'); }
@@ -6164,6 +6215,7 @@ function initStoryUI() {
 /* ---- BANNERS ---- */
 let bannerTimer = null;
 function showBanner(text, kind, ms) {
+  if (document.body.classList.contains('story')) { showToast(text, ms || 1800); return; }   // story HUD: use the feed
   const b = $('banner'); b.textContent = text; b.className = 'banner ' + (kind || '');
   void b.offsetWidth; b.classList.add('show');
   clearTimeout(bannerTimer); bannerTimer = setTimeout(hideBanner, ms || 1300);
