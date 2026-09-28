@@ -827,6 +827,14 @@ body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: no
 .dbtn.upg { background: linear-gradient(180deg, #7ff0ff, #1b9cff); color: #062a4a; border-color: #0b6fb8; }
 #pauseMissions { margin: 10px 0 4px; text-align: left; max-height: 46vh; overflow-y: auto; }
 
+/* drag steering: a small floating joystick under the thumb */
+#swipeStick { position: fixed; z-index: 9; width: 120px; height: 44px; margin: -22px 0 0 -60px; border-radius: 22px; pointer-events: none; opacity: 0; transition: opacity .15s;
+  background: rgba(20,10,51,0.28); border: 2px solid rgba(34,228,255,0.55); box-shadow: 0 0 14px rgba(34,228,255,0.35); }
+#swipeStick.on { opacity: 1; }
+#swipeStick i { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; border-radius: 50%; background: radial-gradient(circle at 40% 35%, #fff, #22e4ff); box-shadow: 0 0 10px rgba(34,228,255,0.8); }
+body.swipe-only .steer { display: none !important; }
+body.swipe-only:not(.mistral) #btnPause { left: calc(16px + env(safe-area-inset-left)); }
+
 </style>
 
 
@@ -1050,6 +1058,7 @@ body.docking #feed { left: calc(10px + env(safe-area-inset-left)); transform: no
     <div class="set-row"><span>🎵 Music</span><input type="range" id="setMusic" min="0" max="100" value="70"><span class="set-val" id="setMusicVal">70%</span></div>
     <div class="set-row"><span>🔊 Sound FX</span><input type="range" id="setSfx" min="0" max="100" value="80"><span class="set-val" id="setSfxVal">80%</span></div>
     <div class="set-row"><span>🖼️ Graphics</span><div class="set-seg"><button class="btn seg" id="setQHigh">HIGH</button><button class="btn seg" id="setQLow">LOW</button></div></div>
+    <div class="set-row"><span>🎮 Steering</span><div class="set-seg"><button class="btn seg" id="setCtlBoth">BUTTONS + DRAG</button><button class="btn seg" id="setCtlSwipe">DRAG ONLY</button></div></div>
     <div class="set-row"><span>📷 Screen shake</span><button class="btn seg wide" id="setShake">ON</button></div>
     <div class="set-row"><span>🌧️ Weather effects</span><button class="btn seg wide" id="setFx">ON</button></div>
     <div class="set-row"><span>📳 Vibration</span><button class="btn seg wide" id="setHaptics">ON</button></div>
@@ -1762,7 +1771,7 @@ const MISTRAL_INTRO = [
   { who: 'old',   text: 'Our coast guard cutters are too big for those breakers. But a small, stubborn boat… Skipper, are you listening?' },
   { who: 'you',   choices: ["I'm going out there.", 'Someone has to.', 'Only if you talk me through it.'] },
   { who: 'old',   text: 'Hah! Then listen close. The sea has rules, even in a storm. I\'ll be on the radio the whole way.' },
-  { who: 'old',   text: 'First, the rudder. Tap **⟲ LEFT** and **⟳ RIGHT** to steer. Go on, try both now.', action: 'steer' },
+  { who: 'old',   text: 'First, the rudder. Tap **⟲ LEFT** and **⟳ RIGHT** to steer, or just **drag your thumb** left and right anywhere on the water. One hand is enough! Go on, try both buttons now.', action: 'steer' },
   { who: 'old',   text: 'Good hands. Now the big swells: ride **UP the wave** where the white arrows point, and you\'ll fly.', show: 'wave' },
   { who: 'old',   text: 'You\'ll need that air. The harbor has strung **chains** across the water. Only a jump off a wave gets you over them.', show: 'chain' },
   { who: 'radio', text: 'Survivors spotted on **flamingo floats**! Each one you pick up is a **rescue**, and every rescue raises your **×multiplier** for 12 seconds. Chain them!', show: 'flamingo' },
@@ -2178,7 +2187,7 @@ const upgrades = {};
 let equippedFlag = null, equippedSail = null;
 let mBestScore = 0;
 let savedBoatId = null;
-const settings = { music: 0.7, sfx: 0.8, quality: 'high', shake: true, fx: true, audioEnabled: true, haptics: true, reminders: true };
+const settings = { music: 0.7, sfx: 0.8, quality: 'high', controls: 'both', shake: true, fx: true, audioEnabled: true, haptics: true, reminders: true };
 
 /* ==============================================================
    WALLET API
@@ -2328,7 +2337,7 @@ const Save = {
 /* ==============================================================
    2. INPUT
 ================================================================ */
-const input = { left: false, right: false };
+const input = { left: false, right: false, drag: null };   // drag: −1..1 while a thumb is steering, else null
 function bindButton(id, key) {
   const el = document.getElementById(id);
   const on  = e => { e.preventDefault(); input[key] = true;  el.classList.add('active-btn'); };
@@ -2338,6 +2347,31 @@ function bindButton(id, key) {
 bindButton('left', 'left'); bindButton('right', 'right');
 window.addEventListener('keydown', e => { if (e.key === 'ArrowLeft'  || e.key === 'a') input.left = true; if (e.key === 'ArrowRight' || e.key === 'd') input.right = true; });
 window.addEventListener('keyup', e => { if (e.key === 'ArrowLeft'  || e.key === 'a') input.left = false; if (e.key === 'ArrowRight' || e.key === 'd') input.right = false; });
+
+/* ---- DRAG STEERING: put a thumb anywhere on the game screen and slide it.
+   Works like a floating joystick: how far you slide = how hard you steer,
+   so the whole game plays with one hand. The buttons keep working too. */
+const steerAxis = () => Math.max(-1, Math.min(1, (input.right ? 1 : 0) - (input.left ? 1 : 0) + (input.drag || 0)));
+(() => {
+  const RANGE = 55, DEAD = 6;                     // px for full lock · small dead zone
+  let id = null, ox = 0, oy = 0;
+  const stick = document.createElement('div'); stick.id = 'swipeStick'; stick.innerHTML = '<i></i>'; document.body.appendChild(stick);
+  const knob = stick.firstChild;
+  const canSteer = () => !Game.paused && (state === 'mistral_run' || state === 'sailing' || state === 'docking' || state === 'viewing');
+  const set = x => {
+    let dx = x - ox;
+    if (Math.abs(dx) > RANGE) { ox = x - Math.sign(dx) * RANGE; dx = x - ox; }   // the centre follows your thumb: reversing is instant
+    input.drag = Math.abs(dx) < DEAD ? 0 : (dx - Math.sign(dx) * DEAD) / (RANGE - DEAD);
+    stick.style.left = ox + 'px'; stick.style.top = oy + 'px'; knob.style.transform = `translateX(${dx}px)`;
+  };
+  const end = e => { if (e.pointerId !== id) return; id = null; input.drag = null; stick.classList.remove('on'); };
+  document.addEventListener('pointerdown', e => {
+    if (id !== null || !canSteer() || e.target.id !== 'gl') return;     // only on the open game screen, never on buttons
+    id = e.pointerId; ox = e.clientX; oy = e.clientY; stick.classList.add('on'); set(e.clientX);
+  });
+  document.addEventListener('pointermove', e => { if (e.pointerId === id) { if (!canSteer()) { end(e); return; } set(e.clientX); } });
+  document.addEventListener('pointerup', end); document.addEventListener('pointercancel', end);
+})();
 
 </script>
 <script>
@@ -3835,14 +3869,14 @@ function updateNormal(dt, t) {
     tour.time += dt; tour.minHpFrac = Math.min(tour.minHpFrac, Hull.frac());
     passingTimer -= dt; if (passingTimer <= 0 && !mgActive) { spawnPassingBoat(); startWakeMinigame(); passingTimer = 40 + Math.random() * 60; }
     if (mgActive) {
-      mgTimer -= dt; mgTargetPos = 50 + Math.sin(t * 2.8) * 32; $('mgTarget').style.left = (mgTargetPos - 15) + '%'; if (input.left) mgCursorPos -= 60 * dt; if (input.right) mgCursorPos += 60 * dt; mgCursorPos = Math.max(0, Math.min(100, mgCursorPos)); $('mgCursor').style.left = mgCursorPos + '%';
+      mgTimer -= dt; mgTargetPos = 50 + Math.sin(t * 2.8) * 32; $('mgTarget').style.left = (mgTargetPos - 15) + '%'; mgCursorPos += 60 * dt * steerAxis(); mgCursorPos = Math.max(0, Math.min(100, mgCursorPos)); $('mgCursor').style.left = mgCursorPos + '%';
       if (Math.abs(mgCursorPos - mgTargetPos) > 17) { mgHealth -= 30 * dt; $('mgBar').style.borderColor = '#e63946'; } else { $('mgBar').style.borderColor = '#06d6a0'; }
       if (mgHealth <= 0) { mgActive = false; $('minigameUI').style.display = 'none'; boat.speed *= 0.3; showToast("💥 The wake smashed you off balance! Hull damaged."); Hull.damage(CONFIG.story.damage.wake, 'wake'); }
       else if (mgTimer <= 0) endWakeMinigame();
     }
     if (state === 'sailing' && Hull.hp <= 0) startSinking();   // e.g. a dock crash took the last HP
     if (state === 'sailing') {
-      const maxSp = effMaxSpeed(); const steerEffect = 0.4 + 0.6 * (boat.speed / maxSp); const steerTarget = (input.left ? 1 : 0) - (input.right ? 1 : 0); rudder += (steerTarget - rudder) * Math.min(1, RUDDER_EASE * dt); boat.heading += currentBoat.turn * (1 + UPG.finsHandling * upgLevel('fins')) * steerEffect * rudder * dt;
+      const maxSp = effMaxSpeed(); const steerEffect = 0.4 + 0.6 * (boat.speed / maxSp); const steerTarget = -steerAxis(); rudder += (steerTarget - rudder) * Math.min(1, RUDDER_EASE * dt); boat.heading += currentBoat.turn * (1 + UPG.finsHandling * upgLevel('fins')) * steerEffect * rudder * dt;
       let power; if (currentBoat.id === 'goldenyacht') power = parseFloat($('throttleLever').value); else power = currentBoat.sail ? sailPower(boat.heading) : 1.0;
       const hullFactor = 0.35 + 0.65 * Hull.frac(); const target = maxSp * power * wind.strength * hullFactor; boat.speed += (target - boat.speed) * DRAG * dt;
       const dx = -Math.sin(boat.heading), dz = -Math.cos(boat.heading); boat.x += dx * boat.speed * dt; boat.z += dz * boat.speed * dt;
@@ -4844,7 +4878,8 @@ function updateMistral(dt, time) {
   // ~0.45s — taps give small corrections, long holds build into a hard carve.
   // Progressive response curve: velocity follows lean·(0.35+0.65·|lean|).
   const steer = (input.right ? 1 : 0) - (input.left ? 1 : 0);
-  if (steer !== 0) mState.lean = Math.max(-1, Math.min(1, mState.lean + steer * dt / 0.45));
+  if (input.drag !== null && !steer) mState.lean += (input.drag - mState.lean) * Math.min(1, 9 * dt);   // thumb drag: lean follows the thumb
+  else if (steer !== 0) mState.lean = Math.max(-1, Math.min(1, mState.lean + steer * dt / 0.45));
   else mState.lean += (0 - mState.lean) * Math.min(1, 5 * dt);   // settles gently on release
   const agility = 1 - Math.min(0.45, mState.tourists * 0.06);
   const maxLat = (52 + boat.speed * 0.26) * agility * boatRun().handling * (mState.boostTimer > 0 ? 1.25 : 1);
@@ -5844,6 +5879,8 @@ function refreshSettingsUI() {
   $('setSfx').value = settings.sfx * 100; $('setSfxVal').textContent = Math.round(settings.sfx * 100) + '%';
   $('setQHigh').classList.toggle('on', settings.quality === 'high'); $('setQLow').classList.toggle('on', settings.quality === 'low');
   const tog = (id, v) => { const b = $(id); b.textContent = v ? 'ON' : 'OFF'; b.classList.toggle('on', v); };
+  $('setCtlBoth').classList.toggle('on', settings.controls !== 'swipe'); $('setCtlSwipe').classList.toggle('on', settings.controls === 'swipe');
+  document.body.classList.toggle('swipe-only', settings.controls === 'swipe');
   tog('setAudio', settings.audioEnabled); tog('setShake', settings.shake); tog('setFx', settings.fx); tog('setHaptics', settings.haptics); tog('setReminders', settings.reminders);
   $('versionLabel').textContent = 'Sardinia Skipper · v' + CONFIG.VERSION + (Platform.isNative ? ' · ' + Platform.os : ' · web');
 }
@@ -5855,6 +5892,8 @@ function initSettingsUI() {
   $('setAudio').addEventListener('click', () => { settings.audioEnabled = !settings.audioEnabled; setAudioVolumes(); if (settings.audioEnabled && !isAudioInit) initAudio(); refreshSettingsUI(); });
   $('setQHigh').addEventListener('click', () => { settings.quality = 'high'; applyQuality(); refreshSettingsUI(); });
   $('setQLow').addEventListener('click', () => { settings.quality = 'low'; applyQuality(); refreshSettingsUI(); });
+  $('setCtlBoth').addEventListener('click', () => { settings.controls = 'both'; refreshSettingsUI(); });
+  $('setCtlSwipe').addEventListener('click', () => { settings.controls = 'swipe'; refreshSettingsUI(); });
   $('setShake').addEventListener('click', () => { settings.shake = !settings.shake; refreshSettingsUI(); });
   $('setFx').addEventListener('click', () => { settings.fx = !settings.fx; applyFx(); refreshSettingsUI(); });
   $('setHaptics').addEventListener('click', () => { settings.haptics = !settings.haptics; Platform.haptics.enabled = settings.haptics; Platform.haptics.impact('MEDIUM'); refreshSettingsUI(); });
@@ -6074,7 +6113,7 @@ function initStoreUI() {
 function canPause() { return (state === 'mistral_run' && mState.active) || state === 'sailing' || state === 'viewing' || state === 'docking'; }
 function pauseGame() {
   if (Game.paused || !canPause()) return false;
-  Game.paused = true; input.left = input.right = false;
+  Game.paused = true; input.left = input.right = false; input.drag = null;
   $('pauseTitle').textContent = state === 'mistral_run' ? '⏸ Run paused' : '⏸ Tour paused';
   $('pauseQuit').textContent = state === 'mistral_run' ? '🏁 End run (keep loot)' : '🏳️ Abandon tour';
   const pm = $('pauseMissions');                                       // Mistral run: check your missions while paused
