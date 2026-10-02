@@ -353,7 +353,7 @@ body { background: #3fb4e6; }
 
 /* panels & overlays */
 .overlay { background: radial-gradient(ellipse at 50% 30%, rgba(63,210,230,0.45), rgba(3,52,80,0.82)); }
-#mainMenuOverlay { background: linear-gradient(180deg, rgba(4,52,77,0) 0%, rgba(4,52,77,0.35) 45%, rgba(4,52,77,0.85) 100%); }
+#mainMenuOverlay { background: linear-gradient(180deg, rgba(4,52,77,0.45) 0%, rgba(4,52,77,0) 24%, rgba(4,52,77,0) 52%, rgba(4,52,77,0.88) 100%); align-items: stretch; }
 .panel { background: linear-gradient(160deg, var(--panel-a), var(--panel-b)); border: 3px solid transparent;
   background-clip: padding-box; box-shadow: 0 0 0 3px var(--line), 0 14px 0 rgba(0,0,0,0.35), 0 0 40px rgba(63,242,224,0.35); border-radius: 22px; }
 .menu-panel { background: transparent; box-shadow: none; }
@@ -862,6 +862,66 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
 .go-btn.gold { background: linear-gradient(180deg, #ffd23f, #f0a500); color: #5a3000; }
 .go-btn[disabled] { opacity: .45; filter: grayscale(.6); pointer-events: none; }
 
+/* ==============================================================
+   MAIN MENU v2 — top bar · title · open view of the harbour ·
+   everything you tap sits at the bottom, under the thumb
+   ============================================================== */
+.menu-v2 { position: relative; display: flex; flex-direction: column; width: min(100vw, 480px); margin: 0 auto; color: #fff;
+  padding: calc(10px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom)); }
+.mm-space { flex: 1 1 auto; min-height: 20px; }
+.mm-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; margin-bottom: 10px; }
+.mm-store, .mm-wallet, .mm-gear, .mm-icon, .mm-boat { font: inherit; cursor: pointer; border: none; position: relative; transition: transform .08s; }
+.mm-store:active, .mm-wallet:active, .mm-gear:active, .mm-icon:active, .mm-boat:active { transform: translateY(3px) scale(.97); }
+.mm-store { white-space: nowrap; flex: 0 0 auto; height: 40px; padding: 0 12px; border-radius: 12px; font-weight: 900; font-size: 14px; letter-spacing: 1px; color: #5a3000;
+  background: linear-gradient(180deg, #ffe680, var(--sun)); box-shadow: 0 4px 0 #c98a00; }
+.mm-store.gift-ready { animation: giftWiggle 2.4s ease-in-out infinite; }
+.mm-wallet { display: flex; align-items: center; gap: 8px; height: 40px; padding: 0 6px 0 12px; border-radius: 999px; font-weight: 900; font-size: 13px; color: #fff; white-space: nowrap;
+  background: rgba(4,52,77,0.82); box-shadow: 0 0 0 2px var(--line), 0 4px 0 rgba(0,0,0,0.3); }
+#menuWallet { display: flex; gap: 10px; }
+.mm-plus { display: flex; align-items: center; justify-content: center; width: 26px; height: 26px; border-radius: 50%; font-size: 18px; line-height: 1; color: #0e3b14;
+  background: linear-gradient(180deg, #b6ff8a, var(--lime)); box-shadow: 0 2px 0 #3aa832; }
+.mm-top .menu-corner { position: relative; top: auto; right: auto; flex: 0 0 auto; }
+.mm-wallet { min-width: 0; } #menuWallet { min-width: 0; overflow: hidden; }
+.mm-gear { width: 40px; height: 40px; border-radius: 12px; font-size: 18px; background: linear-gradient(180deg, #7ff0ff, var(--cyan)); box-shadow: 0 4px 0 #0a8fb0; }
+.mm-top .menu-corner #devToggle { position: absolute; right: 0; top: 46px; white-space: nowrap; }
+.mm-top .menu-corner #devPanel { position: absolute; right: 0; top: 78px; width: 150px; z-index: 7; }
+/* red "something for you" dot */
+.mm-dot { display: none; position: absolute; top: -5px; right: -5px; width: 14px; height: 14px; border-radius: 50%; background: var(--pink);
+  box-shadow: 0 0 0 2px #fff, 0 0 10px var(--pink); animation: dotPulse 1.2s infinite; z-index: 2; }
+.mm-pill { display: none; position: absolute; top: -7px; right: -6px; padding: 2px 6px; border-radius: 999px; font-size: 10px; font-weight: 900; color: #0e3b14;
+  background: var(--lime); box-shadow: 0 0 0 2px #fff; z-index: 2; }
+.menu-v2 .hero-title { margin-top: 2px; }
+.menu-v2 .hero-subtitle { margin-bottom: 0; }
+/* bottom cluster */
+.mm-boat { align-self: center; padding: 6px 14px; margin-bottom: 8px; border-radius: 999px; font-size: 13px; color: #fff;
+  background: rgba(4,52,77,0.72); box-shadow: 0 0 0 1.5px rgba(255,226,150,0.5); }
+.mm-boat span { opacity: .8; margin-left: 2px; }
+.mm-stats { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+.mm-stat { padding: 7px 12px; border-radius: 12px; font-size: 14px; background: rgba(4,52,77,0.78); box-shadow: 0 0 0 2px var(--line), 0 4px 0 rgba(0,0,0,0.3); }
+.mm-stat b { color: var(--sun-t); font-weight: 900; font-variant-numeric: tabular-nums; }
+.mm-row { display: flex; align-items: stretch; gap: 10px; }
+.mm-row .play-btn { flex: 1 1 auto; width: auto; margin: 0; padding: 14px 8px; }
+.mm-icon { flex: 0 0 66px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; border-radius: 16px; color: #fff;
+  background: linear-gradient(160deg, var(--panel-a), var(--panel-b)); box-shadow: 0 0 0 2px var(--line), 0 5px 0 rgba(0,0,0,0.35); }
+.mm-emoji { font-size: 26px; line-height: 1; }
+.mm-icon small { font-size: 9px; font-weight: 900; letter-spacing: .5px; }
+.menu-v2 .story-btn { margin-top: 12px; padding: 10px; }
+.menu-v2 .menu-legal { margin-top: 8px; }
+.missions-panel { width: min(92vw, 400px); }
+.missions-panel #missionsCard { margin: 4px 0 12px; }
+@media (max-height: 640px) { .menu-v2 .hero-title { font-size: 30px; } .mm-boat { display: none; } .mm-stats { margin-bottom: 6px; } }
+@media (prefers-reduced-motion: reduce) { .mm-dot, .mm-store.gift-ready { animation: none; } }
+
+/* ---- Mission note: its own slot under the HUD, stays long enough to read ---- */
+.mission-note { position: fixed; left: 50%; top: calc(156px + env(safe-area-inset-top)); z-index: 71; pointer-events: none; width: max-content; max-width: 88vw;
+  display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 16px; border-radius: 14px; text-align: center; color: #fff;
+  background: rgba(4,52,77,0.92); box-shadow: 0 0 0 2px var(--lime), 0 6px 0 rgba(0,0,0,0.3); opacity: 0; transform: translate(-50%, -8px) scale(0.92); transition: opacity .25s, transform .25s; }
+.mission-note.show { opacity: 1; transform: translate(-50%, 0) scale(1); }
+.mission-note b { font-size: 12px; letter-spacing: 2px; color: var(--lime-t); }
+.mission-note span { font-size: 14px; font-weight: 800; line-height: 1.25; }
+.mission-note.new { box-shadow: 0 0 0 2px var(--sun), 0 6px 0 rgba(0,0,0,0.3), 0 0 22px rgba(255,210,63,0.45); } .mission-note.new b { color: var(--sun-t); }
+@media (prefers-reduced-motion: reduce) { .mission-note { transition: opacity .25s; } }
+
 </style>
 
 
@@ -877,6 +937,7 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
   <div id="webLockMsg"></div>
 </div></div>
 <div id="banner" class="banner"></div>
+<div id="missionNote" class="mission-note"></div>
 <canvas id="confetti"></canvas>
 
 <!-- ============ STORY (TOUR) HUD ============ -->
@@ -952,10 +1013,14 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
 
 <!-- ============ MAIN MENU ============ -->
 <div class="overlay" id="mainMenuOverlay">
-  <div class="panel menu-panel">
-    <div class="menu-corner">
-      <button class="btn small" id="btnSettings">⚙️</button>
-      <button class="btn small danger" id="devToggle">🛠️ DEV</button>
+  <div class="menu-v2">
+    <!-- top bar: store · wallet · settings -->
+    <div class="mm-top">
+      <button class="mm-store" id="btnMarket"><span class="mm-dot" id="storeDot"></span>💎 STORE</button>
+      <button class="mm-wallet" id="menuWalletBtn" aria-label="Wallet: open the store"><span id="menuWallet"></span><span class="mm-plus">+</span></button>
+      <div class="menu-corner">
+        <button class="mm-gear" id="btnSettings" aria-label="Settings">⚙️</button>
+        <button class="btn small danger" id="devToggle">🛠️ DEV</button>
       <div id="devPanel" style="display:none;">
         <button class="btn small" id="devXpBtn">+5 days</button>
         <button class="btn small" id="devMoneyBtn">+50k €</button>
@@ -966,28 +1031,35 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
         <button class="btn small" id="devAllBtn">🔓 Own all</button>
         <button class="btn small danger" id="devExitBtn">Exit dev mode</button>
       </div>
+      </div>
     </div>
     <h1 class="hero-title">Sardinia Skipper</h1>
     <div class="hero-subtitle">The Mistral is blowing</div>
 
-        <button class="go-btn play-btn" id="btnMistral"><span class="play-main">🌪️ PLAY</span><span class="play-sub">MISTRAL RUN · 🏆 <span id="menuBest2">0</span></span></button>
-    <button class="store-btn" id="btnMarket"><span class="store-dot" id="storeDot"></span><span class="store-badge" id="storeBadge">1</span><span class="store-main">💎 STORE</span><span class="store-sub" id="storeSub">Free gift inside</span></button>
-    <button class="shop-btn" id="btnItemShop"><span class="shop-strip" id="shopStrip"></span><span class="shop-main">🛍️ SHOP</span><span class="shop-sub">Boats · Sails · Add-ons</span></button>
-    <div id="missionsCard"></div>
+    <div class="mm-space"></div>   <!-- the harbour and your boat show through here -->
 
-    <div class="stats-box">
-      <div class="stat-grid">
-        <div class="stat-item"><div class="stat-val" id="menuBest">0</div><div class="stat-lbl">🏆 Best score</div></div>
-        <div class="stat-item"><div class="stat-val" id="menuDist">0.0 NM</div><div class="stat-lbl">🌊 Furthest run</div></div>
-      </div>
-      <div class="menu-boat">⛵ <b id="menuBoat">—</b></div>
-      <div class="hpbar"><div class="hpfill"></div><div class="hpshield"></div><span class="hptxt">❤️ 80 / 80</span></div>
-      <div class="menu-wallet" id="menuWallet"></div>
+    <button class="mm-boat" id="menuBoatBtn">⛵ <b id="menuBoat">—</b> <span>›</span></button>
+    <div class="mm-stats">
+      <div class="mm-stat" title="Best score">🏆 <b id="menuBest">0</b></div>
+      <div class="mm-stat" title="Furthest run">🌊 <b id="menuDist">0.0 NM</b></div>
     </div>
-
+    <div class="mm-row">
+      <button class="mm-icon" id="btnMissions"><span class="mm-pill" id="missionsBadge"></span><span class="mm-emoji">🎯</span><small>MISSIONS</small></button>
+      <button class="go-btn play-btn" id="btnMistral"><span class="play-main">🌪️ PLAY</span><span class="play-sub">MISTRAL RUN</span></button>
+      <button class="mm-icon" id="btnItemShop"><span class="mm-dot" id="shopDot"></span><span class="mm-emoji">🛍️</span><small>SHOP</small></button>
+    </div>
     <button class="btn story-btn" id="btnStory">📖 STORY MODE<br><span id="menuStorySub" class="story-sub"></span></button>
     <div class="menu-legal"><a href="#" data-legal="terms">Terms</a> · <a href="#" data-legal="privacy">Privacy</a> · <span id="menuCompany"></span></div>
+  </div>
+</div>
 
+<!-- ============ MISSIONS (opened from the menu) ============ -->
+<div class="overlay" id="missionsOverlay">
+  <div class="panel missions-panel">
+    <h2>🎯 Missions</h2>
+    <div class="sub">Finish one during a Mistral run to win its prize on the spot. A new one takes its place.</div>
+    <div id="missionsCard"></div>
+    <button class="btn wide" id="missionsClose" data-back>◀ Back</button>
   </div>
 </div>
 
@@ -1236,7 +1308,7 @@ const CONFIG = {
               horseshoe: 1.0, closeCall: 0.25, chainJump: 0.25, tourist: 0.25,   // clean passes & rescues add on top…
               maxMult: 2.5 },                                       // …up to ×2.5 in total
     comet: { price: 400, skipTime: 60, skipDist: 2, invincible: 5, boost: 3 },
-    revive: { max: 99, knots: 15, knotsGrowth: 2, adFirst: true, hullFrac: 0.5, shield: 3, seconds: 8 },   // 💖 revives: 1st = ad OR 15 🪢, then 30, 60, 120… 🪢 (doubles each time, like Subway Surfers)   // ☄️ Mistral Comet head start
+    revive: { max: 99, knots: 15, knotsGrowth: 2, adFirst: true, hullFrac: 0.5, shield: 3, seconds: 8 },   // 💖 revives: 1st = ad OR 15 🪢, then 30, 60, 120… 🪢 (doubles each time)   // ☄️ Mistral Comet head start
     coinValue: 1, chainScore: 150,   /* 1 € per coin; the streak multiplies it */
     multCoinFactor: 0.25,         // each ×1 of tourist multiplier adds +25% coin value (score still gets the full ×)
     softBuoyChance: 0.5,          // share of buoys that are the yellow, softer kind (buoySoft damage)
@@ -1305,7 +1377,7 @@ const FLEET = [
     run: { hitR: 2.6, handling: 1.18, armor: 0.15, loot: 1.35, magnet: 6 } },
   /* Premium boats: bought with knots, outside the unlock chain.
      By design they beat the Golden Yacht on every Mistral stat (HP, armor, handling, hitbox, loot, magnet). */
-  { id: 'jetski',      name: 'Jet Ski',          price: 1500, cur: 'knots', premium: true, mult: 1.1, maxSpeed: 60, turn: 2.2, sail: false, tier: 4, len: 8, seats: 2, maxHp: 230,
+  { id: 'jetski',      name: 'Wave Scooter',     price: 1500, cur: 'knots', premium: true, mult: 1.1, maxSpeed: 60, turn: 2.2, sail: false, tier: 4, len: 8, seats: 2, maxHp: 230,
     desc: 'Tiny, twitchy and armoured like a racing car. The hardest thing on the water to hit.',
     run: { hitR: 2.2, handling: 1.45, armor: 0.18, loot: 1.40, magnet: 10 } },
   { id: 'galleon',     name: 'Corsair Galleon',  price: 4500, cur: 'knots', premium: true, mult: 2.0, maxSpeed: 50, turn: 0.75, sail: true, tier: 4, len: 26, seats: 8, maxHp: 300,
@@ -2546,6 +2618,39 @@ Baker.prototype.add = function (geo, color, x, y, z, sx, sy, sz, rx, ry, rz) {
 Baker.prototype.tri = function (a, b, c, color) { _c.set(color); for (const p of [a, b, c]) { this.pos.push(p[0], p[1], p[2]); this.col.push(_c.r, _c.g, _c.b); } };
 Baker.prototype.mesh = function (mat) { const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(this.pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(this.col, 3)); g.computeVertexNormals(); return new THREE.Mesh(g, mat); };
 
+/* ---- House details: doors, shuttered windows, a doorstep and the odd chimney ----
+   Thin boxes baked into the same island mesh (no extra draw calls). It uses its OWN
+   random stream, seeded from the house position, so the rest of the world stays put.
+   (x, gy, z) = centre of the house at ground level · w × h × d = the visible walls · yaw = heading. */
+const HOUSE = { glass: 0x35526e, glassLit: 0xffe9a8, stone: 0xcbb9a0,
+  shutters: [0x3f7d5a, 0x4a86b8, 0x2f6f8f, 0x8a5a3a, 0xb4553c, 0x5f7f45], doors: [0x7a4a2c, 0x4a86b8, 0x3f7d5a, 0x5b3a26, 0xb4553c] };
+function dressHouse(B, x, gy, z, w, h, d, yaw, o) {
+  o = o || {}; const hr = mulberry32(Math.round(x * 7.3 + z * 13.7) * 31 + Math.round(w * 97)), k = o.scale || 1;
+  const cs = Math.cos(yaw), sn = Math.sin(yaw);
+  const put = (col, lx, ly, lz, sx, sy, sz) => B.add(G_BOX, col, x + lx * cs + lz * sn, gy + ly, z - lx * sn + lz * cs, sx, sy, sz, 0, yaw, 0);
+  // a flat panel on one wall. face: 0 = front (+z), 1 = back, 2 = right (+x), 3 = left · u = position along that wall
+  const panel = (face, u, ly, pw, ph, col, out) => {
+    if (face < 2) put(col, u, ly, (face ? -1 : 1) * (d / 2 + out), pw, ph, 0.16 * k); else put(col, (face === 2 ? 1 : -1) * (w / 2 + out), ly, u, 0.16 * k, ph, pw);
+  };
+  const shut = o.shutter || pick(hr, HOUSE.shutters), ww = (o.winW || 1.25) * k, wh = (o.winH || 1.5) * k, sw = 0.42 * k;
+  const win = (face, u, ly) => {
+    panel(face, u, ly, ww, wh, hr() < 0.12 ? HOUSE.glassLit : HOUSE.glass, 0.04 * k);
+    if (!o.noShutters) { panel(face, u - ww / 2 - sw / 2, ly, sw, wh * 1.06, shut, 0.09 * k); panel(face, u + ww / 2 + sw / 2, ly, sw, wh * 1.06, shut, 0.09 * k); }
+  };
+  const floors = h > 6.4 * k ? 2 : 1, rows = floors === 2 ? [h * 0.3, h * 0.73] : [h * 0.56];
+  // front: the door, with windows beside and above it
+  const dh = Math.min(2.7 * k, h * 0.5), dw = 1.5 * k, du = (o.doorAt !== undefined ? o.doorAt : (hr() < 0.5 ? -1 : 1) * w * 0.2);
+  panel(0, du, dh / 2, dw, dh, o.door || pick(hr, HOUSE.doors), 0.05 * k);
+  put(HOUSE.stone, du, -0.35 * k, d / 2 + 0.5 * k, dw + 0.8 * k, 1.1 * k, 1.0 * k);                                   // doorstep (tall, so it also fills the gap on a slope)
+  if (hr() < 0.3 || o.awning) put(o.awning || pick(hr, C.parasol), du, dh + 0.35 * k, d / 2 + 0.55 * k, dw + 1.0 * k, 0.14 * k, 1.1 * k);   // little awning over the door
+  const centred = Math.abs(du) < 0.01, side = w * 0.29;
+  rows.forEach((ry, i) => { for (const u of centred ? [-side, side] : i === 0 ? [-du] : [du, -du]) win(0, u, ry); });
+  // back and both sides
+  const nBack = w > 8 * k ? 2 : 1;
+  for (const ry of rows) { for (let j = 0; j < nBack; j++) win(1, nBack === 2 ? (j ? 1 : -1) * w * 0.22 : 0, ry); win(2, 0, ry); win(3, 0, ry); }
+  if (!o.noChimney && hr() < 0.45) put(HOUSE.stone, w * 0.2, h + 1.3 * k, -d * 0.12, 0.9 * k, 2.4 * k, 0.9 * k);
+}
+
 const matIsland = new THREE.MeshLambertMaterial({ vertexColors: true, flatShading: true });
 const matShallow = new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, opacity: 0.55, depthWrite: false });
 const G_BOX = new THREE.BoxGeometry(1, 1, 1), G_ROCK = new THREE.DodecahedronGeometry(1, 0), G_BLOB = new THREE.IcosahedronGeometry(1, 0), G_CYL = new THREE.CylinderGeometry(1, 1, 1, 7), G_CONE = new THREE.ConeGeometry(1, 1, 7), G_ROOF = new THREE.CylinderGeometry(0, 1, 1, 4), G_FROND = new THREE.BoxGeometry(1, 0.12, 0.34);
@@ -2630,13 +2735,22 @@ islands.forEach((isl, idx) => {
     for (let i = 0; i < nHouses * 3 && placed < nHouses; i++) { const a = faceA + (rnd() - 0.5) * 2.2, f = 0.55 + rnd() * 0.33, R = S.shore(a) * f, x = Math.cos(a) * R, z = Math.sin(a) * R; if (!slopeOk(x, z, 9)) continue; placed++;
       const w = 6 + rnd() * 5, d = 6 + rnd() * 4, hh = 5 + rnd() * 4, g = ground(x, z) - 1, yaw = a + Math.PI / 2 + (rnd() - 0.5) * 0.3;
       B.add(G_BOX, pick(rnd, C.walls), x, g + hh / 2, z, w, hh + 2, d, 0, yaw, 0); const rh = 2.6 + rnd() * 1.4; B.add(G_ROOF, pick(rnd, C.roof), x, g + hh + 1 + rh / 2, z, w * 0.78, rh, d * 0.78, 0, yaw + Math.PI / 4, 0);
-      if (rnd() < 0.35) B.add(G_BOX, 0x5a8fb0, x, g + hh * 0.45, z, w * 1.01, 1.6, 1.2, 0, yaw, 0); }                     // blue shutters stripe
+      rnd();                                                                                                              // (keeps the world's random sequence as it was)
+      dressHouse(B, x, g + 1, z, w, hh, d, yaw); }
     const ca = faceA + (rnd() - 0.5) * 0.8, cf = 0.62, cx = Math.cos(ca) * S.shore(ca) * cf, cz = Math.sin(ca) * S.shore(ca) * cf, cg = ground(cx, cz) - 1;
     B.add(G_BOX, 0xfdfdfd, cx, cg + 7, cz, 10, 14, 16, 0, ca, 0); B.add(G_ROOF, C.roof[0], cx, cg + 15.5, cz, 8, 3, 12, 0, ca + Math.PI / 4, 0);
-    B.add(G_BOX, 0xfdfdfd, cx + Math.cos(ca) * 9, cg + 12, cz + Math.sin(ca) * 9, 5, 24, 5, 0, ca, 0); B.add(G_ROOF, C.roof[1], cx + Math.cos(ca) * 9, cg + 26.5, cz + Math.sin(ca) * 9, 4, 5, 4, 0, ca + Math.PI / 4, 0); }
+    B.add(G_BOX, 0xfdfdfd, cx + Math.cos(ca) * 9, cg + 12, cz + Math.sin(ca) * 9, 5, 24, 5, 0, ca, 0); B.add(G_ROOF, C.roof[1], cx + Math.cos(ca) * 9, cg + 26.5, cz + Math.sin(ca) * 9, 4, 5, 4, 0, ca + Math.PI / 4, 0);
+    { const cs = Math.cos(ca), sn = Math.sin(ca), P = (col, lx, ly, lz, sx, sy, sz) => B.add(G_BOX, col, cx + lx * cs + lz * sn, cg + ly, cz - lx * sn + lz * cs, sx, sy, sz, 0, ca, 0);
+      P(0x5b3a26, 0, 3.4, 8.06, 3, 5.6, 0.2); P(HOUSE.stone, 0, 0.6, 8.5, 4.4, 1.2, 1.2); P(HOUSE.glassLit, 0, 9.6, 8.06, 1.8, 1.8, 0.2);      // door, step, round-ish window above it
+      for (const u of [-4.5, 0, 4.5]) { P(HOUSE.glass, 5.06, 6.5, u, 0.2, 4.2, 1.3); P(HOUSE.glass, -5.06, 6.5, u, 0.2, 4.2, 1.3); }            // tall side windows
+      const tx = cx + Math.cos(ca) * 9, tz = cz + Math.sin(ca) * 9, T = (col, lx, ly, lz, sx, sy, sz) => B.add(G_BOX, col, tx + lx * cs + lz * sn, cg + ly, tz - lx * sn + lz * cs, sx, sy, sz, 0, ca, 0);
+      T(0x2d2d2d, 0, 20.5, 2.56, 1.8, 2.6, 0.2); T(0x2d2d2d, 0, 20.5, -2.56, 1.8, 2.6, 0.2); T(0x2d2d2d, 2.56, 20.5, 0, 0.2, 2.6, 1.8); T(0x2d2d2d, -2.56, 20.5, 0, 0.2, 2.6, 1.8);   // belfry openings
+      T(0xffd166, 0, 30.4, 0, 0.3, 2.6, 0.3); T(0xffd166, 0, 30.9, 0, 1.4, 0.3, 0.3); } }
   // a lighthouse on the seaward point of some wild islands
   else if (isl.r > 70 && rnd() < 0.4) { const a = Math.atan2(isl.z - port.z, isl.x - port.x) + (rnd() - 0.5) * 1.2, R = S.shore(a) * 0.84, x = Math.cos(a) * R, z = Math.sin(a) * R, g = ground(x, z) - 1;
-    B.add(G_CYL, 0xfdfdfd, x, g + 4, z, 5, 8, 5); B.add(G_CYL, 0xfdfdfd, x, g + 16, z, 2.6, 18, 2.6); B.add(G_CYL, 0xd6403a, x, g + 17, z, 2.7, 4, 2.7); B.add(G_CYL, 0xffe08a, x, g + 27, z, 2.1, 3.4, 2.1); B.add(G_CONE, 0x2d2d2d, x, g + 30, z, 2.8, 2.4, 2.8); }
+    B.add(G_CYL, 0xfdfdfd, x, g + 4, z, 5, 8, 5); B.add(G_CYL, 0xfdfdfd, x, g + 16, z, 2.6, 18, 2.6); B.add(G_CYL, 0xd6403a, x, g + 17, z, 2.7, 4, 2.7); B.add(G_CYL, 0xffe08a, x, g + 27, z, 2.1, 3.4, 2.1); B.add(G_CONE, 0x2d2d2d, x, g + 30, z, 2.8, 2.4, 2.8);
+    { const ca = a, cs = Math.cos(ca), sn = Math.sin(ca), P = (col, lx, ly, lz, sx, sy, sz) => B.add(G_BOX, col, x + lx * cs + lz * sn, g + ly, z - lx * sn + lz * cs, sx, sy, sz, 0, ca, 0);
+      P(0x7a4a2c, 0, 2.4, 4.6, 1.8, 3.2, 0.3); P(HOUSE.stone, 0, 0.5, 5.0, 2.8, 1.0, 1.0); P(HOUSE.glass, 0, 11, 2.45, 1, 1.5, 0.3); P(HOUSE.glass, 0, 21.5, 2.45, 1, 1.5, 0.3); } }
   const group = new THREE.Group(); group.add(B.mesh(matIsland));
   // turquoise shallows + a foam line that follow the coastline
   const W = new Baker(); for (let j = 0; j < N; j++) { const a0 = j / N * Math.PI * 2, a1 = (j + 1) / N * Math.PI * 2, s0 = S.shore(a0), s1 = S.shore(a1);
@@ -2663,6 +2777,11 @@ function buildPort() {
   for (let i = -1; i <= 1; i += 2) { for (let zz = 0; zz <= 50; zz += 16) { const post = new THREE.Mesh(new THREE.BoxGeometry(2, 10, 2), matTrunk); post.position.set(i * 6, 2, zz); g.add(post); } }
   const houseMat = new THREE.MeshLambertMaterial({ color: 0xfdf0d5, flatShading: true }); const roofMat = new THREE.MeshLambertMaterial({ color: 0xe63946, flatShading: true });
   const house = new THREE.Mesh(new THREE.BoxGeometry(20, 14, 16), houseMat); house.position.set(0, 10, 68); g.add(house); const roof = new THREE.Mesh(new THREE.CylinderGeometry(0, 16, 8, 4), roofMat); roof.rotation.y = Math.PI / 4; roof.position.set(0, 21, 68); g.add(roof);
+  { const D = new Baker();                                              // the harbour office: door onto the pier, shuttered windows, an awning and a sign
+    dressHouse(D, 0, 4.5, 68, 20, 12.5, 16, Math.PI, { scale: 1.9, doorAt: 0, door: 0x2f6f8f, shutter: 0x3f7d5a, awning: 0xff5a4e, noChimney: true });
+    D.add(G_BOX, 0xfdf6e8, 0, 13.6, 59.8, 6.4, 2.2, 0.3); D.add(G_BOX, 0x2f6f8f, 0, 13.6, 59.7, 5.6, 1.4, 0.3);                                // sign board over the door
+    D.add(G_BOX, 0xcbb9a0, 5, 22.6, 71, 1.6, 3.6, 1.6);                                                                                           // chimney
+    g.add(D.mesh(matIsland)); }
   g.position.set(port.x, 0, port.z); worldGroup.add(g);
 }
 
@@ -2961,7 +3080,7 @@ function buildBoatModel(def) {
     if (equippedSkinItem()) box(3.7, 0.1, 5.6, deckSkinMaterial(matGold, 'box'), 0, 5.05, -5.45); // skinned bow sun deck
     box(2.6, 0.35, 3.4, matGlassBand, 0, 3.45, -12.2);
   } else if (def.id === 'jetski') {
-    /* Stand-up jet ski with a rider. Deck takes the sail skin. */
+    /* Stand-up wave scooter with a rider. Deck takes the sail skin. */
     const matJet = new THREE.MeshLambertMaterial({ color: 0x22c3e6, flatShading: true });
     const hull = new THREE.Mesh(stampedeHullGeometry(7.5, 2.6, 1.3, { bow: 0.45, sternW: 0.8, taper: 0.5 }), matWhite); hull.position.y = 0.4; boatGroup.add(hull);
     const top = new THREE.Mesh(stampedeHullGeometry(7.2, 2.4, 0.6, { bow: 0.45, sternW: 0.8, taper: 0.9 }), deckSkinMaterial(matJet, 'hull', 2.4, 7.2)); top.position.y = 1.5; boatGroup.add(top);
@@ -3913,15 +4032,47 @@ function abandonTour() {
    PER-FRAME UPDATE for the open world (menus + tours)
 ================================================================ */
 let menuCamAngle = 0;
+/* The boat at the home pier (menus, story hub, summaries). It's moored ALONGSIDE the pier like a real
+   berth, drawn larger so it reads against the big pier, and kept clear of the wood: the gap is measured
+   from the model's real width, so wide boats sit further out and long ones stick out past the pier end. */
+const MOOR = { scale: 1.7, pierHalfW: 7, gap: 2.2, sternAt: 16 };       // sternAt: where the stern lies along the pier (z from the port origin)
+const MENU_CAM = { dist: 40, perLen: 1.55, height: 0.3, drop: 0.03, mid: 5.35, swing: 0.55 };   // distance = dist + boat length × perLen; the camera sways on the boat's side of the pier, out over the water
+let moorBox = null, moorKey = '';
+function mooring() {
+  const key = (currentBoat ? currentBoat.id : '') + ':' + (boatGroup.children[0] ? boatGroup.children[0].uuid : '');
+  if (key !== moorKey || !moorBox) {                                      // measure the model once per (re)build
+    moorKey = key; const p = boatGroup.position.clone(), r = boatGroup.rotation.clone(), sc = boatGroup.scale.x;
+    boatGroup.position.set(0, 0, 0); boatGroup.rotation.set(0, 0, 0); boatGroup.scale.setScalar(1); boatGroup.updateMatrixWorld(true);
+    const box = new THREE.Box3(), tmp = new THREE.Box3();
+    // hull-level parts only: sails, booms and flags swing about high above the pier and don't count
+    for (const c of boatGroup.children) { if (c === wakeMesh || c === sailMesh || !c.visible) continue; tmp.setFromObject(c); if (isFinite(tmp.min.x) && tmp.min.y < 2) box.union(tmp); }
+    if (!isFinite(box.min.x)) box.set(new THREE.Vector3(-3, 0, -6), new THREE.Vector3(3, 3, 6));
+    moorBox = { halfW: -box.min.x, zMin: box.min.z, zMax: box.max.z };     // halfW: how far the hull reaches toward the pier (the pier is on its −x side)
+    boatGroup.position.copy(p); boatGroup.rotation.copy(r); boatGroup.scale.setScalar(sc);
+  }
+  const s = MOOR.scale, len = (moorBox.zMax - moorBox.zMin) * s;
+  const x = port.x + MOOR.pierHalfW + MOOR.gap + moorBox.halfW * s;            // clear of the pier, however wide the boat
+  const z = port.z + MOOR.sternAt - moorBox.zMax * s;                          // stern beside the pier, bow out to sea
+  return { x, z, len, cx: x, cz: z + (moorBox.zMin + moorBox.zMax) / 2 * s };
+}
 function updateNormal(dt, t) {
   hitCooldown = Math.max(0, hitCooldown - dt); lockedToastCd = Math.max(0, lockedToastCd - dt);
   if (state === 'mainmenu' || state === 'docked' || state === 'summary') {
-    // Slow orbit around the marina behind the menus
-    menuCamAngle += dt * 0.15; const cx = port.x + Math.cos(menuCamAngle) * 240; const cz = port.z + Math.sin(menuCamAngle) * 240;
-    camera.position.set(cx, 130, cz); camera.lookAt(port.x, 6, port.z);
-    boatGroup.position.set(port.x, waveHeight(port.x, port.z, t) + 0.5, port.z - 12); boatGroup.rotation.set(Math.sin(t * 1.5) * 0.02, 0, Math.cos(t * 1.1) * 0.02);
+    const m = mooring();
+    boatGroup.scale.setScalar(MOOR.scale);
+    boatGroup.position.set(m.x, waveHeight(m.x, m.z, t) * 0.5 + 0.5, m.z); boatGroup.rotation.set(Math.sin(t * 1.5) * 0.02, 0, Math.cos(t * 1.1) * 0.025);
+    if (state === 'mainmenu') {
+      // Main menu: the camera sways slowly around YOUR boat, framed in the open middle of the screen (shows off sails, flags, upgrades)
+      menuCamAngle += dt * 0.11; const R = MENU_CAM.dist + m.len * MENU_CAM.perLen;
+      const a = MENU_CAM.mid + Math.sin(menuCamAngle) * MENU_CAM.swing;
+      camera.position.set(m.cx + Math.cos(a) * R, R * MENU_CAM.height, m.cz + Math.sin(a) * R); camera.lookAt(m.cx, -R * MENU_CAM.drop, m.cz);
+    } else {
+      menuCamAngle += dt * 0.15; const cx = port.x + Math.cos(menuCamAngle) * 240; const cz = port.z + Math.sin(menuCamAngle) * 240;
+      camera.position.set(cx, 130, cz); camera.lookAt(port.x, 6, port.z);
+    }
     return;
   }
+  if (boatGroup.scale.x !== 1) boatGroup.scale.setScalar(1);                // back to real size when you leave the pier
   if (state === 'viewing') { viewTimer -= dt; if (viewTimer <= 0) { state = 'sailing'; hideToast(); showToast('📸 Everyone back aboard!'); } }
   for (let i = passingBoats.length - 1; i >= 0; i--) { const pb = passingBoats[i]; pb.position.x += pb.userData.dx * pb.userData.speed * dt; pb.position.z += pb.userData.dz * pb.userData.speed * dt; pb.position.y = waveHeight(pb.position.x, pb.position.z, t) + 0.5; pb.userData.life -= dt; if (pb.userData.life <= 0) { scene.remove(pb); passingBoats.splice(i, 1); } }
 
@@ -5340,7 +5491,7 @@ function endMistralRun(sank) {
   pStats.bestDist = Math.max(pStats.bestDist || 0, mState.dist);
   const done = Retention.onRunEnd();                  // missions finished this run (rewards already paid)
   if (newRecord) Platform.haptics.success(); else Platform.haptics.impact('HEAVY');
-  hideToast(); hideBanner(); Save.write();
+  hideToast(); hideBanner(); hideMissionNote(); Save.write();
 
   const score = Math.floor(mState.score);
   $('mSumTitle').textContent = newRecord ? '🏆 NEW RECORD!' : sank ? '🌊 SUNK BY THE MISTRAL' : '🌪️ MISTRAL SURVIVED';
@@ -5374,6 +5525,7 @@ function endMistralRun(sank) {
 
 /* Put the calm open world back after a run (storm off, fog out, boat home). */
 function leaveMistralWorld() {
+  hideMissionNote();
   camera.fov = 60; camera.updateProjectionMatrix();
   hideRunBackdrop(); shieldBubble.visible = false; mState.shieldT = mState.magnetT = mState.doubleT = 0; Game.emit('hull', { delta: 0 });
   mState.active = false; boatGroup.scale.setScalar(1);
@@ -6002,7 +6154,7 @@ function hideToast() { clearTimeout(toastTimer); $('toast').classList.remove('sh
 function hideAllOverlays() { document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open')); $('bigmapWrap').classList.remove('open'); }
 /* Closes the top-most open overlay. Returns true if one was closed. */
 function closeTopOverlay() {
-  const order = ['confirmOverlay', 'legalOverlay', 'itemDetail', 'briefOverlay', 'settingsOverlay', 'marketOverlay', 'itemsOverlay', 'storyOverlay'];
+  const order = ['confirmOverlay', 'legalOverlay', 'itemDetail', 'briefOverlay', 'settingsOverlay', 'marketOverlay', 'itemsOverlay', 'missionsOverlay', 'storyOverlay'];
   for (const id of order) { const el = $(id); if (el.classList.contains('open')) { if (id === 'confirmOverlay') $('confirmNo').click(); else el.querySelector('[data-back]').click(); return true; } }
   if ($('bigmapWrap').classList.contains('open')) { $('bigmapWrap').classList.remove('open'); return true; }
   return false;
@@ -6043,8 +6195,11 @@ Game.on('hull', e => {
 
 /* ---- WALLET DISPLAYS ---- */
 function walletLine() { return '💰 ' + Wallet.money.toLocaleString() + ' € · 🪢 ' + Wallet.knots.toLocaleString() + ' knots'; }
+/* Compact wallet for the main-menu pill: 12,300 → 12.3k, 1,250,000 → 1.3M */
+function shortNum(n) { return n >= 1e6 ? (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M' : n >= 1e5 ? Math.round(n / 1e3) + 'k' : n.toLocaleString(); }
+function walletPill() { return '<span>💰 ' + shortNum(Wallet.money) + '</span><span>🪢 ' + shortNum(Wallet.knots) + '</span>'; }
 Game.on('wallet', () => {
-  $('money').textContent = Wallet.money.toLocaleString(); $('menuWallet').innerHTML = walletLine();
+  $('money').textContent = Wallet.money.toLocaleString(); $('menuWallet').innerHTML = walletPill(); if (state === 'mainmenu') refreshShopDot();
   if ($('storyOverlay').classList.contains('open')) $('shWallet').innerHTML = walletLine();
   if ($('itemsOverlay').classList.contains('open')) $('seagullBal').innerHTML = walletLine();
   Save.queue();
@@ -6060,10 +6215,9 @@ function openMainMenu() {
 }
 function refreshMainMenu() {
   $('menuBest').textContent = Math.floor(mBestScore).toLocaleString();
-  $('menuBest2').textContent = Math.floor(mBestScore).toLocaleString();
-  Retention.renderMenu(); refreshStoreButton();
+  Retention.renderMenu(); refreshStoreButton(); refreshShopDot();
   $('menuDist').textContent = (pStats.bestDist || 0).toFixed(1) + ' NM';
-  $('menuWallet').innerHTML = walletLine();
+  $('menuWallet').innerHTML = walletPill();
   $('menuBoat').textContent = currentBoat ? currentBoat.name : '—';
   const ch = chapterForDay(pStats.maxDay);
   $('menuStorySub').textContent = 'Ch. ' + ch.id + ' · ' + ch.title + ' · Day ' + pStats.maxDay + '/' + CONFIG.story.totalDays;
@@ -6113,7 +6267,7 @@ function initSettingsUI() {
   });
   $('replayIntro').addEventListener('click', () => { playMenuClick(); $('settingsOverlay').classList.remove('open'); playScene(currentRunTheme().intro()); });
   $('settingsReset').addEventListener('click', async () => {
-    if (!(await confirmDialog(`Start over? This resets ALL boats (also the Jet Ski and Galleon), every upgrade, cosmetics, high scores, and your money (back to ${CONFIG.start.money} €) and knots (back to ${CONFIG.start.knots}). Knots you bought are lost too. No-Ads and other paid bundles stay. Missions and story progress stay. This cannot be undone.`, 'Reset'))) return;
+    if (!(await confirmDialog(`Start over? This resets ALL boats (also the Wave Scooter and Galleon), every upgrade, cosmetics, high scores, and your money (back to ${CONFIG.start.money} €) and knots (back to ${CONFIG.start.knots}). Knots you bought are lost too. No-Ads and other paid bundles stay. Missions and story progress stay. This cannot be undone.`, 'Reset'))) return;
     await Save.resetCollection();
     if (typeof Thumbs !== 'undefined') Thumbs.clear();
     $('settingsOverlay').classList.remove('open'); refreshMainMenu();
@@ -6208,7 +6362,7 @@ function claimGift() {
     const idx = (pStats.giftIndex || 0) % GIFT_CYCLE.length; const g = GIFT_CYCLE[idx]; pStats.giftIndex = idx + 1;
     Wallet.addKnots(g.knots); Wallet.earn(g.money);
     const parts = []; if (g.knots) parts.push(`🪢 ${g.knots}`); if (g.money) parts.push(`💰 ${g.money} €`);
-    Save.write(); renderMarket(); hideToast(); showBanner('🎁 ' + parts.join(' + '), 'mission', 1800);
+    pStats.giftDay = giftDayKey(); Save.write(); renderMarket(); refreshStoreButton(); hideToast(); showBanner('🎁 ' + parts.join(' + '), 'mission', 1800);
   });
 }
 function renderMarket() {
@@ -6264,15 +6418,19 @@ function openStore(reason) {
   renderMarket(); $('marketOverlay').classList.add('open'); playTutorial('tut_store');
   if (reason) showToast(reason, 2600);
 }
+/* Red dot on STORE: a free gift is waiting — today's daily gift, or today's first
+   free ad gift (the ad gift can be repeated, the dot only nags once a day). */
+const giftDayKey = () => { const d = new Date(); return d.getFullYear() + '-' + (d.getMonth() + 1) + '-' + d.getDate(); };
+function freeGiftWaiting() { return Retention.daily().available || pStats.giftDay !== giftDayKey(); }
 function refreshStoreButton() {
-  const starter = !pStats.starterBought, dailyReady = Retention.daily().available;
-  $('storeSub').textContent = dailyReady ? '🎁 Daily gift ready!' : starter ? 'Starter Pack · Free gift' : 'Free gift inside';
-  $('btnMarket').classList.toggle('gift-ready', dailyReady);
-  $('storeBadge').style.display = dailyReady ? 'flex' : 'none';
-  $('storeDot').style.display = dailyReady ? 'none' : 'block';
-  // Shop teaser: swatches of what's in stock right now
-  const teaser = [...stockFor('sail').slice(0, 3), ...stockFor('flag').slice(0, 2)].filter(i => !ownedItems.has(i.id));
-  $('shopStrip').innerHTML = teaser.map(i => `<img alt="" src="${skinPreviewURL(i)}">`).join('');
+  const dailyReady = Retention.daily().available;
+  $('storeDot').style.display = freeGiftWaiting() ? 'block' : 'none';
+  $('btnMarket').classList.toggle('gift-ready', dailyReady);          // the daily gift also makes the button wiggle
+}
+/* Dot on SHOP: you can afford a new boat right now (upgrades are cheap, a dot for those would never go out). */
+function refreshShopDot() {
+  const boat = FLEET.find(b => !owned.has(b.id) && !boatLocked(b) && Wallet.canAfford(b.price, boatCur(b)));
+  $('shopDot').style.display = boat && !pStats.dev ? 'block' : 'none';
 }
 /* ==============================================================
    LEGAL SCREEN (texts in legal-data.js)
@@ -6303,6 +6461,11 @@ function initLegalUI() {
 
 function initStoreUI() {
   $('btnMarket').addEventListener('click', () => { playMenuClick(); openStore(); });
+  $('menuWalletBtn').addEventListener('click', () => { playMenuClick(); openStore(); });
+  $('menuBoatBtn').addEventListener('click', () => { playMenuClick(); openBoutique('boats'); });
+  $('btnMissions').addEventListener('click', () => { playMenuClick(); Retention.renderMenu(); $('missionsOverlay').classList.add('open'); });
+  $('missionsClose').addEventListener('click', () => { $('missionsOverlay').classList.remove('open'); });
+  $('missionsOverlay').addEventListener('click', e => { if (e.target === $('missionsOverlay')) $('missionsOverlay').classList.remove('open'); });
   $('marketBack').addEventListener('click', () => { $('marketOverlay').classList.remove('open'); refreshMainMenu(); if ($('itemsOverlay').classList.contains('open')) renderItemShop(); });
   $('giftBtn').addEventListener('click', claimGift);
   initPayments();
@@ -6606,6 +6769,19 @@ function showBanner(text, kind, ms) {
   clearTimeout(bannerTimer); bannerTimer = setTimeout(hideBanner, ms || 1300);
 }
 function hideBanner() { clearTimeout(bannerTimer); $('banner').classList.remove('show'); }
+/* Mission notes have their own slot under the HUD, so the fast run banners (streak, close call,
+   miles…) can't overwrite them. They queue up and each stays long enough to read. */
+const MISSION_NOTE_MS = { done: 2600, fresh: 5500 };   // how long each note stays on screen
+let noteQueue = [], noteTimer = null;
+function missionNote(title, text, kind, ms) { noteQueue.push({ title, text, kind, ms }); if (!noteTimer) nextMissionNote(); }
+function nextMissionNote() {
+  const el = $('missionNote'), n = noteQueue.shift();
+  if (!n) { noteTimer = null; el.classList.remove('show'); return; }
+  el.className = 'mission-note ' + (n.kind || ''); el.innerHTML = '<b>' + n.title + '</b><span>' + n.text + '</span>';
+  void el.offsetWidth; el.classList.add('show');
+  noteTimer = setTimeout(nextMissionNote, n.ms);
+}
+function hideMissionNote() { noteQueue = []; clearTimeout(noteTimer); noteTimer = null; $('missionNote').classList.remove('show'); }
 
 const Retention = (() => {
   const todayKey = (d = new Date()) => d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
@@ -6669,8 +6845,10 @@ const Retention = (() => {
     // (so it can't complete instantly off the same stats). "Play N runs" counts from the next run.
     const fresh = s.active.filter(x => !before.has(x));
     for (const x of fresh) { if (x.cumulative || x.type === 'mult') x.fresh = true; else if (state === 'mistral_run') x.base = statFor(x.type); }
-    showBanner('✅ MISSION DONE! ' + rewardText(m.reward), 'mission', 1800);
-    if (fresh[0]) setTimeout(() => showBanner('🎯 NEW MISSION: ' + fresh[0].text, 'good', 2200), 1900);
+    if (state === 'mistral_run' && mState.active) {                       // after a run the summary lists them instead
+      missionNote('✅ MISSION DONE!', m.text + ' · ' + rewardText(m.reward), 'done', MISSION_NOTE_MS.done);
+      if (fresh[0]) missionNote('🎯 NEW MISSION', fresh[0].text + ' · 🎁 ' + rewardText(fresh[0].reward), 'new', MISSION_NOTE_MS.fresh);
+    }
     playRescueSound(); Platform.haptics.success(); Save.queue();
   }
   function checkRun() {
@@ -6749,6 +6927,9 @@ const Retention = (() => {
   /* ---------- MENU WIDGETS ---------- */
   function renderMenu() {
     $('missionsCard').innerHTML = missionsHtml(false);
+    // badge on the menu's 🎯 button: how far the closest mission is
+    const best = Math.max(0, ...store().active.map(m => Math.min(1, m.progress / m.target)));
+    const badge = $('missionsBadge'); badge.textContent = Math.round(best * 100) + '%'; badge.style.display = best > 0 ? 'block' : 'none';
   }
 
   /* ---------- SUMMARY JUICE ---------- */
@@ -6950,6 +7131,11 @@ async function boot() {
   $('mainMenuOverlay').classList.add('open');
   $('loading').remove();
   if (!loaded) showToast('⛵ Welcome aboard, skipper!<br>Tap PLAY to brave the Mistral.', 4000);
+  // Returning players: today's daily gift opens by itself, once per launch (never over the web lock, a scene or another screen)
+  if (loaded && (pStats.runs || 0) >= 1) setTimeout(() => {
+    const busy = document.querySelector('.overlay.open:not(#mainMenuOverlay)') || $('webLock').classList.contains('show') || $('sceneOverlay').classList.contains('open');
+    if (state === 'mainmenu' && !busy && Retention.daily().available) openStore();
+  }, 1200);
   requestAnimationFrame(loop);
 }
 boot();
