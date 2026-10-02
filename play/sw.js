@@ -1,7 +1,7 @@
 /* Offline cache for the one-file web version of Sardinia Skipper.
    The game page is NETWORK-FIRST: online you always get the newest version,
    offline (or on a very slow connection) the saved copy starts instead. */
-const VERSION = 'skipper-web-v28';
+const VERSION = 'skipper-web-v29';
 const FILES = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 self.addEventListener('install', e => { e.waitUntil(caches.open(VERSION).then(c => c.addAll(FILES.map(f => new Request(f, { cache: 'reload' })))).then(() => self.skipWaiting())); });
 self.addEventListener('activate', e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k !== VERSION).map(k => caches.delete(k)))).then(() => self.clients.claim())); });

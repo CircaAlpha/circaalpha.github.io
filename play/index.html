@@ -1308,7 +1308,7 @@ const CONFIG = {
               horseshoe: 1.0, closeCall: 0.25, chainJump: 0.25, tourist: 0.25,   // clean passes & rescues add on top…
               maxMult: 2.5 },                                       // …up to ×2.5 in total
     comet: { price: 400, skipTime: 60, skipDist: 2, invincible: 5, boost: 3 },
-    revive: { max: 99, knots: 15, knotsGrowth: 2, adFirst: true, hullFrac: 0.5, shield: 3, seconds: 8 },   // 💖 revives: 1st = ad OR 15 🪢, then 30, 60, 120… 🪢 (doubles each time, like Subway Surfers)   // ☄️ Mistral Comet head start
+    revive: { max: 99, knots: 15, knotsGrowth: 2, adFirst: true, hullFrac: 0.5, shield: 3, seconds: 8 },   // 💖 revives: 1st = ad OR 15 🪢, then 30, 60, 120… 🪢 (doubles each time)   // ☄️ Mistral Comet head start
     coinValue: 1, chainScore: 150,   /* 1 € per coin; the streak multiplies it */
     multCoinFactor: 0.25,         // each ×1 of tourist multiplier adds +25% coin value (score still gets the full ×)
     softBuoyChance: 0.5,          // share of buoys that are the yellow, softer kind (buoySoft damage)
@@ -1377,7 +1377,7 @@ const FLEET = [
     run: { hitR: 2.6, handling: 1.18, armor: 0.15, loot: 1.35, magnet: 6 } },
   /* Premium boats: bought with knots, outside the unlock chain.
      By design they beat the Golden Yacht on every Mistral stat (HP, armor, handling, hitbox, loot, magnet). */
-  { id: 'jetski',      name: 'Jet Ski',          price: 1500, cur: 'knots', premium: true, mult: 1.1, maxSpeed: 60, turn: 2.2, sail: false, tier: 4, len: 8, seats: 2, maxHp: 230,
+  { id: 'jetski',      name: 'Wave Scooter',     price: 1500, cur: 'knots', premium: true, mult: 1.1, maxSpeed: 60, turn: 2.2, sail: false, tier: 4, len: 8, seats: 2, maxHp: 230,
     desc: 'Tiny, twitchy and armoured like a racing car. The hardest thing on the water to hit.',
     run: { hitR: 2.2, handling: 1.45, armor: 0.18, loot: 1.40, magnet: 10 } },
   { id: 'galleon',     name: 'Corsair Galleon',  price: 4500, cur: 'knots', premium: true, mult: 2.0, maxSpeed: 50, turn: 0.75, sail: true, tier: 4, len: 26, seats: 8, maxHp: 300,
@@ -3033,7 +3033,7 @@ function buildBoatModel(def) {
     if (equippedSkinItem()) box(3.7, 0.1, 5.6, deckSkinMaterial(matGold, 'box'), 0, 5.05, -5.45); // skinned bow sun deck
     box(2.6, 0.35, 3.4, matGlassBand, 0, 3.45, -12.2);
   } else if (def.id === 'jetski') {
-    /* Stand-up jet ski with a rider. Deck takes the sail skin. */
+    /* Stand-up wave scooter with a rider. Deck takes the sail skin. */
     const matJet = new THREE.MeshLambertMaterial({ color: 0x22c3e6, flatShading: true });
     const hull = new THREE.Mesh(stampedeHullGeometry(7.5, 2.6, 1.3, { bow: 0.45, sternW: 0.8, taper: 0.5 }), matWhite); hull.position.y = 0.4; boatGroup.add(hull);
     const top = new THREE.Mesh(stampedeHullGeometry(7.2, 2.4, 0.6, { bow: 0.45, sternW: 0.8, taper: 0.9 }), deckSkinMaterial(matJet, 'hull', 2.4, 7.2)); top.position.y = 1.5; boatGroup.add(top);
@@ -3985,23 +3985,47 @@ function abandonTour() {
    PER-FRAME UPDATE for the open world (menus + tours)
 ================================================================ */
 let menuCamAngle = 0;
-const MENU_CAM = { dist: 70, perLen: 3, height: 0.24, drop: 0.04, mid: 4.4, swing: 0.85 };   // distance = dist + boat length × perLen; the camera sways over the open water (mid ± swing rad) so the jetty never hides the boat
+/* The boat at the home pier (menus, story hub, summaries). It's moored ALONGSIDE the pier like a real
+   berth, drawn larger so it reads against the big pier, and kept clear of the wood: the gap is measured
+   from the model's real width, so wide boats sit further out and long ones stick out past the pier end. */
+const MOOR = { scale: 1.7, pierHalfW: 7, gap: 2.2, sternAt: 16 };       // sternAt: where the stern lies along the pier (z from the port origin)
+const MENU_CAM = { dist: 40, perLen: 1.55, height: 0.3, drop: 0.03, mid: 5.35, swing: 0.55 };   // distance = dist + boat length × perLen; the camera sways on the boat's side of the pier, out over the water
+let moorBox = null, moorKey = '';
+function mooring() {
+  const key = (currentBoat ? currentBoat.id : '') + ':' + (boatGroup.children[0] ? boatGroup.children[0].uuid : '');
+  if (key !== moorKey || !moorBox) {                                      // measure the model once per (re)build
+    moorKey = key; const p = boatGroup.position.clone(), r = boatGroup.rotation.clone(), sc = boatGroup.scale.x;
+    boatGroup.position.set(0, 0, 0); boatGroup.rotation.set(0, 0, 0); boatGroup.scale.setScalar(1); boatGroup.updateMatrixWorld(true);
+    const box = new THREE.Box3(), tmp = new THREE.Box3();
+    // hull-level parts only: sails, booms and flags swing about high above the pier and don't count
+    for (const c of boatGroup.children) { if (c === wakeMesh || c === sailMesh || !c.visible) continue; tmp.setFromObject(c); if (isFinite(tmp.min.x) && tmp.min.y < 2) box.union(tmp); }
+    if (!isFinite(box.min.x)) box.set(new THREE.Vector3(-3, 0, -6), new THREE.Vector3(3, 3, 6));
+    moorBox = { halfW: -box.min.x, zMin: box.min.z, zMax: box.max.z };     // halfW: how far the hull reaches toward the pier (the pier is on its −x side)
+    boatGroup.position.copy(p); boatGroup.rotation.copy(r); boatGroup.scale.setScalar(sc);
+  }
+  const s = MOOR.scale, len = (moorBox.zMax - moorBox.zMin) * s;
+  const x = port.x + MOOR.pierHalfW + MOOR.gap + moorBox.halfW * s;            // clear of the pier, however wide the boat
+  const z = port.z + MOOR.sternAt - moorBox.zMax * s;                          // stern beside the pier, bow out to sea
+  return { x, z, len, cx: x, cz: z + (moorBox.zMin + moorBox.zMax) / 2 * s };
+}
 function updateNormal(dt, t) {
   hitCooldown = Math.max(0, hitCooldown - dt); lockedToastCd = Math.max(0, lockedToastCd - dt);
   if (state === 'mainmenu' || state === 'docked' || state === 'summary') {
-    // Slow orbit around the marina behind the menus
-    boatGroup.position.set(port.x, waveHeight(port.x, port.z, t) + 0.5, port.z - 12); boatGroup.rotation.set(Math.sin(t * 1.5) * 0.02, 0, Math.cos(t * 1.1) * 0.02);
+    const m = mooring();
+    boatGroup.scale.setScalar(MOOR.scale);
+    boatGroup.position.set(m.x, waveHeight(m.x, m.z, t) * 0.5 + 0.5, m.z); boatGroup.rotation.set(Math.sin(t * 1.5) * 0.02, 0, Math.cos(t * 1.1) * 0.025);
     if (state === 'mainmenu') {
-      // Main menu: a slow, close orbit around YOUR boat, framed in the open middle of the screen (shows off sails, flags, upgrades)
-      menuCamAngle += dt * 0.11; const R = MENU_CAM.dist + (currentBoat ? currentBoat.len : 8) * MENU_CAM.perLen, bx = port.x, bz = port.z - 12;
+      // Main menu: the camera sways slowly around YOUR boat, framed in the open middle of the screen (shows off sails, flags, upgrades)
+      menuCamAngle += dt * 0.11; const R = MENU_CAM.dist + m.len * MENU_CAM.perLen;
       const a = MENU_CAM.mid + Math.sin(menuCamAngle) * MENU_CAM.swing;
-      camera.position.set(bx + Math.cos(a) * R, R * MENU_CAM.height, bz + Math.sin(a) * R); camera.lookAt(bx, -R * MENU_CAM.drop, bz);
+      camera.position.set(m.cx + Math.cos(a) * R, R * MENU_CAM.height, m.cz + Math.sin(a) * R); camera.lookAt(m.cx, -R * MENU_CAM.drop, m.cz);
     } else {
       menuCamAngle += dt * 0.15; const cx = port.x + Math.cos(menuCamAngle) * 240; const cz = port.z + Math.sin(menuCamAngle) * 240;
       camera.position.set(cx, 130, cz); camera.lookAt(port.x, 6, port.z);
     }
     return;
   }
+  if (boatGroup.scale.x !== 1) boatGroup.scale.setScalar(1);                // back to real size when you leave the pier
   if (state === 'viewing') { viewTimer -= dt; if (viewTimer <= 0) { state = 'sailing'; hideToast(); showToast('📸 Everyone back aboard!'); } }
   for (let i = passingBoats.length - 1; i >= 0; i--) { const pb = passingBoats[i]; pb.position.x += pb.userData.dx * pb.userData.speed * dt; pb.position.z += pb.userData.dz * pb.userData.speed * dt; pb.position.y = waveHeight(pb.position.x, pb.position.z, t) + 0.5; pb.userData.life -= dt; if (pb.userData.life <= 0) { scene.remove(pb); passingBoats.splice(i, 1); } }
 
@@ -6196,7 +6220,7 @@ function initSettingsUI() {
   });
   $('replayIntro').addEventListener('click', () => { playMenuClick(); $('settingsOverlay').classList.remove('open'); playScene(currentRunTheme().intro()); });
   $('settingsReset').addEventListener('click', async () => {
-    if (!(await confirmDialog(`Start over? This resets ALL boats (also the Jet Ski and Galleon), every upgrade, cosmetics, high scores, and your money (back to ${CONFIG.start.money} €) and knots (back to ${CONFIG.start.knots}). Knots you bought are lost too. No-Ads and other paid bundles stay. Missions and story progress stay. This cannot be undone.`, 'Reset'))) return;
+    if (!(await confirmDialog(`Start over? This resets ALL boats (also the Wave Scooter and Galleon), every upgrade, cosmetics, high scores, and your money (back to ${CONFIG.start.money} €) and knots (back to ${CONFIG.start.knots}). Knots you bought are lost too. No-Ads and other paid bundles stay. Missions and story progress stay. This cannot be undone.`, 'Reset'))) return;
     await Save.resetCollection();
     if (typeof Thumbs !== 'undefined') Thumbs.clear();
     $('settingsOverlay').classList.remove('open'); refreshMainMenu();
