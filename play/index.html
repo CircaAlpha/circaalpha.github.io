@@ -922,6 +922,57 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
 .mission-note.new { box-shadow: 0 0 0 2px var(--sun), 0 6px 0 rgba(0,0,0,0.3), 0 0 22px rgba(255,210,63,0.45); } .mission-note.new b { color: var(--sun-t); }
 @media (prefers-reduced-motion: reduce) { .mission-note { transition: opacity .25s; } }
 
+/* ==============================================================
+   PHOTO BOOK — viewfinder, shutter flash, polaroid, the book
+   ============================================================== */
+.mm-photos { font: inherit; color: #fff; border: none; cursor: pointer; position: relative; transition: transform .08s; }
+.mm-photos:active { transform: translateY(3px) scale(.97); }
+.photo-finder { position: fixed; left: 0; top: 0; z-index: 60; width: 120px; height: 120px; pointer-events: none; opacity: 0; transition: opacity .15s; }
+.photo-finder.show { opacity: 1; }
+.photo-finder i { position: absolute; width: 26%; height: 26%; border: 0 solid #fff; filter: drop-shadow(0 1px 2px rgba(0,0,0,.6)); transition: border-color .12s; }
+.photo-finder i:nth-child(1) { left: 0; top: 0; border-left-width: 4px; border-top-width: 4px; border-top-left-radius: 8px; }
+.photo-finder i:nth-child(2) { right: 0; top: 0; border-right-width: 4px; border-top-width: 4px; border-top-right-radius: 8px; }
+.photo-finder i:nth-child(3) { left: 0; bottom: 0; border-left-width: 4px; border-bottom-width: 4px; border-bottom-left-radius: 8px; }
+.photo-finder i:nth-child(4) { right: 0; bottom: 0; border-right-width: 4px; border-bottom-width: 4px; border-bottom-right-radius: 8px; }
+.photo-finder.ok i { border-color: var(--lime); }
+.photo-finder svg { position: absolute; left: 50%; top: 50%; width: 44px; height: 44px; margin: -22px 0 0 -22px; transform: rotate(-90deg); }
+.photo-finder .pf-track { fill: none; stroke: rgba(255,255,255,.35); stroke-width: 4; }
+.photo-finder .pf-ring { fill: none; stroke: var(--lime); stroke-width: 4; stroke-linecap: round; stroke-dasharray: 113; stroke-dashoffset: 113; }
+.photo-finder span { position: absolute; left: 50%; top: 100%; transform: translateX(-50%); margin-top: 6px; white-space: nowrap; padding: 3px 9px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 800; color: #fff; background: rgba(4,40,60,.82); box-shadow: 0 0 0 2px rgba(255,255,255,.25); }
+.photo-finder.ok span { box-shadow: 0 0 0 2px var(--lime); }
+.photo-flash { position: fixed; inset: 0; z-index: 90; background: #fff; opacity: 0; pointer-events: none; }
+.photo-flash.go { animation: photoFlash .55s ease-out; }
+@keyframes photoFlash { 0% { opacity: 0; } 8% { opacity: .96; } 100% { opacity: 0; } }
+.photo-card { position: fixed; left: 12px; top: calc(200px + env(safe-area-inset-top)); z-index: 73; width: 128px; padding: 7px 7px 9px; background: #fffdf6; color: #1d3557;
+  border-radius: 6px; box-shadow: 0 8px 22px rgba(0,0,0,.45); pointer-events: none; opacity: 0; transform: translate(-150%, -10px) rotate(-14deg); transition: transform .45s cubic-bezier(.2,1.3,.4,1), opacity .25s; }
+.photo-card.show { opacity: 1; transform: translate(0, 0) rotate(-5deg); }
+.photo-card .ph, .polaroid .ph { aspect-ratio: 1; border-radius: 3px; overflow: hidden; background: linear-gradient(#bfe8ff, #7fd0ee); }
+.photo-card img, .polaroid img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.photo-card b { display: block; margin-top: 6px; font-size: 12.5px; line-height: 1.15; }
+.photo-card span { display: block; font-size: 12px; font-weight: 800; color: #0b7a3b; }
+.photo-card.new span { color: #d6336c; }
+.photo-card small { display: block; font-size: 10.5px; opacity: .7; }
+.photo-panel { width: min(94vw, 430px); max-height: 88vh; display: flex; flex-direction: column; }
+.photo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; overflow-y: auto; padding: 6px 4px 10px; margin-bottom: 4px; -webkit-overflow-scrolling: touch; }
+.polaroid { position: relative; padding: 7px 7px 9px; background: #fffdf6; color: #1d3557; border-radius: 6px; box-shadow: 0 5px 0 rgba(0,0,0,.25); text-align: left; }
+.polaroid:nth-child(odd) { transform: rotate(-1.2deg); } .polaroid:nth-child(even) { transform: rotate(1deg); }
+.polaroid b { display: block; margin-top: 6px; font-size: 13.5px; line-height: 1.15; }
+.polaroid small { display: block; margin-top: 2px; font-size: 11px; line-height: 1.25; opacity: .78; }
+.polaroid i { position: absolute; right: 10px; top: 10px; padding: 1px 6px; border-radius: 999px; font-style: normal; font-size: 11px; font-weight: 800; color: #fff; background: rgba(4,52,77,.75); }
+.polaroid.missing { background: #dfe7ea; }
+.polaroid.missing .ph { background: #c3d2d8; }
+.polaroid.missing img { filter: brightness(0) opacity(.3); object-fit: contain; }
+.polaroid.missing b { letter-spacing: 2px; opacity: .6; }
+@media (prefers-reduced-motion: reduce) { .photo-flash.go { animation-duration: .2s; } .photo-card { transition: opacity .2s; } }
+
+/* Story Mode and Photo Safari sit side by side under PLAY */
+.mm-modes { display: flex; gap: 10px; }
+.mm-modes .story-btn { flex: 1; min-width: 0; font-size: 14px; padding: 10px 6px; }
+.mm-modes .story-sub { font-size: 11px; }
+.safari-btn { background: linear-gradient(160deg, #19a57f, #0c7a66); border-color: var(--sun); }
+.btn.go { background: linear-gradient(160deg, #19a57f, #0c7a66); color: #fff; }
+
 </style>
 
 
@@ -938,6 +989,12 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
 </div></div>
 <div id="banner" class="banner"></div>
 <div id="missionNote" class="mission-note"></div>
+<!-- Photo Book: viewfinder, shutter flash and the polaroid that drops in -->
+<div id="photoFinder" class="photo-finder"><i></i><i></i><i></i><i></i>
+  <svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="18" class="pf-track"/><circle cx="22" cy="22" r="18" id="photoRing" class="pf-ring"/></svg>
+  <span id="photoLabel"></span></div>
+<div id="photoFlash" class="photo-flash"></div>
+<div id="photoCard" class="photo-card"></div>
 <canvas id="confetti"></canvas>
 
 <!-- ============ STORY (TOUR) HUD ============ -->
@@ -1041,6 +1098,7 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
     <button class="mm-boat" id="menuBoatBtn">⛵ <b id="menuBoat">—</b> <span>›</span></button>
     <div class="mm-stats">
       <div class="mm-stat" title="Best score">🏆 <b id="menuBest">0</b></div>
+      <button class="mm-stat mm-photos" id="btnPhotos" aria-label="Photo Book"><span class="mm-dot" id="photoDot"></span>📷 <b id="menuPhotos">0/10</b></button>
       <div class="mm-stat" title="Furthest run">🌊 <b id="menuDist">0.0 NM</b></div>
     </div>
     <div class="mm-row">
@@ -1048,12 +1106,25 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
       <button class="go-btn play-btn" id="btnMistral"><span class="play-main">🌪️ PLAY</span><span class="play-sub">MISTRAL RUN</span></button>
       <button class="mm-icon" id="btnItemShop"><span class="mm-dot" id="shopDot"></span><span class="mm-emoji">🛍️</span><small>SHOP</small></button>
     </div>
-    <button class="btn story-btn" id="btnStory">📖 STORY MODE<br><span id="menuStorySub" class="story-sub"></span></button>
+    <div class="mm-modes">
+      <button class="btn story-btn" id="btnStory">📖 STORY MODE<br><span id="menuStorySub" class="story-sub"></span></button>
+      <button class="btn story-btn safari-btn" id="btnSafari">📷 PHOTO SAFARI<br><span id="menuSafariSub" class="story-sub"></span></button>
+    </div>
     <div class="menu-legal"><a href="#" data-legal="terms">Terms</a> · <a href="#" data-legal="privacy">Privacy</a> · <span id="menuCompany"></span></div>
   </div>
 </div>
 
 <!-- ============ MISSIONS (opened from the menu) ============ -->
+<div class="overlay" id="photoOverlay">
+  <div class="panel photo-panel">
+    <h2>📷 Photo Book</h2>
+    <div class="sub" id="photoSub"></div>
+    <div class="photo-grid" id="photoGrid"></div>
+    <button class="btn wide go" id="photoGo">📷 Go on a Photo Safari</button>
+    <button class="btn wide" id="photoClose" data-back>◀ Back</button>
+  </div>
+</div>
+
 <div class="overlay" id="missionsOverlay">
   <div class="panel missions-panel">
     <h2>🎯 Missions</h2>
@@ -1895,6 +1966,13 @@ function chapterForDay(day) {
    Line fields:  who, text (**bold** = highlighted keyword), show (a prop to
    illustrate, see PROPS in portraits.js), choices (you pick what to say),
    action: 'steer' (player must slide the steering slider to both ends to continue).      */
+/* First-time intro for the Photo Safari (run theme "safari") */
+const SAFARI_INTRO = [
+  { who: 'old', text: 'The storm has blown itself out, Skipper. On days like this the sea shows off: **dolphins**, **turtles**, even a **whale** out past the sandbanks.' },
+  { who: 'old', text: 'Take my old **camera**. Same channel, same rocks and buoys, but no storm and nobody to rescue. Just you and the sea. Steer with the **slider** at the bottom, like always.' },
+  { who: 'old', text: 'When something swims up, get **alongside it** and **hold the wheel steady**. Shaky hands, blurry photo! Fill my **Photo Book** and I\'ll make it worth your while.' },
+];
+
 const MISTRAL_INTRO = [
   { who: 'narr',  text: 'Sardinia, late summer. The **Mistral** wind has grown into a hurricane the old sailors call **Su Bentu Mannu**: the Great Wind.' },
   { who: 'radio', text: 'Mayday, mayday! Cruise liner **STELLA MARIS** adrift off Capo Testa. Engines dead. Passengers **washed overboard** on their pool floats!', show: 'stella' },
@@ -2550,9 +2628,11 @@ const sea = new THREE.Mesh(seaGeo, new THREE.MeshLambertMaterial({ vertexColors:
 seaGeo.setAttribute('color', new THREE.BufferAttribute(new Float32Array(seaGeo.attributes.position.count * 3), 3));
 const seaCol = seaGeo.attributes.color; scene.add(sea); const seaPos = seaGeo.attributes.position;
 
+/* Set by the run theme (runthemes.js): the water palette, and whether the sea piles up at the track edges (storm only) */
+let runWater = { base: [0.12, 0.45, 0.70], crest: [0.15, 0.20, 0.10], wall: [0.7, 0.5, 0.3] }, runEdgeSwell = true;
 function waveHeight(x, z, t) { 
   let h = Math.sin(x * 0.03 + t * 1.5) * 0.8 + Math.cos(z * 0.04 + t * 1.2) * 0.6; 
-  if (state === 'mistral_run') {
+  if (state === 'mistral_run' && runEdgeSwell) {
     // Low frothing swell at the track edges — the curling wave meshes above
     // are the actual walls now, so the sea must not bury them
     const edgeDist = Math.max(0, Math.abs(x) - 65);
@@ -2576,7 +2656,7 @@ function updateSea(t, refZ) {
     if (state === 'mistral_run') {
         const wallBrightness = Math.min(1, Math.max(0, (Math.abs(wx) - 65) * 0.05));
         // Deep storm water turning into bright frothy crests at the massive side walls
-        seaCol.setXYZ(i, 0.12 + f * 0.15 + wallBrightness*0.7, 0.45 + f * 0.20 + wallBrightness*0.5, 0.70 + f * 0.10 + wallBrightness*0.3); 
+        const W = runWater; seaCol.setXYZ(i, W.base[0] + f * W.crest[0] + wallBrightness * W.wall[0], W.base[1] + f * W.crest[1] + wallBrightness * W.wall[1], W.base[2] + f * W.crest[2] + wallBrightness * W.wall[2]);
     } else {
         seaCol.setXYZ(i, 0.16 + f * 0.2, 0.51 + f * 0.24, 0.83 + f * 0.08);
     }
@@ -2609,6 +2689,7 @@ function updateRunSea(t) {
   if (!runSea.visible) resetRunWake();
   sea.position.y = -3; runSea.visible = runWake.visible = true;
   const sunI = sun.intensity, L0 = rsSun.y, F = RUN_SEA.facet, base12 = Math.round(boat.z / 12); let k = 0;
+  const WB = runWater.base, WC = runWater.crest, WW = runWater.wall;                    // this run's water palette
   const tri = (ax, ay, az, bx, by, bz, cx, cy, cz, seed) => {
     const ux = bx - ax, uy = by - ay, uz = bz - az, vx = cx - ax, vy = cy - ay, vz = cz - az;
     const nX = uy * vz - uz * vy, nY = uz * vx - ux * vz, nZ = ux * vy - uy * vx, nl = Math.hypot(nX, nY, nZ) || 1;
@@ -2616,7 +2697,7 @@ function updateRunSea(t) {
     const h = (ay + by + cy) / 3, f = Math.min(1, Math.max(0, (h + 1.4) / 2.8));
     const wall = Math.min(1, Math.max(0, (Math.abs((ax + bx + cx) / 3) - 65) * 0.05));                        // bright frothy water under the wave walls
     const s = (0.75 + sunI * light) * 0.94 * (0.98 + 0.04 * ((seed * 0.6180339887) % 1));
-    const r = (0.12 + f * 0.15 + wall * 0.7) * s, g = (0.45 + f * 0.20 + wall * 0.5) * s, b = (0.70 + f * 0.10 + wall * 0.3) * s;
+    const r = (WB[0] + f * WC[0] + wall * WW[0]) * s, g = (WB[1] + f * WC[1] + wall * WW[1]) * s, b = (WB[2] + f * WC[2] + wall * WW[2]) * s;
     rsPos[k] = ax; rsPos[k + 1] = ay; rsPos[k + 2] = az; rsPos[k + 3] = bx; rsPos[k + 4] = by; rsPos[k + 5] = bz; rsPos[k + 6] = cx; rsPos[k + 7] = cy; rsPos[k + 8] = cz;
     for (let q = 0; q < 9; q += 3) { rsCol[k + q] = r; rsCol[k + q + 1] = g; rsCol[k + q + 2] = b; }
     k += 9;
@@ -5097,7 +5178,8 @@ function launchComet() {
   showBanner('☄️ MISTRAL COMET! Invincible ' + C.invincible + 's', 'record', 1800); Save.queue();
 }
 let flashFov = 0;
-function startMistralRun() {
+function startMistralRun(themeId) {
+  if (themeId) runThemeId = themeId;                              // 'storm' = Mistral Run, 'safari' = Photo Safari; none = same as last time
   hideAllOverlays(); hideTourHud();
   state = 'mistral_run'; mState.active = true; pStats.runs = (pStats.runs || 0) + 1;
   mState.dist = 0; mState.speed = 50; mState.velX = 0; mState.lean = 0; mState.coins = 0; mState.knots = 0; mState.tourists = 0; mState.mult = 1; mState.streak = 0; mState.precision = 0; mState.coinsF = 0; mState.maxMult = 1; mState.score = 0; mState.chains = 0; mState.repairs = 0; mState.closeCalls = 0; mState.shieldT = mState.magnetT = mState.doubleT = 0; pwrShown = null; clearTrail(); Retention.onRunStart();
@@ -5111,6 +5193,7 @@ function startMistralRun() {
   mState.bolts = []; mState.strike = null; mState.strikeTimer = 5; mState.flash = 0; mState.edgeT = 0;
   const theme = mState.theme = currentRunTheme();                 // sky, weather, backdrop (runthemes.js)
   _stormCol.setHex(theme.sky); _flashCol.setHex(theme.flash);
+  runWater = theme.water; runEdgeSwell = !theme.calm;
   scene.background.setHex(theme.sky); scene.fog.color.setHex(theme.sky);
   sun.intensity = theme.sun; rainMesh.visible = theme.rain && settings.fx;
   showRunBackdrop(theme);
@@ -5136,7 +5219,7 @@ function startMistralRun() {
   SteerSlider.show(true);
   $('btnPause').classList.add('show');
   
-  showToast("🌪️ THE MISTRAL RUN!<br>Storm's up — dodge obstacles, watch for ⚡, don't hug the breakers!", 4000);
+  showToast(theme.startToast, 4000);
   updateMistralHUD();
 }
 
@@ -5166,7 +5249,7 @@ function spawnMistralObj(type, x, z) {
   else if (type === 'rock') { mesh = makeMistralRock(); r = 8; }
   else if (type === 'horseshoe') { mesh = makeHorseshoe(); r = 0; }   // composite hitbox, see horseshoeHit()
   else if (type === 'edgerock') { mesh = makeMistralRock(); const sc = 1.6 + Math.random() * 1.0; mesh.scale.setScalar(sc); r = 8 * sc; } // big breaker rock — now a real hazard at the track edge
-  else if (type === 'curl') { mesh = makeWaveCurl(Math.sign(x) || 1, z); r = 0; } // overhanging wave wall, pure scenery
+  else if (type === 'curl') { mesh = (mState.theme && mState.theme.makeEdge || makeWaveCurl)(Math.sign(x) || 1, z); r = 0; } // the track's edge scenery: storm wave wall, or the theme's own (sandbanks)
   else if (type === 'chain') { mesh = makeChain(); r = 0; } // full-width jump gate — custom collision on dz only
   else if (type === 'buoy') { mesh = makeMistralBuoy(soft); r = 4; }
   else if (type === 'ramp') { mesh = makeJumpWave(); r = 0; }
@@ -5204,6 +5287,7 @@ function genMistralChunk(zStart) {
   const types = ['coins', 'rocks', 'flamingo', 'ramp', 'whirlpool', 'buoys', 'yacht', 'chain', 'horseshoe'];
   let t = types[Math.floor(Math.random() * types.length)];
   if (t === 'horseshoe' && Math.random() < 0.5) t = 'rocks';        // horseshoes are special: about 1 chunk in 18
+  if (t === 'flamingo' && mState.theme && !mState.theme.rescue) t = 'coins';   // no castaways to rescue on a calm day
   const rx = () => (Math.random() - 0.5) * (M_WIDTH - 12); // full width — the edges are not a safe lane
   const sceneryOnly = zStart > -150; // chunks at/behind the start line get walls but no hazards
   
@@ -5321,7 +5405,7 @@ function updateMistral(dt, time) {
     if (obj.follow) { obj.z = obj.follow.z + obj.offZ; if (obj.mesh) obj.mesh.position.z = obj.z; }
     if (obj.mesh && obj.type !== 'whirlpool' && obj.type !== 'yacht' && obj.type !== 'ramp' && obj.type !== 'curl') { obj.mesh.position.y = waveHeight(obj.x, obj.z, time) + (obj.type==='coin'||obj.type==='knot'?2:0) + (obj.airY || 0); }
     
-    if (obj.type === 'curl') { obj.mesh.position.y = Math.sin(time * 1.2) * 0.8; } // whole tunnel heaves in unison — joins stay sealed
+    if (obj.type === 'curl' && !(mState.theme && mState.theme.calm)) { obj.mesh.position.y = Math.sin(time * 1.2) * 0.8; } // whole tunnel heaves in unison — joins stay sealed
     else if (obj.type === 'coin' || obj.type === 'knot') { obj.mesh.rotation.y += 3*dt; }
     else if (obj.type === 'shield' || obj.type === 'magnet' || obj.type === 'double') {
       obj.mesh.position.y += 1 + Math.sin(time * 3 + obj.phase) * 0.6; obj.mesh.rotation.y += 2 * dt;
@@ -5462,7 +5546,7 @@ function updateMistral(dt, time) {
       mState.edgeT += dt;
       boat.x -= Math.sign(boat.x) * 30 * dt;                                  // the surf shoves you back onto the track
       mState.lean = Math.max(-1, Math.min(1, mState.lean - Math.sign(boat.x) * dt * 1.4));
-      if (mState.edgeT > 1.0) { mState.edgeT = 0.25; showToast("🌊 Breaking surf! Get off the rocks!"); mDamage(MC.damage.surf, 'surf'); }
+      if (mState.edgeT > 1.0) { mState.edgeT = 0.25; showToast(mState.theme ? mState.theme.edgeToast : '🌊 Breaking surf! Get off the rocks!'); mDamage(MC.damage.surf, 'surf'); }
     } else { mState.edgeT = 0; }
     
     // Lightning: telegraphs a lane with a warning ring, then strikes.
@@ -5627,7 +5711,7 @@ function endMistralRun(sank) {
       <div class="loot"><span class="count" data-to="${totE}">0</span> €<small>EUROS</small></div>
       <div class="loot"><span class="count" data-to="${totK}">0</span> 🪢<small>KNOTS</small></div>
       <div class="loot">${mState.dist.toFixed(1)}<small>NM SAILED</small></div>
-      <div class="loot">${mState.tourists}<small>RESCUED</small></div>
+      ${mState.theme && mState.theme.photos ? `<div class="loot">${Photos.runShots().n}<small>PHOTOS</small></div>` : `<div class="loot">${mState.tourists}<small>RESCUED</small></div>`}
     </div>
     ${done.length ? `<div class="mission-done"><h4>✅ MISSIONS COMPLETE</h4>${done.map(m => `<div class="md-row"><span>${m.text}</span><span class="pos">${Retention.rewardText(m.reward)}</span></div>`).join('')}</div>` : ''}
     ${Retention.missionsHtml(true)}
@@ -5658,11 +5742,16 @@ function initMistralUI() {
   $('btnMistral').onclick = () => {
     playMenuClick();
     // First time ever: the theme's story intro, then the mission briefing
-    const theme = currentRunTheme(), key = 'run_intro_' + theme.id;
+    runThemeId = 'storm'; const theme = currentRunTheme(), key = 'run_intro_' + theme.id;
     if (!pStats.storySeen[key]) { pStats.storySeen[key] = true; Save.queue(); playScene(theme.intro(), () => Retention.openBriefing()); }
     else Retention.openBriefing();
   };
-  $('briefGo').onclick = () => { playMenuClick(); $('briefOverlay').classList.remove('open'); startMistralRun(); };
+  $('briefGo').onclick = () => { playMenuClick(); $('briefOverlay').classList.remove('open'); startMistralRun('storm'); };
+  // Photo Safari: the same run on a calm day, straight in (its intro plays the first time)
+  $('btnSafari').onclick = () => {
+    playMenuClick(); const go = () => startMistralRun('safari');
+    if (!pStats.storySeen.run_intro_safari) { pStats.storySeen.run_intro_safari = true; Save.queue(); playScene(SAFARI_INTRO, go); } else go();
+  };
   $('briefBack').onclick = () => { $('briefOverlay').classList.remove('open'); };
   // After the very first run, the Old Fisherman explains what the loot is for
   $('mSumContinue').onclick = () => { playMenuClick(); $('mistralSummary').classList.remove('open'); leaveMistralWorld(); openMainMenu(); adBreak('runs', () => playTutorial('tut_first_run', () => Reminders.maybeAsk())); };
@@ -5686,13 +5775,31 @@ const RUN_THEMES = {
   storm: {
     id: 'storm', name: 'The Mistral',
     sky: 0x5f6f80, flash: 0xeef3f8, fogNear: 220, fogFar: 680, sun: 0.75,
-    rain: true, lightning: true,
+    rain: true, lightning: true, rescue: true,
+    water: { base: [0.12, 0.45, 0.70], crest: [0.15, 0.20, 0.10], wall: [0.7, 0.5, 0.3] },   // deep storm blue, white froth under the wave walls
+    startToast: "🌪️ THE MISTRAL RUN!<br>Storm's up — dodge obstacles, watch for ⚡, don't hug the breakers!",
+    edgeToast: '🌊 Breaking surf! Get off the rocks!',
     intro: () => MISTRAL_INTRO,
     buildBackdrop: buildStormBackdrop,
     updateBackdrop: updateStormBackdrop,
   },
+  /* PHOTO SAFARI: the same run on a calm sunny day. No storm, nobody to rescue:
+     sandbanks instead of wave walls, and wildlife to photograph (photos.js). */
+  safari: {
+    id: 'safari', name: 'Photo Safari',
+    sky: 0x79cdf2, flash: 0xffffff, fogNear: 330, fogFar: 880, sun: 1.1,
+    rain: false, lightning: false, rescue: false, calm: true, photos: true,
+    water: { base: [0.08, 0.38, 0.64], crest: [0.12, 0.17, 0.08], wall: [0.20, 0.26, 0.04] },   // lagoon blue, turquoise shallows along the banks
+    startToast: '📷 PHOTO SAFARI<br>A calm day on the water. Get alongside the wildlife and hold the wheel steady.',
+    edgeToast: '🏝️ Shallows! Steer back into the channel!',
+    makeEdge: makeSandbank,
+    intro: () => SAFARI_INTRO,
+    buildBackdrop: buildSafariBackdrop,
+    updateBackdrop: updateSafariBackdrop,
+  },
 };
-function currentRunTheme() { return RUN_THEMES[pStats.runTheme] || RUN_THEMES.storm; }
+let runThemeId = 'storm';                               // which mode the next run uses (set by the menu buttons)
+function currentRunTheme() { return RUN_THEMES[runThemeId] || RUN_THEMES.storm; }
 
 /* ---- Backdrop container: follows the boat so it's always on the horizon ---- */
 const runBackdrop = new THREE.Group(); runBackdrop.visible = false; scene.add(runBackdrop);
@@ -5818,6 +5925,69 @@ function updateStormBackdrop(g, dt, t, flash) {
   U.flareY += dt * 60; U.flare.position.set(0, U.flareY, -80); U.flare.material.opacity = Math.max(0, 1 - (U.flareY - U.shipTop) / 260);
   const k = 1 + flash * 1.4;                                      // lightning lights up the silhouettes
   U.hur.children.forEach(m => { if (m.material && !m.material.map) m.material.opacity = Math.min(0.9, (m.userData.o ?? (m.userData.o = m.material.opacity)) * k); });
+}
+
+/* ================= SAFARI: a sunny Sardinian horizon ================= */
+function buildSafariBackdrop(g) {
+  const U = g.userData; let sd = 77; const r = () => (sd = (sd * 16807) % 2147483647) / 2147483647;
+  for (let i = 0; i < 9; i++) {                                    // hazy islands along the horizon, the far row paler
+    const far = i % 2, x = -1150 + i * 285 + (r() - 0.5) * 150, z = -1380 - far * 280, h = 80 + r() * 150, w = 240 + r() * 250;
+    const hill = new THREE.Mesh(new THREE.ConeGeometry(1, 1, 7), farMat(far ? 0xb9dfc6 : 0x8fc88e, 1)); hill.scale.set(w, h, w * 0.6); hill.position.set(x, h / 2 - 5, z); hill.rotation.y = r() * 3; g.add(hill);
+    const peak = new THREE.Mesh(new THREE.ConeGeometry(1, 1, 6), farMat(far ? 0xd7e6d2 : 0xc9bfa2, 1)); peak.scale.set(w * 0.28, h * 0.3, w * 0.17); peak.position.set(x, h * 0.86 - 5, z); peak.rotation.y = hill.rotation.y; g.add(peak);
+    const sand = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.12, 1, 9), farMat(far ? 0xf7ecc8 : 0xf6e3ae, 1)); sand.scale.set(w * 1.04, 7, w * 0.64); sand.position.set(x, 1, z); g.add(sand);
+  }
+  const lh = new THREE.Group(); lh.position.set(520, 0, -1180); g.add(lh);       // a lighthouse on its rock
+  const add = (geo, col, y, sx, sy, sz) => { const m = new THREE.Mesh(geo, farMat(col, 1)); m.position.y = y; m.scale.set(sx, sy, sz); lh.add(m); };
+  add(new THREE.DodecahedronGeometry(1, 0), 0xbba88f, 4, 46, 16, 34); add(new THREE.CylinderGeometry(0.75, 1, 1, 10), 0xfafafa, 50, 11, 70, 11);
+  add(new THREE.CylinderGeometry(1, 1, 1, 10), 0xe63946, 62, 9.4, 12, 9.4); add(new THREE.CylinderGeometry(1, 1, 1, 10), 0x2b3a4a, 90, 7, 9, 7); add(new THREE.ConeGeometry(1, 1, 10), 0xe63946, 99, 9, 9, 9);
+  U.sails = [];                                                    // far-off sailboats drifting along
+  for (const [x, z, sc] of [[-430, -1020, 1], [180, -1120, 0.8], [760, -980, 0.9]]) {
+    const b = new THREE.Group(); b.position.set(x, 0, z); b.scale.setScalar(sc * 2.4); g.add(b);
+    const hull = new THREE.Mesh(new THREE.BoxGeometry(22, 4, 6), farMat(0xffffff, 1)); hull.position.y = 2; b.add(hull);
+    const sh = new THREE.Shape(); sh.moveTo(0, 0); sh.lineTo(13, 0); sh.lineTo(0, 30); sh.lineTo(0, 0);
+    const sail = new THREE.Mesh(new THREE.ShapeGeometry(sh), farMat(0xfff7e6, 1)); sail.position.set(-2, 5, 0); b.add(sail);
+    const jib = new THREE.Mesh(new THREE.ShapeGeometry(sh), farMat(0xff8a5c, 1)); jib.scale.set(-0.7, 0.8, 1); jib.position.set(-3, 5, 0); b.add(jib);
+    U.sails.push({ b, x, ph: x });
+  }
+  const sunDisc = new THREE.Mesh(new THREE.CircleGeometry(70, 24), farMat(0xfff6cf, 1)); sunDisc.position.set(-620, 520, -1700); g.add(sunDisc);
+  const glow = new THREE.Sprite(new THREE.SpriteMaterial({ map: puffTex, color: 0xfff1b0, fog: false, transparent: true, opacity: 0.55, depthWrite: false })); glow.scale.set(520, 520, 1); glow.position.copy(sunDisc.position); g.add(glow);
+}
+function updateSafariBackdrop(g, dt, t) {
+  g.position.set(0, 0, boat.z);                                    // always the same distance ahead
+  for (const s of g.userData.sails) { s.b.position.x = s.x + Math.sin(t * 0.03 + s.ph) * 120; s.b.position.y = Math.sin(t * 0.8 + s.ph) * 1.2; s.b.rotation.z = Math.sin(t * 0.6 + s.ph) * 0.04; }
+}
+
+/* Sandbanks line the channel instead of the storm's wave walls: low dunes that rise
+   and sink along the way (gaps open onto the sea), with palms, scrub and the odd
+   parasol. Heights follow WORLD z, so neighbouring chunks join without a seam.
+   Baked into one flat-shaded mesh per side, like the islands of the open world. */
+function makeSandbank(side, zStart) {
+  const B = new Baker(), len = M_CHUNK_LEN + 20, segs = 22, D = [0, 6, 13, 22, 34, 50, 70, 96], PR = [0, 0.1, 0.3, 0.72, 1, 0.9, 0.45, 0];
+  const bank = wz => Math.max(0, Math.min(1, 0.62 + 0.7 * Math.sin(wz * 0.0085 + side * 2.1) + 0.3 * Math.sin(wz * 0.023 + 1.3)));   // 0 = a gap in the bank, 1 = a full dune
+  const hAt = (i, wz) => PR[i] * (1.2 + 8.5 * bank(wz)) * (1 + 0.12 * Math.sin(wz * 0.07 + i * 1.9)) - 1.7;
+  const hD = (d, wz) => { let i = 0; while (i < D.length - 2 && D[i + 1] < d) i++; const k = (d - D[i]) / (D[i + 1] - D[i]); return hAt(i, wz) * (1 - k) + hAt(i + 1, wz) * k; };
+  const col = h => h < 0.5 ? C.sandWet : h < 3.3 ? C.sand : h < 5.2 ? C.dryGrass : C.macchia[1];
+  const face = (p, q, r) => B.tri(p, q, r, col((p[1] + q[1] + r[1]) / 3));
+  for (let s = 0; s < segs; s++) {
+    const z0 = -s * len / segs, z1 = -(s + 1) * len / segs;
+    for (let i = 0; i < D.length - 1; i++) {
+      const a = [side * D[i], hAt(i, zStart + z0), z0], b = [side * D[i + 1], hAt(i + 1, zStart + z0), z0], c = [side * D[i], hAt(i, zStart + z1), z1], d = [side * D[i + 1], hAt(i + 1, zStart + z1), z1];
+      if (Math.max(a[1], b[1], c[1], d[1]) < -1.4) continue;                         // under water: nothing to draw
+      if (side > 0) { face(a, b, c); face(c, b, d); } else { face(a, c, b); face(b, c, d); }
+    }
+  }
+  const rnd = mulberry32(Math.round(zStart) * 7 + (side > 0 ? 3 : 11));
+  for (let k = 0; k < 9; k++) {
+    const lz = -rnd() * (M_CHUNK_LEN - 10), wz = zStart + lz, d = 24 + rnd() * 24, g = hD(d, wz), x = side * d, what = rnd();
+    if (g < 2) continue;                                                            // only on dry ground
+    if (what < 0.45) { const s = 1.9 + rnd() * 0.9, lean = (rnd() - 0.5) * 0.5, H = 9 * s;      // palm
+      B.add(G_CYL, C.palmTrunk, x, g + H / 2 - 0.5, lz, 0.45 * s, H, 0.45 * s, lean, 0, lean * 0.6); const tx = x + Math.sin(lean * 0.6) * -H * 0.5, tz = lz + Math.sin(lean) * H * 0.5;
+      for (let j = 0; j < 6; j++) { const fa = j / 6 * Math.PI * 2 + rnd() * 0.4; B.add(G_FROND, pick(rnd, C.frond), tx + Math.cos(fa) * 2.4 * s, g + H - 0.9, tz + Math.sin(fa) * 2.4 * s, 5.2 * s, 1, 1.6 * s, 0, -fa, -0.35); } }
+    else if (what < 0.75) { const s = 3 + rnd() * 3; B.add(G_BLOB, pick(rnd, C.bush), x, g + s * 0.3, lz, s * 1.4, s * 0.75, s * 1.3, 0, rnd() * 3, 0); if (rnd() < 0.4) B.add(G_BLOB, pick(rnd, C.flower), x + s * 0.3, g + s * 0.85, lz, s * 0.55, s * 0.35, s * 0.55); }
+    else if (what < 0.9) { const sc = 2.5 + rnd() * 3; B.add(G_ROCK, pick(rnd, C.granite), x, g + sc * 0.3, lz, sc * 1.2, sc * (0.7 + rnd() * 0.6), sc, rnd() * 3, rnd() * 3, 0); }
+    else { const bx = side * (15 + rnd() * 6), bg = hD(15, wz); if (bg > 0.4) { B.add(G_CYL, 0xeee6d6, bx, bg + 2.8, lz, 0.18, 5.6, 0.18); B.add(G_CONE, pick(rnd, C.parasol), bx, bg + 6, lz, 3.6, 1.6, 3.6); B.add(G_BOX, pick(rnd, C.parasol), bx + 2, bg + 0.2, lz + 1.2, 2, 0.16, 3.6, 0, rnd() * 3, 0); } }
+  }
+  return B.mesh(matIsland);
 }
 
 </script>
@@ -6154,7 +6324,7 @@ function updateAudio(dt) {
   if (!isAudioInit || audioCtx.state !== 'running') return;
   const run = state === 'mistral_run' && mState.active;
   const sailing = state === 'sailing' || state === 'docking' || state === 'viewing';
-  Music.set(state === 'mistral_run' ? 'storm' : 'chill', run ? Math.min(1, Math.max(0, (boat.speed - 55) / 90)) : 0);
+  Music.set(state === 'mistral_run' && !(mState.theme && mState.theme.calm) ? 'storm' : 'chill', run ? Math.min(1, Math.max(0, (boat.speed - 55) / 90)) : 0);
   const motor = run || ((state === 'sailing' || state === 'docking') && currentBoat && !currentBoat.sail);
   Engine.update(boat.speed, motor && !Game.paused, currentBoat && currentBoat.sail);
   const t = now(), s = Math.min(1, Math.abs(boat.speed) / 150);
@@ -6267,7 +6437,7 @@ function hideToast() { clearTimeout(toastTimer); $('toast').classList.remove('sh
 function hideAllOverlays() { document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open')); $('bigmapWrap').classList.remove('open'); }
 /* Closes the top-most open overlay. Returns true if one was closed. */
 function closeTopOverlay() {
-  const order = ['confirmOverlay', 'legalOverlay', 'itemDetail', 'briefOverlay', 'settingsOverlay', 'marketOverlay', 'itemsOverlay', 'missionsOverlay', 'storyOverlay'];
+  const order = ['confirmOverlay', 'legalOverlay', 'itemDetail', 'briefOverlay', 'settingsOverlay', 'marketOverlay', 'itemsOverlay', 'missionsOverlay', 'photoOverlay', 'storyOverlay'];
   for (const id of order) { const el = $(id); if (el.classList.contains('open')) { if (id === 'confirmOverlay') $('confirmNo').click(); else el.querySelector('[data-back]').click(); return true; } }
   if ($('bigmapWrap').classList.contains('open')) { $('bigmapWrap').classList.remove('open'); return true; }
   return false;
@@ -6329,11 +6499,12 @@ function openMainMenu() {
 function refreshMainMenu() {
   $('menuBest').textContent = Math.floor(mBestScore).toLocaleString();
   Retention.renderMenu(); refreshStoreButton(); refreshShopDot();
+  if (typeof Photos !== 'undefined') Photos.refreshMenu();
   $('menuDist').textContent = (pStats.bestDist || 0).toFixed(1) + ' NM';
   $('menuWallet').innerHTML = walletPill();
   $('menuBoat').textContent = currentBoat ? currentBoat.name : '—';
   const ch = chapterForDay(pStats.maxDay);
-  $('menuStorySub').textContent = 'Ch. ' + ch.id + ' · ' + ch.title + ' · Day ' + pStats.maxDay + '/' + CONFIG.story.totalDays;
+  $('menuStorySub').textContent = 'Ch. ' + ch.id + ' · Day ' + pStats.maxDay + '/' + CONFIG.story.totalDays;
   renderHpBars();
 }
 
@@ -6389,7 +6560,7 @@ function initSettingsUI() {
     if (settings.reminders) { const ok = await Platform.notify.request(); if (!ok && Platform.isNative) { settings.reminders = false; showToast('Notifications are blocked for this app. Turn them on in your phone settings → Apps → Sardinia Skipper.', 3800); } }
     Reminders.reschedule(); Save.queue(); refreshSettingsUI();
   });
-  $('replayIntro').addEventListener('click', () => { playMenuClick(); $('settingsOverlay').classList.remove('open'); playScene(currentRunTheme().intro()); });
+  $('replayIntro').addEventListener('click', () => { playMenuClick(); $('settingsOverlay').classList.remove('open'); playScene(RUN_THEMES.storm.intro()); });
   $('settingsReset').addEventListener('click', async () => {
     if (!(await confirmDialog(`Start over? This resets ALL boats (also the Wave Scooter and Galleon), every upgrade, cosmetics, high scores, and your money (back to ${CONFIG.start.money} €) and knots (back to ${CONFIG.start.knots}). Knots you bought are lost too. No-Ads and other paid bundles stay. Missions and story progress stay. This cannot be undone.`, 'Reset'))) return;
     await Save.resetCollection();
@@ -7098,6 +7269,292 @@ const Retention = (() => {
 </script>
 <script>
 /* ==============================================================
+   PHOTO SAFARI + PHOTO BOOK — photograph the wildlife of Sardinia.
+     • Its own game mode: the same run as the Mistral, but on a calm
+       sunny day (run theme "safari" in runthemes.js). Animals swim
+       or fly up alongside you.
+     • Get alongside one, then HOLD THE WHEEL STEADY: the viewfinder
+       focuses, the shutter fires (flash + click) and the photo goes
+       in your book.
+     • The picture in the book is the one you actually took.
+   Tuning lives in PHOTO below. Progress is saved in pStats.photos; the
+   pictures themselves sit in their own storage slot (they are big).
+   ============================================================== */
+const PHOTO = {
+  first: [5, 8], every: [11, 17],                    // seconds until the first animal, and between animals
+  reach: 30, need: 1.15, steady: 0.3,                // lane distance · seconds of focus · how much steering still counts as "steady"
+  scale: 2.1,                                        // animals are drawn larger than life so they read on a phone
+  reward: { firstEuros: 60, firstKnots: 5, againEuros: 15, bookKnots: 100 },
+  preferNew: 0.7,                                    // chance that the next animal is one you still miss
+};
+
+/* nm: how far into a safari before it shows up · move: how it behaves · n: how many travel together */
+const SPECIES = [
+  { id: 'dolphin',    name: 'Bottlenose Dolphin', nm: 0,   move: 'leap',  scale: 1,    size: 5,  n: 3, fact: 'They surf the bow wave for fun.' },
+  { id: 'turtle',     name: 'Loggerhead Turtle',  nm: 0,   move: 'float', scale: 1.1,  size: 4,  n: 1, fact: 'Nests on Sardinian beaches every summer.' },
+  { id: 'flyingfish', name: 'Flying Fish',        nm: 0,   move: 'leap',  scale: 1.2,  size: 3,  n: 4, fact: 'Glides up to 50 metres on its fins.' },
+  { id: 'tuna',       name: 'Bluefin Tuna',       nm: 30,  move: 'leap',  scale: 1,    size: 4,  n: 3, fact: 'Sprints at over 60 km/h.' },
+  { id: 'flamingo',   name: 'Pink Flamingo',      nm: 55,  move: 'fly',   scale: 1.1,  size: 5,  n: 3, fact: 'Sardinians call them "sa genti arrubia", the red people.' },
+  { id: 'seal',       name: 'Monk Seal',          nm: 85,  move: 'float', scale: 1.25, size: 4,  n: 1, fact: 'One of the rarest seals on Earth.' },
+  { id: 'swordfish',  name: 'Swordfish',          nm: 115, move: 'leap',  scale: 1,    size: 6,  n: 1, fact: 'Its bill is a third of its length.' },
+  { id: 'falcon',     name: "Eleonora's Falcon",  nm: 150, move: 'fly',   scale: 1.3,  size: 5,  n: 1, fact: 'Named after a Sardinian queen who protected it in 1392.' },
+  { id: 'ray',        name: 'Devil Ray',          nm: 190, move: 'leap',  scale: 1.1,  size: 6,  n: 2, fact: 'Jumps clean out of the water, nobody knows why.' },
+  { id: 'whale',      name: 'Fin Whale',          nm: 240, move: 'whale', scale: 1,    size: 16, n: 1, fact: 'The second largest animal that ever lived.' },
+];
+
+const Photos = (() => {
+  /* ---------- low-poly models (all face −z, like the boats) ---------- */
+  const mats = {};
+  const mat = (c, o) => { const k = c + (o ? '_' + o : ''); return mats[k] || (mats[k] = new THREE.MeshLambertMaterial(o ? { color: c, transparent: true, opacity: o } : { color: c })); };
+  const flat = geo => { const g = geo.index ? geo.toNonIndexed() : geo; g.computeVertexNormals(); return g; };   // every face one flat shade
+  const G = {
+    ball: flat(new THREE.SphereGeometry(1, 8, 6)), cone: flat(new THREE.ConeGeometry(1, 1, 5)), box: flat(new THREE.BoxGeometry(1, 1, 1)),
+    cyl: flat(new THREE.CylinderGeometry(1, 1, 1, 6)), dome: flat(new THREE.SphereGeometry(1, 8, 5, 0, Math.PI * 2, 0, Math.PI / 2)), gem: flat(new THREE.OctahedronGeometry(1, 0)),
+  };
+  function P(g, geo, color, p, s, r, opacity) {
+    const m = new THREE.Mesh(G[geo], mat(color, opacity)); m.position.set(p[0], p[1], p[2]); m.scale.set(s[0], s[1], s[2]); if (r) m.rotation.set(r[0], r[1], r[2]); g.add(m); return m;
+  }
+  /* a flapping wing: a flat triangle hinged at the shoulder, stored as userData.w1 / w-1 */
+  function wing(g, s, at, len, chord, c1, c2, tip) {
+    const w = new THREE.Group(); w.position.set(s * at[0], at[1], at[2]); g.add(w); g.userData['w' + s] = w;
+    P(w, 'cone', c1, [s * len / 2, 0.02, 0], [0.14, len, chord], [0, 0, s * -Math.PI / 2]);
+    if (c2) P(w, 'cone', c2, [s * len * 0.47, -0.09, 0], [0.12, len * 0.9, chord * 0.88], [0, 0, s * -Math.PI / 2]);
+    if (tip) P(w, 'cone', tip, [s * len * 0.82, 0.05, 0.05], [0.15, len * 0.4, chord * 0.45], [0, 0, s * -Math.PI / 2]);
+    return w;
+  }
+  const MODELS = {
+    dolphin(g) {
+      P(g, 'ball', 0x5f7f99, [0, 0, 0], [1.1, 1.0, 3.2]); P(g, 'ball', 0xdfe8ee, [0, -0.35, 0], [0.9, 0.7, 2.6]);
+      P(g, 'cone', 0x5f7f99, [0, 1.1, 0.4], [0.5, 1.4, 0.5], [-0.4, 0, 0]); P(g, 'box', 0x5f7f99, [0, 0, 3.3], [2.4, 0.15, 0.8]);
+      P(g, 'cone', 0x5f7f99, [0, 0, -3.6], [0.35, 1.2, 0.35], [-Math.PI / 2, 0, 0]);
+      for (const s of [-1, 1]) P(g, 'box', 0x5f7f99, [s * 1.1, -0.4, -0.8], [1.1, 0.12, 0.6], [0, 0, s * -0.5]);
+    },
+    turtle(g) {
+      P(g, 'dome', 0x7a8f3c, [0, 0.1, 0], [1.7, 1.0, 2.1]); P(g, 'dome', 0x9fb055, [0, 0.45, 0], [1.1, 0.75, 1.4]);
+      P(g, 'ball', 0xe8d9a0, [0, 0, 0], [1.6, 0.3, 2.0]); P(g, 'ball', 0xb7c46a, [0, 0.25, -2.5], [0.6, 0.5, 0.75]);
+      for (const s of [-1, 1]) { g.userData['f' + s] = P(g, 'box', 0xb7c46a, [s * 2.0, 0, -0.9], [1.8, 0.14, 0.75], [0, s * 0.5, 0]); P(g, 'box', 0xb7c46a, [s * 1.4, 0, 1.6], [0.9, 0.12, 0.5], [0, s * -0.6, 0]); }
+      P(g, 'box', 0x1a1a1a, [0.32, 0.4, -2.95], [0.1, 0.12, 0.1]); P(g, 'box', 0x1a1a1a, [-0.32, 0.4, -2.95], [0.1, 0.12, 0.1]);
+    },
+    flyingfish(g) {
+      P(g, 'ball', 0x3f7fb5, [0, 0.05, 0], [0.42, 0.5, 1.9]); P(g, 'ball', 0xe6eef4, [0, -0.14, 0], [0.36, 0.4, 1.7]);
+      for (const s of [-1, 1]) { wing(g, s, [0.3, 0.1, -0.5], 2.5, 0.85, 0x9fd6f5, null, null).rotation.y = s * -0.35; P(g, 'box', 0x10151c, [s * 0.36, 0.14, -1.3], [0.06, 0.14, 0.14]);
+        P(g, 'box', 0x3f7fb5, [s * 0.35, 0, 2.2], [0.1, 0.5, 1.0], [0, s * 0.5, 0]); }
+    },
+    tuna(g) {
+      P(g, 'ball', 0x26466d, [0, 0.1, 0], [0.9, 1.15, 2.7]); P(g, 'ball', 0xd9e3ea, [0, -0.3, 0], [0.75, 0.85, 2.4]);
+      P(g, 'cone', 0x26466d, [0, 1.25, -0.3], [0.3, 1.0, 0.5], [-0.5, 0, 0]); P(g, 'cone', 0xf2c230, [0, 1.0, 1.2], [0.18, 0.7, 0.3], [-0.5, 0, 0]); P(g, 'cone', 0xf2c230, [0, -1.0, 1.2], [0.18, 0.7, 0.3], [Math.PI + 0.5, 0, 0]);
+      P(g, 'box', 0x26466d, [0, 0.7, 3.0], [0.12, 1.5, 0.4], [0.5, 0, 0]); P(g, 'box', 0x26466d, [0, -0.7, 3.0], [0.12, 1.5, 0.4], [-0.5, 0, 0]);
+      P(g, 'box', 0x10151c, [0.7, 0.3, -1.9], [0.08, 0.2, 0.2]); P(g, 'box', 0x10151c, [-0.7, 0.3, -1.9], [0.08, 0.2, 0.2]);
+    },
+    flamingo(g) {                                         // in flight: neck stretched out front, legs trailing behind
+      P(g, 'ball', 0xff7fae, [0, 0, 0], [0.7, 0.62, 1.5]); P(g, 'cyl', 0xff8fb7, [0, 0.12, -2.5], [0.12, 2.4, 0.12], [Math.PI / 2, 0, 0]);
+      P(g, 'ball', 0xff7fae, [0, 0.16, -3.85], [0.28, 0.28, 0.36]); P(g, 'cone', 0xfbe9ef, [0, 0.08, -4.3], [0.13, 0.5, 0.13], [-Math.PI / 2 - 0.25, 0, 0]); P(g, 'cone', 0x1a1a1a, [0, -0.04, -4.62], [0.085, 0.3, 0.085], [-Math.PI / 2 - 0.6, 0, 0]);
+      for (const s of [-1, 1]) { P(g, 'cyl', 0xf2a0b8, [s * 0.16, -0.12, 3.0], [0.06, 3.4, 0.06], [Math.PI / 2, 0, 0]); wing(g, s, [0.45, 0.2, -0.1], 3.6, 1.15, 0xff8fb7, 0xffb3cf, 0x1a1a1a); }
+    },
+    seal(g) {
+      P(g, 'ball', 0x6e6258, [0, -0.5, 0.6], [1.2, 1.0, 2.6], [0.25, 0, 0]); P(g, 'ball', 0xb9aa98, [0, -0.85, 0.3], [0.95, 0.7, 2.0], [0.25, 0, 0]);
+      P(g, 'ball', 0x6e6258, [0, 0.75, -1.9], [0.8, 0.75, 0.85]); P(g, 'ball', 0x857869, [0, 0.55, -2.55], [0.45, 0.38, 0.4]);
+      P(g, 'box', 0x1a1a1a, [0, 0.6, -2.95], [0.2, 0.14, 0.1]);
+      for (const s of [-1, 1]) { P(g, 'box', 0x10151c, [s * 0.42, 0.95, -2.45], [0.14, 0.16, 0.1]); P(g, 'box', 0x6e6258, [s * 1.2, -0.4, -0.6], [1.0, 0.14, 0.6], [0, s * 0.5, s * -0.4]); }
+    },
+    swordfish(g) {
+      P(g, 'ball', 0x2b3f63, [0, 0.1, 0], [0.75, 0.95, 3.4]); P(g, 'ball', 0xcfd9e2, [0, -0.25, 0], [0.62, 0.7, 3.0]);
+      P(g, 'cone', 0x39424f, [0, 0.05, -5.2], [0.14, 3.6, 0.1], [-Math.PI / 2, 0, 0]);
+      P(g, 'cone', 0x2b3f63, [0, 1.5, -1.2], [0.2, 2.0, 0.9], [-0.35, 0, 0]);
+      P(g, 'box', 0x2b3f63, [0, 0.9, 3.8], [0.12, 2.0, 0.4], [0.6, 0, 0]); P(g, 'box', 0x2b3f63, [0, -0.9, 3.8], [0.12, 2.0, 0.4], [-0.6, 0, 0]);
+      for (const s of [-1, 1]) { P(g, 'box', 0x2b3f63, [s * 0.8, -0.5, -1.4], [1.2, 0.1, 0.4], [0, s * 0.6, s * -0.5]); P(g, 'box', 0x10151c, [s * 0.6, 0.3, -2.4], [0.08, 0.22, 0.22]); }
+    },
+    falcon(g) {
+      P(g, 'ball', 0x4a3b33, [0, 0, 0], [0.5, 0.45, 1.35]); P(g, 'ball', 0xb9774a, [0, -0.14, -0.1], [0.42, 0.36, 1.1]);
+      P(g, 'ball', 0x3a2d27, [0, 0.18, -1.35], [0.36, 0.34, 0.4]); P(g, 'cone', 0xf2c230, [0, 0.1, -1.8], [0.11, 0.3, 0.11], [-Math.PI / 2 - 0.5, 0, 0]);
+      P(g, 'box', 0x4a3b33, [0, 0, 1.9], [0.75, 0.08, 1.5]);
+      for (const s of [-1, 1]) { wing(g, s, [0.3, 0.12, -0.2], 3.5, 0.95, 0x4a3b33, 0x6b574c, null).rotation.y = s * -0.3; P(g, 'box', 0xf2e9c9, [s * 0.26, 0.22, -1.62], [0.08, 0.1, 0.1]); }
+    },
+    ray(g) {
+      P(g, 'gem', 0x3a4250, [0, 0, 0], [1.4, 0.38, 2.1]); P(g, 'gem', 0xe9eef2, [0, -0.13, 0], [1.3, 0.32, 1.95]);
+      for (const s of [-1, 1]) { wing(g, s, [0.7, 0, 0.1], 3.4, 1.7, 0x3a4250, 0xe9eef2, null);
+        P(g, 'cone', 0x3a4250, [s * 0.5, 0, -2.2], [0.2, 0.9, 0.2], [-Math.PI / 2, 0, s * 0.3]); P(g, 'box', 0x10151c, [s * 0.75, 0.12, -1.4], [0.1, 0.14, 0.16]); }
+      P(g, 'cyl', 0x3a4250, [0, 0, 3.6], [0.07, 3.4, 0.07], [Math.PI / 2, 0, 0]);
+    },
+    whale(g) {
+      P(g, 'ball', 0x46525f, [0, 0, 0], [3.0, 2.5, 12.0]); P(g, 'ball', 0xdde4ea, [0, -1.15, -0.6], [2.5, 1.7, 9.4]);
+      P(g, 'cone', 0x46525f, [0, 2.6, 5.5], [0.5, 1.6, 1.3], [-0.6, 0, 0]);
+      P(g, 'box', 0x46525f, [0, 0.2, 12.4], [7.0, 0.35, 2.0]); P(g, 'cone', 0x46525f, [0, 0, 10.5], [1.1, 4.0, 1.0], [Math.PI / 2, 0, 0]);
+      for (const s of [-1, 1]) { P(g, 'box', 0x46525f, [s * 3.2, -1.2, -4.5], [3.2, 0.3, 1.3], [0, s * 0.5, s * -0.4]); P(g, 'box', 0x10151c, [s * 2.45, 0.2, -8.3], [0.12, 0.3, 0.4]); }
+      const spout = new THREE.Group(); spout.position.set(0, 2.4, -6.5); g.add(spout); g.userData.spout = spout;
+      P(spout, 'cone', 0xffffff, [0, 2.2, 0], [1.3, 4.4, 1.3], [Math.PI, 0, 0], 0.75); P(spout, 'ball', 0xffffff, [0, 4.6, 0], [1.8, 0.9, 1.8], null, 0.6);
+    },
+  };
+  function makeAnimal(id) { const g = new THREE.Group(); MODELS[id](g); return g; }
+  const spOf = id => SPECIES.find(s => s.id === id);
+
+  /* ---------- saved state ---------- */
+  const PICS_KEY = 'sardiniaSkipper_photos_v1';
+  let pics = {}; try { pics = JSON.parse(localStorage.getItem(PICS_KEY) || '{}') || {}; } catch (e) { pics = {}; }
+  const savePics = () => { try { localStorage.setItem(PICS_KEY, JSON.stringify(pics)); } catch (e) { /* storage full: the book falls back to a drawing */ } };
+  const taken = () => (pStats.photos || (pStats.photos = {}));
+  const count = () => SPECIES.filter(s => taken()[s.id]).length;
+
+  /* ---------- the animals ---------- */
+  const group = new THREE.Group(); scene.add(group);
+  let active = [], timer = 0, wasOn = false, shots = { n: 0, fresh: 0 }, forced = null;     // forced: tests can pick the species
+  const rand = (a, b) => a + Math.random() * (b - a);
+  const safariOn = () => state === 'mistral_run' && mState.theme && mState.theme.photos;
+  function pick(nm) {
+    if (forced) return spOf(forced);
+    const pool = SPECIES.filter(s => nm >= s.nm), fresh = pool.filter(s => !taken()[s.id]);
+    const from = fresh.length && Math.random() < PHOTO.preferNew ? fresh : pool;
+    return from[Math.floor(Math.random() * from.length)];
+  }
+  function remove(a) { group.remove(a.g); active = active.filter(x => x !== a); if (target === a) setTarget(null); }
+  function clearAll() { for (const a of active.slice()) remove(a); setTarget(null); }
+  function spawn() {
+    const sp = pick(mState.dist); if (!sp) return;
+    const g = new THREE.Group(), members = [], S = sp.scale * PHOTO.scale, edge = sp.move === 'whale';
+    for (let i = 0; i < sp.n; i++) { const m = makeAnimal(sp.id); m.userData.ph = i * 1.7 + Math.random(); m.userData.off = sp.n === 1 ? [0, 0] : [(i - (sp.n - 1) / 2) * sp.size * S * 0.95, (i % 2) * sp.size * S * 0.7]; g.add(m); members.push(m); }
+    group.add(g);
+    const lane = edge ? (Math.random() < 0.5 ? -1 : 1) * 46 : rand(-42, 42);
+    active.push({ sp, g, members, S, R: sp.size * S * (sp.n > 1 ? 0.55 + sp.n * 0.3 : 0.9),   // R: how big the subject is, for the viewfinder and the lens
+      lane, x: lane, z: boat.z - 230, rel: -230, cy: 0, age: 0, hold: edge ? 7 : 5.5, shot: false, prog: 0, heading: 0 });
+    hint();
+  }
+  /* how each kind moves: sets every member's position and pose */
+  function pose(a, t) {
+    const mv = a.sp.move, S = a.S; let sumY = 0;
+    for (const m of a.members) {
+      const o = m.userData.off, ph = t * (mv === 'leap' ? 2.6 : 1.4) + m.userData.ph, x = a.x + o[0], z = a.z + o[1], w = waveHeight(x, z, t);
+      let y = w, rx = 0, flap = 0;
+      if (mv === 'leap') { const s = Math.sin(ph), hi = a.sp.id === 'ray' ? 4.2 : a.sp.id === 'flyingfish' ? 3.6 : 3.2;
+        y = w + (a.peak ? 2.6 : Math.max(-1.4, s * hi) - 0.5) * S; rx = a.peak ? -0.3 : -Math.cos(ph) * 0.6;
+        flap = a.sp.id === 'ray' ? Math.sin(t * 9 + m.userData.ph) * 0.55 : Math.sin(t * 30 + m.userData.ph) * 0.12 + 0.15; }
+      else if (mv === 'float') { const seal = a.sp.id === 'seal'; y = w + ((seal ? 0.9 : 0.3) + Math.sin(ph) * (seal ? 0.45 : 0.2) + (a.peak && seal ? 0.5 : 0)) * S; rx = Math.sin(ph * 0.7) * 0.06;
+        if (m.userData.f1) { const f = Math.sin(t * 2.2) * 0.4; m.userData.f1.rotation.z = -f; m.userData['f-1'].rotation.z = f; } }
+      else if (mv === 'fly') { const dive = a.sp.id === 'falcon'; y = w + ((dive ? 5.5 : 4.2) + Math.sin(ph * (dive ? 0.9 : 0.6)) * (dive ? 2.2 : 0.7)) * S; rx = dive ? -Math.cos(ph * 0.9) * 0.25 : 0;
+        flap = a.peak ? 0.45 : Math.sin(t * (dive ? 7 : 5) + m.userData.ph) * (dive ? 0.45 : 0.6); }
+      else if (mv === 'whale') { const s = Math.sin(t * 0.9 + m.userData.ph); y = w + (a.peak ? 0.2 : -2.2 + s * 1.6) * S; rx = -Math.cos(t * 0.9 + m.userData.ph) * 0.07;
+        const sp = m.userData.spout, blow = Math.max(0, Math.sin(t * 0.9 + m.userData.ph - 0.3)); sp.visible = blow > 0.55 || !!a.peak; sp.scale.setScalar(0.6 + blow * 0.7); }
+      if (m.userData.w1) { m.userData.w1.rotation.z = flap; m.userData['w-1'].rotation.z = -flap; }
+      m.scale.setScalar(S); m.position.set(x, y + (a.sink || 0), z); m.rotation.set(rx, a.heading, 0); sumY += y;
+    }
+    a.cy = sumY / a.members.length;
+  }
+
+  /* ---------- viewfinder, flash, polaroid ---------- */
+  const el = { finder: $('photoFinder'), ring: $('photoRing'), label: $('photoLabel'), flash: $('photoFlash'), card: $('photoCard') };
+  let target = null, cardTimer = null, nowT = 0; const v3 = new THREE.Vector3();
+  function setTarget(a) { target = a; if (!a) el.finder.classList.remove('show', 'ok'); }
+  function hint() {
+    if (pStats.storySeen.tut_photo) return; pStats.storySeen.tut_photo = true; Save.queue();
+    showToast('📷 Get alongside it and <b>hold the wheel steady</b> to take its photo!', 4500);
+  }
+  function drawFinder(a, view) {
+    const d = Math.max(20, camera.position.distanceTo(v3.set(a.x, a.cy + a.R * 0.15, a.z)));
+    v3.project(camera);
+    if (v3.z > 1 || Math.abs(v3.x) > 1.25 || Math.abs(v3.y) > 1.25) { el.finder.classList.remove('show'); return; }
+    const c = renderer.domElement, W = c.clientWidth, H = c.clientHeight;
+    const px = Math.max(78, Math.min(210, a.R * 2.3 / d * H * 0.95)), x = (v3.x * 0.5 + 0.5) * W, y = (-v3.y * 0.5 + 0.5) * H;
+    el.finder.style.transform = `translate(${(x - px / 2).toFixed(1)}px, ${(y - px / 2).toFixed(1)}px)`; el.finder.style.width = el.finder.style.height = px.toFixed(0) + 'px';
+    el.finder.classList.add('show'); el.finder.classList.toggle('ok', view === 'focus');
+    el.ring.style.strokeDashoffset = (113 * (1 - Math.min(1, a.prog))).toFixed(1);
+    el.label.textContent = view === 'focus' ? '📷 Hold steady…' : view === 'steer' ? '✋ Hold the wheel steady' : '📷 Get closer';
+  }
+  function playShutterSound() { if (!sfxOk()) return; burst(noiseBuf, 'highpass', 3200, 0.03, 0.3); burst(noiseBuf, 'bandpass', 1800, 0.05, 0.22, 3, 0.09); tone('triangle', 1568, 2093, 0.16, 0.05, 0.16); }
+
+  /* The photo itself: taken from your side of the animal, a little ahead of it, so you see
+     its face with your own boat sailing behind. Drawn straight after the shutter fires,
+     copied off the game canvas and shrunk to a small JPEG. */
+  const snapCv = document.createElement('canvas'); snapCv.width = snapCv.height = 320;
+  function snapshot(a) {
+    try {
+      const keep = { p: camera.position.clone(), q: camera.quaternion.clone(), fov: camera.fov };
+      a.peak = true; pose(a, nowT); a.peak = false;                                           // caught at its best moment: mid-leap, wings up, or right at the surface
+      const mv = a.sp.move, R = a.R, cy = a.cy + R * (mv === 'whale' ? 0.12 : 0.05), D = R * 2.7;
+      let sx = boat.x - a.x; if (Math.abs(sx) < 3) sx = a.x > 0 ? -1 : 1; sx = Math.sign(sx);  // which side of the animal you are on
+      if (Math.abs(a.x + sx * 0.7 * D) > 52) sx = -sx;                                         // never from inside the bank at the side
+      const dl = Math.hypot(0.8, 0.8);
+      camera.position.set(a.x + sx * 0.8 / dl * D, Math.max(waveHeight(a.x, a.z, nowT) + 3, cy + D * (mv === 'fly' ? 0.05 : 0.26)), a.z - 0.8 / dl * D);
+      camera.up.set(0, 1, 0); camera.lookAt(a.x, cy, a.z);
+      const d2 = camera.position.distanceTo(v3.set(a.x, cy, a.z));
+      camera.fov = Math.max(10, Math.min(60, 2 * Math.atan(R * 1.2 / d2 / Math.min(1, Math.max(0.35, camera.aspect))) * 180 / Math.PI)); camera.updateProjectionMatrix();   // the subject fills most of the frame
+      renderer.render(scene, camera);
+      const c = renderer.domElement, s = Math.min(c.width, c.height), g2 = snapCv.getContext('2d');
+      g2.drawImage(c, (c.width - s) / 2, (c.height - s) / 2, s, s, 0, 0, 320, 320);
+      camera.position.copy(keep.p); camera.quaternion.copy(keep.q); camera.fov = keep.fov; camera.updateProjectionMatrix();
+      return snapCv.toDataURL('image/jpeg', 0.82);
+    } catch (e) { return null; }
+  }
+  function shoot(a) {
+    a.shot = true; a.prog = 1;
+    const url = snapshot(a), sp = a.sp, first = !taken()[sp.id], R = PHOTO.reward;
+    if (url) { pics[sp.id] = url; savePics(); }
+    taken()[sp.id] = (taken()[sp.id] || 0) + 1; shots.n++; if (first) shots.fresh++;
+    el.flash.classList.remove('go'); void el.flash.offsetWidth; el.flash.classList.add('go');
+    playShutterSound(); try { Platform.haptics.impact('MEDIUM'); } catch (e) {}
+    let line;
+    if (first) { Wallet.earn(R.firstEuros, true); Wallet.addKnots(R.firstKnots); pStats.photoNew = true; line = `NEW! +${R.firstEuros} € · +${R.firstKnots} 🪢`; }
+    else { Wallet.earn(R.againEuros, true); line = `+${R.againEuros} €`; }
+    if (first && count() === SPECIES.length && !pStats.photoBookDone) { pStats.photoBookDone = true; Wallet.addKnots(R.bookKnots); setTimeout(() => showBanner(`📷 PHOTO BOOK COMPLETE! +${R.bookKnots} 🪢`, 'record', 3200), 2600); }
+    el.card.innerHTML = `<div class="ph"><img alt="" src="${url || picture(sp.id)}"></div><b>${sp.name}</b><span>${line}</span><small>${count()}/${SPECIES.length} in your Photo Book</small>`;
+    el.card.className = 'photo-card show' + (first ? ' new' : '');
+    clearTimeout(cardTimer); cardTimer = setTimeout(() => el.card.classList.remove('show'), 3000);
+    setTarget(null); Save.queue();
+  }
+
+  /* ---------- per-frame ---------- */
+  function update(dt, t) {
+    nowT = t; const on = safariOn();
+    if (on !== wasOn) { clearAll(); wasOn = on; if (on) { timer = rand(...PHOTO.first); shots = { n: 0, fresh: 0 }; } else el.card.classList.remove('show'); }
+    if (!on) return;
+    timer -= dt;
+    if (timer <= 0 && !active.length && mState.active) { spawn(); timer = rand(...PHOTO.every); }
+    let best = null;
+    for (const a of active.slice()) {
+      a.age += dt;
+      const inT = 1.3, k = Math.min(1, a.age / inT), e = 1 - (1 - k) * (1 - k);                // comes up from ahead, cruises beside you, then dives or peels away
+      const hold = Math.max(0, Math.min(a.hold, a.age - inT));
+      a.rel = -230 + 182 * e + hold * 3;
+      const out = a.age - inT - a.hold;
+      if (out > 0) { a.sink = a.sp.move === 'fly' ? out * out * 22 : -out * out * 14; a.rel -= out * 30; if (out > 1.3) { remove(a); continue; } }
+      a.z = boat.z + a.rel; a.x = a.lane + Math.sin(t * 0.7 + a.lane) * 3;
+      pose(a, t);
+      if (a.shot || out > 0) continue;
+      const dx = Math.abs(boat.x - a.x), near = dx < PHOTO.reach + (a.sp.move === 'whale' ? 18 : 0) && a.rel > -120;
+      const steady = Math.abs(steerAxis()) < PHOTO.steady;
+      if (near && steady && !(mState.jumpY > 2)) a.prog += dt / PHOTO.need; else a.prog = Math.max(0, a.prog - dt * 1.4);
+      a.view = near ? (steady ? 'focus' : 'steer') : 'far'; if (a.rel > -150) best = a;
+      if (a.prog >= 1) shoot(a);
+    }
+    if (best && !best.shot) { target = best; drawFinder(best, best.view); } else setTarget(null);
+  }
+
+  /* ---------- the book ---------- */
+  const drawn = {};
+  function picture(id) {                                    // a clean drawing of the animal: the silhouette, and the stand-in if a photo file is lost
+    if (drawn[id]) return drawn[id];
+    const g = makeAnimal(id); if (g.userData.spout) g.userData.spout.visible = false;
+    if (g.userData.w1) { g.userData.w1.rotation.z = 0.3; g.userData['w-1'].rotation.z = -0.3; }
+    return drawn[id] = PropRender.render('animal_' + id, g, [1, 0.45, -0.75], 1.8);
+  }
+  function openBook() {
+    const have = taken(), n = count();
+    $('photoSub').innerHTML = `<b>${n} / ${SPECIES.length}</b> animals photographed` + (n === SPECIES.length ? ' · complete! 🏆' : ` · finish the book for <b>${PHOTO.reward.bookKnots} 🪢</b>`);
+    $('photoGrid').innerHTML = SPECIES.map(s => have[s.id]
+      ? `<div class="polaroid"><div class="ph"><img alt="" src="${pics[s.id] || picture(s.id)}"></div><b>${s.name}</b><small>${s.fact}</small><i>×${have[s.id]}</i></div>`
+      : `<div class="polaroid missing"><div class="ph"><img alt="" src="${picture(s.id)}"></div><b>???</b><small>${s.nm ? 'Photo Safari · past ' + s.nm + ' NM' : 'Photo Safari · seen early on'}</small></div>`).join('');
+    pStats.photoNew = false; refreshMenu(); $('photoOverlay').classList.add('open');
+  }
+  function refreshMenu() { const b = $('menuPhotos'); if (b) b.textContent = count() + '/' + SPECIES.length; const sb = $('menuSafariSub'); if (sb) sb.textContent = count() + '/' + SPECIES.length + ' animals'; const d = $('photoDot'); if (d) d.style.display = pStats.photoNew ? 'block' : 'none'; }
+  function reset() { pics = {}; try { localStorage.removeItem(PICS_KEY); } catch (e) {} clearAll(); refreshMenu(); }
+  $('btnPhotos').addEventListener('click', () => { if (typeof playMenuClick === 'function') playMenuClick(); openBook(); });
+  $('photoClose').addEventListener('click', () => $('photoOverlay').classList.remove('open'));
+  $('photoGo').addEventListener('click', () => { $('photoOverlay').classList.remove('open'); $('btnSafari').click(); });
+
+  return { update, openBook, refreshMenu, clearAll, picture, reset, runShots: () => shots, _active: () => active, _spawn: spawn, _force: id => { forced = id; } };
+})();
+
+</script>
+<script>
+/* ==============================================================
    REMINDERS — the old fisherman sends a message to bring players back.
    All local (scheduled on the phone), re-planned every time the game
    opens or goes to the background, so nothing ever fires stale.
@@ -7190,8 +7647,9 @@ function loop(now) {
   if (state === 'mistral_run') {
     updateMistral(dt, t);
     updateClouds(dt); updateSea(t, mState.nextZ + 500); updateRunSea(t); updateGulls(dt, t);
+    Photos.update(dt, t);
   } else {
-    updateNormal(dt, t); TourEvents.update(dt, t); updateClouds(dt); updateSea(t); updateAmbientBoats(dt, t); updateGulls(dt, t);
+    updateNormal(dt, t); TourEvents.update(dt, t); Photos.update(dt, t); updateClouds(dt); updateSea(t); updateAmbientBoats(dt, t); updateGulls(dt, t);
     if (state === 'sailing' || state === 'docking' || state === 'viewing') { drawMap(miniCtx, mini.width, mini.height, t, false); if (bigWrap.classList.contains('open')) drawMap(bigCtx, big.width, big.height, t, true); }
   }
   if (boatGroup.userData.props) for (const p of boatGroup.userData.props) p.rotation.z += (1.5 + Math.abs(boat.speed) * 0.3) * 5 * dt;
