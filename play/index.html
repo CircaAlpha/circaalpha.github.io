@@ -971,7 +971,7 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
 .mm-modes .story-btn { flex: 1; min-width: 0; font-size: 14px; padding: 10px 6px; }
 .mm-modes .story-sub { font-size: 11px; }
 .safari-btn { background: linear-gradient(160deg, #19a57f, #0c7a66); border-color: var(--sun); }
-.btn.go { background: linear-gradient(160deg, #19a57f, #0c7a66); color: #fff; }
+.btn.go { background: linear-gradient(160deg, #19a57f, #0c7a66); color: #fff; padding: 13px 10px; font-size: 16px; line-height: 1.2; }
 
 </style>
 
@@ -1122,6 +1122,17 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
     <div class="photo-grid" id="photoGrid"></div>
     <button class="btn wide go" id="photoGo">📷 Go on a Photo Safari</button>
     <button class="btn wide" id="photoClose" data-back>◀ Back</button>
+  </div>
+</div>
+
+<div class="overlay" id="filmOverlay">
+  <div class="panel small-panel film-panel">
+    <h2>🎞️ Camera film</h2>
+    <div class="sub" id="filmSub"></div>
+    <button class="go-btn" id="filmGo">📷 START SAFARI</button>
+    <button class="go-btn" id="filmAd">📺 WATCH AD · +1 ROLL</button>
+    <button class="go-btn gold" id="filmKnots">🪢 20 · REFILL ALL 5</button>
+    <button class="btn wide" id="filmBack" data-back>◀ Back</button>
   </div>
 </div>
 
@@ -1970,7 +1981,7 @@ function chapterForDay(day) {
 const SAFARI_INTRO = [
   { who: 'old', text: 'The storm has blown itself out, Skipper. On days like this the sea shows off: **dolphins**, **turtles**, even a **whale** out past the sandbanks.' },
   { who: 'old', text: 'Take my old **camera**. Same channel, same rocks and buoys, but no storm and nobody to rescue. Just you and the sea. Steer with the **slider** at the bottom, like always.' },
-  { who: 'old', text: 'When something swims up, get **alongside it** and **hold the wheel steady**. Shaky hands, blurry photo! Fill my **Photo Book** and I\'ll make it worth your while.' },
+  { who: 'old', text: 'The viewfinder points **straight ahead of your boat**. Nothing out there sits still, so **steer to keep the animal in the frame** until the ring fills up. Fill my **Photo Book** and I\'ll make it worth your while.' },
 ];
 
 const MISTRAL_INTRO = [
@@ -5681,7 +5692,8 @@ function endMistralRun(sank) {
   mState.active = false; boatGroup.scale.setScalar(1);
   SteerSlider.show(false); $('btnPause').classList.remove('show');
   $('mistralHUD').style.display = 'none'; input.left = input.right = false;
-  const totE = mState.coins, totK = mState.knots;
+  const theme = mState.theme || RUN_THEMES.storm, lm = theme.loot || 1;          // a Photo Safari pays more: you only get a few a day
+  const totE = Math.round(mState.coins * lm), totK = Math.ceil(mState.knots * lm);
   Wallet.earn(totE, true); Wallet.addKnots(totK);
   const prevBest = mBestScore;
   const newRecord = mState.score > mBestScore; if (newRecord) mBestScore = mState.score;
@@ -5691,9 +5703,10 @@ function endMistralRun(sank) {
   hideToast(); hideBanner(); hideMissionNote(); Save.write();
 
   const score = Math.floor(mState.score);
-  $('mSumTitle').textContent = newRecord ? '🏆 NEW RECORD!' : sank ? '🌊 SUNK BY THE MISTRAL' : '🌪️ MISTRAL SURVIVED';
+  $('mSumTitle').textContent = newRecord ? '🏆 NEW RECORD!' : sank ? theme.sunkTitle : theme.doneTitle;
   $('mSumTitle').className = newRecord ? 'sum-title record' : 'sum-title';
-  $('mSumSub').textContent = sank ? 'The coast guard hauled you back. Repairs are on the house.' : 'The storm blew over... for now.';
+  $('mSumSub').textContent = sank ? theme.sunkSub : theme.doneSub;
+  $('mSumAgain').textContent = theme.photos ? '📷 SAFARI AGAIN · 🎞️ ' + Photos.Film.left() + ' left' : '🌪️ RUN AGAIN';
 
   // Goal gradient: show how close this run came to the best
   const pct = prevBest > 0 ? Math.min(100, Math.round(score / prevBest * 100)) : 100;
@@ -5713,6 +5726,7 @@ function endMistralRun(sank) {
       <div class="loot">${mState.dist.toFixed(1)}<small>NM SAILED</small></div>
       ${mState.theme && mState.theme.photos ? `<div class="loot">${Photos.runShots().n}<small>PHOTOS</small></div>` : `<div class="loot">${mState.tourists}<small>RESCUED</small></div>`}
     </div>
+    ${lm > 1 ? `<div class="best-line">📷 Safari bonus: <b>×${lm}</b> euros and knots</div>` : ''}
     ${done.length ? `<div class="mission-done"><h4>✅ MISSIONS COMPLETE</h4>${done.map(m => `<div class="md-row"><span>${m.text}</span><span class="pos">${Retention.rewardText(m.reward)}</span></div>`).join('')}</div>` : ''}
     ${Retention.missionsHtml(true)}
   `;
@@ -5747,15 +5761,12 @@ function initMistralUI() {
     else Retention.openBriefing();
   };
   $('briefGo').onclick = () => { playMenuClick(); $('briefOverlay').classList.remove('open'); startMistralRun('storm'); };
-  // Photo Safari: the same run on a calm day, straight in (its intro plays the first time)
-  $('btnSafari').onclick = () => {
-    playMenuClick(); const go = () => startMistralRun('safari');
-    if (!pStats.storySeen.run_intro_safari) { pStats.storySeen.run_intro_safari = true; Save.queue(); playScene(SAFARI_INTRO, go); } else go();
-  };
+  // Photo Safari: the same run on a calm day. It costs a roll of film (photos.js)
+  $('btnSafari').onclick = () => { playMenuClick(); Photos.openBook(); };   // opens the Photo Book first; its big button starts the safari
   $('briefBack').onclick = () => { $('briefOverlay').classList.remove('open'); };
   // After the very first run, the Old Fisherman explains what the loot is for
   $('mSumContinue').onclick = () => { playMenuClick(); $('mistralSummary').classList.remove('open'); leaveMistralWorld(); openMainMenu(); adBreak('runs', () => playTutorial('tut_first_run', () => Reminders.maybeAsk())); };
-  $('mSumAgain').onclick = () => { playMenuClick(); $('mistralSummary').classList.remove('open'); leaveMistralWorld(); adBreak('runs', () => playTutorial('tut_first_run', () => startMistralRun())); };
+  $('mSumAgain').onclick = () => { playMenuClick(); $('mistralSummary').classList.remove('open'); leaveMistralWorld(); adBreak('runs', () => playTutorial('tut_first_run', () => runThemeId === 'safari' ? Photos.tryStart() : startMistralRun())); };
 }
 
 </script>
@@ -5779,6 +5790,7 @@ const RUN_THEMES = {
     water: { base: [0.12, 0.45, 0.70], crest: [0.15, 0.20, 0.10], wall: [0.7, 0.5, 0.3] },   // deep storm blue, white froth under the wave walls
     startToast: "🌪️ THE MISTRAL RUN!<br>Storm's up — dodge obstacles, watch for ⚡, don't hug the breakers!",
     edgeToast: '🌊 Breaking surf! Get off the rocks!',
+    sunkTitle: '🌊 SUNK BY THE MISTRAL', sunkSub: 'The coast guard hauled you back. Repairs are on the house.', doneTitle: '🌪️ MISTRAL SURVIVED', doneSub: 'The storm blew over... for now.',
     intro: () => MISTRAL_INTRO,
     buildBackdrop: buildStormBackdrop,
     updateBackdrop: updateStormBackdrop,
@@ -5790,8 +5802,10 @@ const RUN_THEMES = {
     sky: 0x79cdf2, flash: 0xffffff, fogNear: 330, fogFar: 880, sun: 1.1,
     rain: false, lightning: false, rescue: false, calm: true, photos: true,
     water: { base: [0.08, 0.38, 0.64], crest: [0.12, 0.17, 0.08], wall: [0.20, 0.26, 0.04] },   // lagoon blue, turquoise shallows along the banks
-    startToast: '📷 PHOTO SAFARI<br>A calm day on the water. Get alongside the wildlife and hold the wheel steady.',
+    startToast: '📷 PHOTO SAFARI<br>A calm day on the water. Steer to keep the wildlife in your viewfinder.',
     edgeToast: '🏝️ Shallows! Steer back into the channel!',
+    loot: 1.5,                                            // euros and knots from a safari count 1.5× (film is limited)
+    sunkTitle: '📷 SAFARI OVER', sunkSub: 'The harbour patrol towed you home. Repairs are on the house.', doneTitle: '📷 BACK IN PORT', doneSub: 'A good day on the water.',
     makeEdge: makeSandbank,
     intro: () => SAFARI_INTRO,
     buildBackdrop: buildSafariBackdrop,
@@ -6437,7 +6451,7 @@ function hideToast() { clearTimeout(toastTimer); $('toast').classList.remove('sh
 function hideAllOverlays() { document.querySelectorAll('.overlay.open').forEach(o => o.classList.remove('open')); $('bigmapWrap').classList.remove('open'); }
 /* Closes the top-most open overlay. Returns true if one was closed. */
 function closeTopOverlay() {
-  const order = ['confirmOverlay', 'legalOverlay', 'itemDetail', 'briefOverlay', 'settingsOverlay', 'marketOverlay', 'itemsOverlay', 'missionsOverlay', 'photoOverlay', 'storyOverlay'];
+  const order = ['confirmOverlay', 'legalOverlay', 'itemDetail', 'briefOverlay', 'settingsOverlay', 'marketOverlay', 'itemsOverlay', 'missionsOverlay', 'filmOverlay', 'photoOverlay', 'storyOverlay'];
   for (const id of order) { const el = $(id); if (el.classList.contains('open')) { if (id === 'confirmOverlay') $('confirmNo').click(); else el.querySelector('[data-back]').click(); return true; } }
   if ($('bigmapWrap').classList.contains('open')) { $('bigmapWrap').classList.remove('open'); return true; }
   return false;
@@ -7273,33 +7287,49 @@ const Retention = (() => {
      • Its own game mode: the same run as the Mistral, but on a calm
        sunny day (run theme "safari" in runthemes.js). Animals swim
        or fly up alongside you.
-     • Get alongside one, then HOLD THE WHEEL STEADY: the viewfinder
-       focuses, the shutter fires (flash + click) and the photo goes
-       in your book.
+     • The viewfinder points straight ahead of your boat. The animals
+       keep moving (weaving, darting, swooping): STEER TO KEEP ONE IN
+       THE FRAME until the focus ring is full, then the shutter fires
+       (flash + click) and the photo goes in your book.
      • The picture in the book is the one you actually took.
-   Tuning lives in PHOTO below. Progress is saved in pStats.photos; the
-   pictures themselves sit in their own storage slot (they are big).
+     • A safari costs one roll of FILM. You hold 5 rolls and a new one
+       arrives every 48 minutes (5 per 4 hours); an ad or knots get you
+       more. In return a safari pays 1.5× euros and knots (theme.loot).
+   Tuning lives in PHOTO below. Progress is saved in pStats.photos and
+   pStats.film; the pictures themselves sit in their own storage slot.
    ============================================================== */
 const PHOTO = {
   first: [5, 8], every: [11, 17],                    // seconds until the first animal, and between animals
-  reach: 30, need: 1.15, steady: 0.3,                // lane distance · seconds of focus · how much steering still counts as "steady"
+  drain: 0.7,                                        // focus lost per second while the animal is out of the frame
   scale: 2.1,                                        // animals are drawn larger than life so they read on a phone
-  reward: { firstEuros: 60, firstKnots: 5, againEuros: 15, bookKnots: 100 },
+  reward: { firstEuros: 60, firstKnots: 5, againEuros: 15, bookKnots: 150 },
   preferNew: 0.7,                                    // chance that the next animal is one you still miss
+  film: { max: 5, minutes: 48, adRolls: 1, knotsRefill: 20 },   // 5 safaris per 4 hours
 };
 
-/* nm: how far into a safari before it shows up · move: how it behaves · n: how many travel together */
+/* nm: how far into a safari before it shows up · move: how it behaves · n: how many travel together
+   path: how it crosses the channel (weave = smooth curves, dart = sudden dashes to a new lane, drift = slow)
+   off/amp/per: where a weave is centred (distance from mid-channel), its width and its seconds
+   every: seconds a darter rests in a lane before the next dash (always away from you) · v: top sideways speed
+   frame: half-width of the viewfinder it must stay inside · need: seconds in frame for a sharp photo
+   wake: size of the foam it leaves in the water (0 = none) · tail: where the wake starts behind it */
 const SPECIES = [
-  { id: 'dolphin',    name: 'Bottlenose Dolphin', nm: 0,   move: 'leap',  scale: 1,    size: 5,  n: 3, fact: 'They surf the bow wave for fun.' },
-  { id: 'turtle',     name: 'Loggerhead Turtle',  nm: 0,   move: 'float', scale: 1.1,  size: 4,  n: 1, fact: 'Nests on Sardinian beaches every summer.' },
-  { id: 'flyingfish', name: 'Flying Fish',        nm: 0,   move: 'leap',  scale: 1.2,  size: 3,  n: 4, fact: 'Glides up to 50 metres on its fins.' },
-  { id: 'tuna',       name: 'Bluefin Tuna',       nm: 30,  move: 'leap',  scale: 1,    size: 4,  n: 3, fact: 'Sprints at over 60 km/h.' },
-  { id: 'flamingo',   name: 'Pink Flamingo',      nm: 55,  move: 'fly',   scale: 1.1,  size: 5,  n: 3, fact: 'Sardinians call them "sa genti arrubia", the red people.' },
-  { id: 'seal',       name: 'Monk Seal',          nm: 85,  move: 'float', scale: 1.25, size: 4,  n: 1, fact: 'One of the rarest seals on Earth.' },
-  { id: 'swordfish',  name: 'Swordfish',          nm: 115, move: 'leap',  scale: 1,    size: 6,  n: 1, fact: 'Its bill is a third of its length.' },
-  { id: 'falcon',     name: "Eleonora's Falcon",  nm: 150, move: 'fly',   scale: 1.3,  size: 5,  n: 1, fact: 'Named after a Sardinian queen who protected it in 1392.' },
-  { id: 'ray',        name: 'Devil Ray',          nm: 190, move: 'leap',  scale: 1.1,  size: 6,  n: 2, fact: 'Jumps clean out of the water, nobody knows why.' },
-  { id: 'whale',      name: 'Fin Whale',          nm: 240, move: 'whale', scale: 1,    size: 16, n: 1, fact: 'The second largest animal that ever lived.' },
+  { id: 'dolphin',    name: 'Bottlenose Dolphin', nm: 0,   move: 'leap',   scale: 1,    size: 5,  n: 3, wake: 1,   tail: 3,  path: 'weave', off: 10, amp: 30, per: 5.5, v: 42, frame: 12, need: 1.2, fact: 'They surf the bow wave for fun.' },
+  { id: 'turtle',     name: 'Loggerhead Turtle',  nm: 0,   move: 'float',  scale: 1.1,  size: 4,  n: 1, wake: 0.9, tail: 2,  path: 'weave', off: 24, amp: 10, per: 6, v: 12, frame: 13, need: 1.1, fact: 'Nests on Sardinian beaches every summer.' },
+  { id: 'flyingfish', name: 'Flying Fish',        nm: 0,   move: 'leap',   scale: 1.2,  size: 3,  n: 4, wake: 0.5, tail: 2,  path: 'dart', every: [1.0, 1.7], v: 75, frame: 12, need: 1.0, fact: 'Glides up to 50 metres on its fins.' },
+  { id: 'gull',       name: 'Yellow-legged Gull', nm: 0,   move: 'fly',    scale: 1.2,  size: 4,  n: 2, wake: 0,   tail: 0,  path: 'weave', off: 8, amp: 34, per: 6, v: 42, frame: 12, need: 1.2, fact: 'Follows every fishing boat home.' },
+  { id: 'tuna',       name: 'Bluefin Tuna',       nm: 25,  move: 'leap',   scale: 1,    size: 4,  n: 3, wake: 0.9, tail: 3,  path: 'dart', every: [1.1, 1.8], v: 85, frame: 12, need: 1.2, fact: 'Sprints at over 60 km/h.' },
+  { id: 'mahi',       name: 'Mahi-Mahi',          nm: 45,  move: 'leap',   scale: 1.1,  size: 4,  n: 2, wake: 0.8, tail: 3,  path: 'dart', every: [1.0, 1.7], v: 90, frame: 11, need: 1.2, fact: 'Its gold and green fade minutes after it leaves the water.' },
+  { id: 'flamingo',   name: 'Pink Flamingo',      nm: 60,  move: 'fly',    scale: 1.1,  size: 5,  n: 3, wake: 0,   tail: 0,  path: 'weave', off: 8, amp: 32, per: 7, v: 36, frame: 13, need: 1.4, fact: 'Sardinians call them "sa genti arrubia", the red people.' },
+  { id: 'shag',       name: 'Mediterranean Shag', nm: 75,  move: 'skim',   scale: 1.2,  size: 4,  n: 2, wake: 0,   tail: 0,  path: 'dart', every: [1.3, 2.2], v: 100, frame: 12, need: 1.2, fact: 'Dives 40 metres deep for its lunch.' },
+  { id: 'seal',       name: 'Monk Seal',          nm: 90,  move: 'float',  scale: 1.25, size: 4,  n: 1, wake: 1,   tail: 2.5, path: 'weave', off: 22, amp: 15, per: 3.2, v: 32, frame: 12, need: 1.4, fact: 'One of the rarest seals on Earth.' },
+  { id: 'swordfish',  name: 'Swordfish',          nm: 110, move: 'leap',   scale: 1,    size: 6,  n: 1, wake: 1,   tail: 4,  path: 'dart', every: [1.1, 1.9], v: 105, frame: 11, need: 1.3, fact: 'Its bill is a third of its length.' },
+  { id: 'shark',      name: 'Blue Shark',         nm: 130, move: 'cruise', scale: 1.1,  size: 5,  n: 1, wake: 0.9, tail: -0.5, path: 'weave', off: 28, amp: 20, per: 7, v: 26, frame: 11, need: 1.8, fact: 'Crosses whole oceans; harmless to boats.' },
+  { id: 'falcon',     name: "Eleonora's Falcon",  nm: 150, move: 'fly',    scale: 1.3,  size: 5,  n: 1, wake: 0,   tail: 0,  path: 'weave', off: 0, amp: 34, per: 5.6, v: 60, frame: 13, need: 1.3, fact: 'Named after a Sardinian queen who protected it in 1392.' },
+  { id: 'ray',        name: 'Devil Ray',          nm: 175, move: 'leap',   scale: 1.1,  size: 6,  n: 2, wake: 1.1, tail: 2,  path: 'dart', every: [1.2, 1.9], v: 95, frame: 12, need: 1.4, fact: 'Jumps clean out of the water, nobody knows why.' },
+  { id: 'orca',       name: 'Orca',               nm: 200, move: 'leap',   scale: 0.9,  size: 8,  n: 1, wake: 1.9, tail: 5,  path: 'weave', off: 10, amp: 30, per: 6.5, v: 46, frame: 13, need: 1.4, fact: 'A rare visitor from the Strait of Gibraltar.' },
+  { id: 'whale',      name: 'Fin Whale',          nm: 230, move: 'whale',  scale: 1,    size: 16, n: 1, wake: 3.4, tail: 9,  path: 'weave', off: 38, amp: 9, per: 10, v: 8, frame: 18, need: 2.2, fact: 'The second largest animal that ever lived.' },
+  { id: 'spermwhale', name: 'Sperm Whale',        nm: 260, move: 'whale',  scale: 0.95, size: 16, n: 1, wake: 3.4, tail: 9,  path: 'weave', off: 38, amp: 9, per: 10, v: 8, frame: 18, need: 2.4, fact: 'Shows its tail flukes before a deep dive.' },
 ];
 
 const Photos = (() => {
@@ -7322,47 +7352,75 @@ const Photos = (() => {
     if (tip) P(w, 'cone', tip, [s * len * 0.82, 0.05, 0.05], [0.15, len * 0.4, chord * 0.45], [0, 0, s * -Math.PI / 2]);
     return w;
   }
+  /* a tail hinged where it meets the body: fish sweep it side to side ('y'), dolphins and whales beat it up and down ('x') */
+  function tail(g, z, axis, amp, speed) { const t = new THREE.Group(); t.position.set(0, 0, z); g.add(t); g.userData.tail = { g: t, axis, amp, speed }; return t; }
+  const fishTail = (g, z, col, h, amp) => { const t = tail(g, z, 'y', amp || 0.45, 9); P(t, 'box', col, [0, h * 0.42, 0.75], [0.12, h, 0.4], [0.55, 0, 0]); P(t, 'box', col, [0, -h * 0.42, 0.75], [0.12, h, 0.4], [-0.55, 0, 0]); P(t, 'cone', col, [0, 0, 0.25], [0.22, 0.9, 0.35], [Math.PI / 2, 0, 0]); return t; };
   const MODELS = {
     dolphin(g) {
       P(g, 'ball', 0x5f7f99, [0, 0, 0], [1.1, 1.0, 3.2]); P(g, 'ball', 0xdfe8ee, [0, -0.35, 0], [0.9, 0.7, 2.6]);
-      P(g, 'cone', 0x5f7f99, [0, 1.1, 0.4], [0.5, 1.4, 0.5], [-0.4, 0, 0]); P(g, 'box', 0x5f7f99, [0, 0, 3.3], [2.4, 0.15, 0.8]);
-      P(g, 'cone', 0x5f7f99, [0, 0, -3.6], [0.35, 1.2, 0.35], [-Math.PI / 2, 0, 0]);
-      for (const s of [-1, 1]) P(g, 'box', 0x5f7f99, [s * 1.1, -0.4, -0.8], [1.1, 0.12, 0.6], [0, 0, s * -0.5]);
+      P(g, 'cone', 0x5f7f99, [0, 1.1, 0.4], [0.5, 1.4, 0.5], [-0.4, 0, 0]); P(g, 'cone', 0x5f7f99, [0, 0, -3.6], [0.35, 1.2, 0.35], [-Math.PI / 2, 0, 0]);
+      P(tail(g, 2.6, 'x', 0.4, 8), 'box', 0x5f7f99, [0, 0, 0.75], [2.4, 0.15, 0.8]);
+      for (const s of [-1, 1]) { P(g, 'box', 0x5f7f99, [s * 1.1, -0.4, -0.8], [1.1, 0.12, 0.6], [0, 0, s * -0.5]); P(g, 'box', 0x10151c, [s * 0.86, 0.3, -2.3], [0.08, 0.16, 0.16]); }
     },
     turtle(g) {
       P(g, 'dome', 0x7a8f3c, [0, 0.1, 0], [1.7, 1.0, 2.1]); P(g, 'dome', 0x9fb055, [0, 0.45, 0], [1.1, 0.75, 1.4]);
       P(g, 'ball', 0xe8d9a0, [0, 0, 0], [1.6, 0.3, 2.0]); P(g, 'ball', 0xb7c46a, [0, 0.25, -2.5], [0.6, 0.5, 0.75]);
-      for (const s of [-1, 1]) { g.userData['f' + s] = P(g, 'box', 0xb7c46a, [s * 2.0, 0, -0.9], [1.8, 0.14, 0.75], [0, s * 0.5, 0]); P(g, 'box', 0xb7c46a, [s * 1.4, 0, 1.6], [0.9, 0.12, 0.5], [0, s * -0.6, 0]); }
-      P(g, 'box', 0x1a1a1a, [0.32, 0.4, -2.95], [0.1, 0.12, 0.1]); P(g, 'box', 0x1a1a1a, [-0.32, 0.4, -2.95], [0.1, 0.12, 0.1]);
+      for (const s of [-1, 1]) { const f = new THREE.Group(); f.position.set(s * 1.2, 0, -0.9); g.add(f); g.userData['f' + s] = f; P(f, 'box', 0xb7c46a, [s * 0.9, 0, 0], [1.8, 0.14, 0.75], [0, s * 0.5, 0]);
+        P(g, 'box', 0xb7c46a, [s * 1.4, 0, 1.6], [0.9, 0.12, 0.5], [0, s * -0.6, 0]); P(g, 'box', 0x1a1a1a, [s * 0.32, 0.4, -2.95], [0.1, 0.12, 0.1]); }
     },
     flyingfish(g) {
       P(g, 'ball', 0x3f7fb5, [0, 0.05, 0], [0.42, 0.5, 1.9]); P(g, 'ball', 0xe6eef4, [0, -0.14, 0], [0.36, 0.4, 1.7]);
-      for (const s of [-1, 1]) { wing(g, s, [0.3, 0.1, -0.5], 2.5, 0.85, 0x9fd6f5, null, null).rotation.y = s * -0.35; P(g, 'box', 0x10151c, [s * 0.36, 0.14, -1.3], [0.06, 0.14, 0.14]);
-        P(g, 'box', 0x3f7fb5, [s * 0.35, 0, 2.2], [0.1, 0.5, 1.0], [0, s * 0.5, 0]); }
+      fishTail(g, 1.6, 0x3f7fb5, 1.0, 0.5);
+      for (const s of [-1, 1]) { wing(g, s, [0.3, 0.1, -0.5], 2.5, 0.85, 0x9fd6f5, null, null).rotation.y = s * -0.35; P(g, 'box', 0x10151c, [s * 0.36, 0.14, -1.3], [0.06, 0.14, 0.14]); }
+    },
+    gull(g) {
+      P(g, 'ball', 0xf4f6f8, [0, 0, 0], [0.55, 0.5, 1.3]); P(g, 'ball', 0xf4f6f8, [0, 0.2, -1.25], [0.38, 0.36, 0.42]);
+      P(g, 'cone', 0xf2c230, [0, 0.13, -1.75], [0.11, 0.42, 0.11], [-Math.PI / 2 - 0.2, 0, 0]); P(g, 'box', 0xf4f6f8, [0, 0, 1.7], [0.7, 0.08, 1.1]);
+      for (const s of [-1, 1]) { wing(g, s, [0.35, 0.15, -0.1], 3.3, 1.0, 0xbcc6d0, 0xf4f6f8, 0x1a1a1a); P(g, 'box', 0x10151c, [s * 0.3, 0.3, -1.45], [0.07, 0.09, 0.09]); P(g, 'cyl', 0xf2c230, [s * 0.15, -0.4, 1.2], [0.05, 0.8, 0.05], [Math.PI / 2, 0, 0]); }
     },
     tuna(g) {
       P(g, 'ball', 0x26466d, [0, 0.1, 0], [0.9, 1.15, 2.7]); P(g, 'ball', 0xd9e3ea, [0, -0.3, 0], [0.75, 0.85, 2.4]);
       P(g, 'cone', 0x26466d, [0, 1.25, -0.3], [0.3, 1.0, 0.5], [-0.5, 0, 0]); P(g, 'cone', 0xf2c230, [0, 1.0, 1.2], [0.18, 0.7, 0.3], [-0.5, 0, 0]); P(g, 'cone', 0xf2c230, [0, -1.0, 1.2], [0.18, 0.7, 0.3], [Math.PI + 0.5, 0, 0]);
-      P(g, 'box', 0x26466d, [0, 0.7, 3.0], [0.12, 1.5, 0.4], [0.5, 0, 0]); P(g, 'box', 0x26466d, [0, -0.7, 3.0], [0.12, 1.5, 0.4], [-0.5, 0, 0]);
-      P(g, 'box', 0x10151c, [0.7, 0.3, -1.9], [0.08, 0.2, 0.2]); P(g, 'box', 0x10151c, [-0.7, 0.3, -1.9], [0.08, 0.2, 0.2]);
+      fishTail(g, 2.4, 0x26466d, 1.5);
+      for (const s of [-1, 1]) P(g, 'box', 0x10151c, [s * 0.7, 0.3, -1.9], [0.08, 0.2, 0.2]);
+    },
+    mahi(g) {
+      P(g, 'ball', 0xe8cf3a, [0, 0, 0], [0.6, 1.0, 2.6]); P(g, 'ball', 0x2aa67c, [0, 0.35, 0.1], [0.55, 0.78, 2.5]);
+      P(g, 'ball', 0x2aa67c, [0, 0.2, -1.9], [0.5, 0.95, 0.8]); P(g, 'box', 0x2f7fd6, [0, 1.2, 0.2], [0.08, 0.75, 3.6]);
+      fishTail(g, 2.3, 0xe8cf3a, 1.6);
+      for (const s of [-1, 1]) { P(g, 'box', 0x10151c, [s * 0.47, 0.25, -2.1], [0.08, 0.2, 0.2]); P(g, 'box', 0xe8cf3a, [s * 0.6, -0.4, -1.0], [0.7, 0.08, 0.35], [0, s * 0.6, s * -0.5]); }
     },
     flamingo(g) {                                         // in flight: neck stretched out front, legs trailing behind
       P(g, 'ball', 0xff7fae, [0, 0, 0], [0.7, 0.62, 1.5]); P(g, 'cyl', 0xff8fb7, [0, 0.12, -2.5], [0.12, 2.4, 0.12], [Math.PI / 2, 0, 0]);
       P(g, 'ball', 0xff7fae, [0, 0.16, -3.85], [0.28, 0.28, 0.36]); P(g, 'cone', 0xfbe9ef, [0, 0.08, -4.3], [0.13, 0.5, 0.13], [-Math.PI / 2 - 0.25, 0, 0]); P(g, 'cone', 0x1a1a1a, [0, -0.04, -4.62], [0.085, 0.3, 0.085], [-Math.PI / 2 - 0.6, 0, 0]);
       for (const s of [-1, 1]) { P(g, 'cyl', 0xf2a0b8, [s * 0.16, -0.12, 3.0], [0.06, 3.4, 0.06], [Math.PI / 2, 0, 0]); wing(g, s, [0.45, 0.2, -0.1], 3.6, 1.15, 0xff8fb7, 0xffb3cf, 0x1a1a1a); }
     },
+    shag(g) {
+      P(g, 'ball', 0x1f2a2a, [0, 0, 0], [0.5, 0.46, 1.45]); P(g, 'cyl', 0x26332f, [0, 0.12, -1.9], [0.14, 1.5, 0.14], [Math.PI / 2, 0, 0]);
+      P(g, 'ball', 0x1f2a2a, [0, 0.16, -2.75], [0.26, 0.25, 0.34]); P(g, 'cone', 0xe0b53a, [0, 0.1, -3.2], [0.08, 0.5, 0.08], [-Math.PI / 2 - 0.15, 0, 0]);
+      P(g, 'box', 0x1f2a2a, [0, 0, 1.8], [0.6, 0.08, 1.2]);
+      for (const s of [-1, 1]) { wing(g, s, [0.32, 0.14, -0.1], 2.7, 0.95, 0x1f2a2a, 0x33443f, null); P(g, 'box', 0x3ad18a, [s * 0.2, 0.26, -2.85], [0.06, 0.08, 0.08]); }
+    },
     seal(g) {
       P(g, 'ball', 0x6e6258, [0, -0.5, 0.6], [1.2, 1.0, 2.6], [0.25, 0, 0]); P(g, 'ball', 0xb9aa98, [0, -0.85, 0.3], [0.95, 0.7, 2.0], [0.25, 0, 0]);
       P(g, 'ball', 0x6e6258, [0, 0.75, -1.9], [0.8, 0.75, 0.85]); P(g, 'ball', 0x857869, [0, 0.55, -2.55], [0.45, 0.38, 0.4]);
       P(g, 'box', 0x1a1a1a, [0, 0.6, -2.95], [0.2, 0.14, 0.1]);
-      for (const s of [-1, 1]) { P(g, 'box', 0x10151c, [s * 0.42, 0.95, -2.45], [0.14, 0.16, 0.1]); P(g, 'box', 0x6e6258, [s * 1.2, -0.4, -0.6], [1.0, 0.14, 0.6], [0, s * 0.5, s * -0.4]); }
+      const t = tail(g, 2.7, 'y', 0.5, 5); for (const s of [-1, 1]) { P(t, 'box', 0x6e6258, [s * 0.35, -1.0, 0.6], [0.5, 0.14, 1.2], [0, s * -0.3, 0]);
+        P(g, 'box', 0x10151c, [s * 0.42, 0.95, -2.45], [0.14, 0.16, 0.1]); P(g, 'box', 0x6e6258, [s * 1.2, -0.4, -0.6], [1.0, 0.14, 0.6], [0, s * 0.5, s * -0.4]); }
     },
     swordfish(g) {
       P(g, 'ball', 0x2b3f63, [0, 0.1, 0], [0.75, 0.95, 3.4]); P(g, 'ball', 0xcfd9e2, [0, -0.25, 0], [0.62, 0.7, 3.0]);
       P(g, 'cone', 0x39424f, [0, 0.05, -5.2], [0.14, 3.6, 0.1], [-Math.PI / 2, 0, 0]);
       P(g, 'cone', 0x2b3f63, [0, 1.5, -1.2], [0.2, 2.0, 0.9], [-0.35, 0, 0]);
-      P(g, 'box', 0x2b3f63, [0, 0.9, 3.8], [0.12, 2.0, 0.4], [0.6, 0, 0]); P(g, 'box', 0x2b3f63, [0, -0.9, 3.8], [0.12, 2.0, 0.4], [-0.6, 0, 0]);
+      fishTail(g, 3.1, 0x2b3f63, 2.0);
       for (const s of [-1, 1]) { P(g, 'box', 0x2b3f63, [s * 0.8, -0.5, -1.4], [1.2, 0.1, 0.4], [0, s * 0.6, s * -0.5]); P(g, 'box', 0x10151c, [s * 0.6, 0.3, -2.4], [0.08, 0.22, 0.22]); }
+    },
+    shark(g) {
+      P(g, 'ball', 0x4a6c90, [0, 0, 0], [0.9, 0.85, 3.5]); P(g, 'ball', 0xe9eef2, [0, -0.3, -0.1], [0.78, 0.62, 3.1]);
+      P(g, 'cone', 0x4a6c90, [0, 0.05, -3.9], [0.55, 1.7, 0.5], [-Math.PI / 2, 0, 0]);
+      P(g, 'cone', 0x3d5b7b, [0, 1.6, -0.3], [0.22, 2.2, 1.1], [-0.35, 0, 0]);                 // the fin that cuts the surface
+      const t = tail(g, 3.1, 'y', 0.5, 6); P(t, 'box', 0x4a6c90, [0, 0.9, 1.0], [0.12, 2.6, 0.5], [0.7, 0, 0]); P(t, 'box', 0x4a6c90, [0, -0.45, 0.7], [0.12, 1.2, 0.4], [-0.6, 0, 0]);
+      for (const s of [-1, 1]) { P(g, 'box', 0x4a6c90, [s * 1.2, -0.45, -1.2], [1.7, 0.1, 0.6], [0, s * 0.6, s * -0.35]); P(g, 'box', 0x10151c, [s * 0.62, 0.15, -3.1], [0.08, 0.16, 0.16]); }
     },
     falcon(g) {
       P(g, 'ball', 0x4a3b33, [0, 0, 0], [0.5, 0.45, 1.35]); P(g, 'ball', 0xb9774a, [0, -0.14, -0.1], [0.42, 0.36, 1.1]);
@@ -7376,17 +7434,51 @@ const Photos = (() => {
         P(g, 'cone', 0x3a4250, [s * 0.5, 0, -2.2], [0.2, 0.9, 0.2], [-Math.PI / 2, 0, s * 0.3]); P(g, 'box', 0x10151c, [s * 0.75, 0.12, -1.4], [0.1, 0.14, 0.16]); }
       P(g, 'cyl', 0x3a4250, [0, 0, 3.6], [0.07, 3.4, 0.07], [Math.PI / 2, 0, 0]);
     },
+    orca(g) {
+      P(g, 'ball', 0x15181e, [0, 0, 0], [1.5, 1.4, 5.0]); P(g, 'ball', 0xf2f4f6, [0, -0.55, -0.4], [1.25, 1.0, 4.2]);
+      P(g, 'cone', 0x15181e, [0, 2.7, -0.2], [0.3, 3.2, 1.1], [-0.2, 0, 0]);
+      P(tail(g, 4.4, 'x', 0.35, 5), 'box', 0x15181e, [0, 0, 1.1], [4.6, 0.25, 1.4]);
+      for (const s of [-1, 1]) { P(g, 'ball', 0xf2f4f6, [s * 1.12, 0.5, -3.1], [0.14, 0.3, 0.62]); P(g, 'box', 0x15181e, [s * 1.9, -0.8, -1.8], [2.0, 0.2, 1.1], [0, s * 0.5, s * -0.45]); }
+    },
     whale(g) {
       P(g, 'ball', 0x46525f, [0, 0, 0], [3.0, 2.5, 12.0]); P(g, 'ball', 0xdde4ea, [0, -1.15, -0.6], [2.5, 1.7, 9.4]);
-      P(g, 'cone', 0x46525f, [0, 2.6, 5.5], [0.5, 1.6, 1.3], [-0.6, 0, 0]);
-      P(g, 'box', 0x46525f, [0, 0.2, 12.4], [7.0, 0.35, 2.0]); P(g, 'cone', 0x46525f, [0, 0, 10.5], [1.1, 4.0, 1.0], [Math.PI / 2, 0, 0]);
+      P(g, 'cone', 0x46525f, [0, 2.6, 5.5], [0.5, 1.6, 1.3], [-0.6, 0, 0]); P(g, 'cone', 0x46525f, [0, 0, 10.5], [1.1, 4.0, 1.0], [Math.PI / 2, 0, 0]);
+      P(tail(g, 11.6, 'x', 0.3, 2.2), 'box', 0x46525f, [0, 0.1, 1.2], [7.0, 0.35, 2.0]);
       for (const s of [-1, 1]) { P(g, 'box', 0x46525f, [s * 3.2, -1.2, -4.5], [3.2, 0.3, 1.3], [0, s * 0.5, s * -0.4]); P(g, 'box', 0x10151c, [s * 2.45, 0.2, -8.3], [0.12, 0.3, 0.4]); }
       const spout = new THREE.Group(); spout.position.set(0, 2.4, -6.5); g.add(spout); g.userData.spout = spout;
       P(spout, 'cone', 0xffffff, [0, 2.2, 0], [1.3, 4.4, 1.3], [Math.PI, 0, 0], 0.75); P(spout, 'ball', 0xffffff, [0, 4.6, 0], [1.8, 0.9, 1.8], null, 0.6);
     },
+    spermwhale(g) {
+      P(g, 'box', 0x5d5852, [0, 0.2, -6.5], [3.6, 3.5, 7.5]); P(g, 'ball', 0x5d5852, [0, 0, 2.5], [2.5, 2.3, 9.0]);
+      P(g, 'box', 0xcfc8be, [0, -1.9, -6.2], [1.0, 0.5, 6.0]); P(g, 'cone', 0x5d5852, [0, 2.0, 5.0], [0.6, 1.1, 1.6], [-0.5, 0, 0]);
+      P(g, 'cone', 0x5d5852, [0, 0, 10.6], [1.0, 3.6, 0.9], [Math.PI / 2, 0, 0]);
+      P(tail(g, 11.6, 'x', 0.3, 2.2), 'box', 0x5d5852, [0, 0.1, 1.2], [7.4, 0.4, 2.2]);
+      for (const s of [-1, 1]) { P(g, 'box', 0x5d5852, [s * 2.4, -1.2, -1.5], [1.8, 0.3, 1.1], [0, s * 0.5, s * -0.4]); P(g, 'box', 0x10151c, [s * 1.84, -0.4, -3.6], [0.1, 0.25, 0.3]); }
+      const spout = new THREE.Group(); spout.position.set(-0.9, 2.0, -9.4); spout.rotation.set(-0.45, 0, 0.3); g.add(spout); g.userData.spout = spout;   // one nostril, front left: the blow leans forward
+      P(spout, 'cone', 0xffffff, [0, 1.8, 0], [1.2, 3.6, 1.2], [Math.PI, 0, 0], 0.75); P(spout, 'ball', 0xffffff, [0, 3.8, 0], [1.6, 0.8, 1.6], null, 0.6);
+    },
   };
   function makeAnimal(id) { const g = new THREE.Group(); MODELS[id](g); return g; }
   const spOf = id => SPECIES.find(s => s.id === id);
+
+  /* ---------- foam in the water: a V of wake behind each swimmer, and spray when one breaks the surface ---------- */
+  const wakeGeo = (() => {
+    const pos = [], col = [], K = [0, 0.35, 0.7, 1], quad = (a, b, c, d, r, g, bl) => { for (const p of [a, b, c, a, c, d]) { pos.push(p[0], p[1], p[2]); col.push(r, g, bl); } };
+    const sec = (k, s) => { const off = 0.6 + k * 2.9, hw = 0.3 + k * 0.6, h = 0.6 * (1 - k) * Math.min(1, 0.4 + k * 3), z = k * 10; return [[s * (off - hw), 0, z], [s * off, h, z], [s * (off + hw * 1.5), 0, z]]; };
+    for (let i = 0; i < K.length - 1; i++) for (const s of [-1, 1]) { const A = sec(K[i], s), B = sec(K[i + 1], s), sh = i & 1 ? 0.95 : 1; quad(A[0], A[1], B[1], B[0], 0.78 * sh, 0.93 * sh, sh); quad(A[1], A[2], B[2], B[1], sh, sh, sh); }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setAttribute('color', new THREE.Float32BufferAttribute(col, 3)); return g;
+  })();
+  const wakeMat = new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide });
+  const fx = new THREE.Group(); scene.add(fx);
+  const drops = [], dropMat = new THREE.MeshBasicMaterial({ color: 0xffffff }); let dropI = 0;
+  for (let i = 0; i < 48; i++) { const m = new THREE.Mesh(G.gem, dropMat); m.visible = false; fx.add(m); drops.push({ m, life: 0, vx: 0, vy: 0, vz: 0 }); }
+  const rand = (a, b) => a + Math.random() * (b - a);
+  function spray(x, y, z, S, vz, n, up) {
+    for (let i = 0; i < n; i++) { const d = drops[dropI++ % drops.length]; d.life = rand(0.4, 0.75); d.vx = rand(-1, 1) * 5 * S; d.vy = rand(7, 13) * Math.sqrt(S) * (up || 1); d.vz = vz + rand(-5, 5) * S;
+      d.m.position.set(x + rand(-1, 1) * S, y, z + rand(-1, 1) * S); d.m.scale.setScalar(rand(0.22, 0.5) * S); d.m.visible = true; }
+  }
+  function updateFx(dt) { for (const d of drops) { if (d.life <= 0) continue; d.life -= dt; d.vy -= 34 * dt; d.m.position.x += d.vx * dt; d.m.position.y += d.vy * dt; d.m.position.z += d.vz * dt; d.m.rotation.x += dt * 7; if (d.life <= 0) d.m.visible = false; } }
+  function clearFx() { for (const d of drops) { d.life = 0; d.m.visible = false; } }
 
   /* ---------- saved state ---------- */
   const PICS_KEY = 'sardiniaSkipper_photos_v1';
@@ -7395,10 +7487,28 @@ const Photos = (() => {
   const taken = () => (pStats.photos || (pStats.photos = {}));
   const count = () => SPECIES.filter(s => taken()[s.id]).length;
 
+  /* ---------- film: 5 rolls, one back every 48 minutes ---------- */
+  const Film = (() => {
+    const F = PHOTO.film, step = F.minutes * 60000;
+    function sync() {
+      const s = pStats.film || (pStats.film = { n: F.max, t: Date.now() }), now = Date.now();
+      if (s.n >= F.max) { s.n = F.max; s.t = now; return s; }
+      if (now < s.t) s.t = now;                                                    // the phone's clock was set back
+      const k = Math.floor((now - s.t) / step); if (k > 0) { s.n = Math.min(F.max, s.n + k); s.t = s.n >= F.max ? now : s.t + k * step; }
+      return s;
+    }
+    return {
+      max: F.max, left: () => sync().n,
+      nextIn: () => { const s = sync(); return s.n >= F.max ? 0 : Math.max(0, s.t + step - Date.now()); },
+      use() { if (pStats.dev) return true; const s = sync(); if (s.n <= 0) return false; if (s.n >= F.max) s.t = Date.now(); s.n--; Save.queue(); return true; },
+      add(k) { const s = sync(); s.n = Math.min(F.max, s.n + k); Save.queue(); },
+    };
+  })();
+  const clock = ms => { const s = Math.ceil(ms / 1000), m = Math.floor(s / 60); return m + ':' + String(s % 60).padStart(2, '0'); };
+
   /* ---------- the animals ---------- */
   const group = new THREE.Group(); scene.add(group);
   let active = [], timer = 0, wasOn = false, shots = { n: 0, fresh: 0 }, forced = null;     // forced: tests can pick the species
-  const rand = (a, b) => a + Math.random() * (b - a);
   const safariOn = () => state === 'mistral_run' && mState.theme && mState.theme.photos;
   function pick(nm) {
     if (forced) return spOf(forced);
@@ -7407,34 +7517,54 @@ const Photos = (() => {
     return from[Math.floor(Math.random() * from.length)];
   }
   function remove(a) { group.remove(a.g); active = active.filter(x => x !== a); if (target === a) setTarget(null); }
-  function clearAll() { for (const a of active.slice()) remove(a); setTarget(null); }
+  function clearAll() { for (const a of active.slice()) remove(a); setTarget(null); clearFx(); }
   function spawn() {
     const sp = pick(mState.dist); if (!sp) return;
     const g = new THREE.Group(), members = [], S = sp.scale * PHOTO.scale, edge = sp.move === 'whale';
-    for (let i = 0; i < sp.n; i++) { const m = makeAnimal(sp.id); m.userData.ph = i * 1.7 + Math.random(); m.userData.off = sp.n === 1 ? [0, 0] : [(i - (sp.n - 1) / 2) * sp.size * S * 0.95, (i % 2) * sp.size * S * 0.7]; g.add(m); members.push(m); }
+    for (let i = 0; i < sp.n; i++) {
+      const m = makeAnimal(sp.id); m.userData.ph = i * 1.7 + Math.random(); m.userData.off = sp.n === 1 ? [0, 0] : [(i - (sp.n - 1) / 2) * sp.size * S * 0.95, (i % 2) * sp.size * S * 0.7];
+      if (sp.wake) { const w = new THREE.Mesh(wakeGeo, wakeMat); w.visible = false; g.add(w); m.userData.wake = w; }
+      g.add(m); members.push(m);
+    }
     group.add(g);
-    const lane = edge ? (Math.random() < 0.5 ? -1 : 1) * 46 : rand(-42, 42);
+    const side = boat.x > 6 ? -1 : boat.x < -6 ? 1 : Math.random() < 0.5 ? -1 : 1;             // it shows up on the far side from you: go and get it
+    const mid = side * (sp.off || 0), lane = edge ? side * 46 : sp.path === 'dart' ? Math.max(-42, Math.min(42, boat.x + side * rand(28, 40))) : mid;
     active.push({ sp, g, members, S, R: sp.size * S * (sp.n > 1 ? 0.55 + sp.n * 0.3 : 0.9),   // R: how big the subject is, for the viewfinder and the lens
-      lane, x: lane, z: boat.z - 230, rel: -230, cy: 0, age: 0, hold: edge ? 7 : 5.5, shot: false, prog: 0, heading: 0 });
+      mid, lane, tx: lane, dartT: 0.6, x: lane, vx: 0, z: boat.z - 230, vz: 0, rel: -230, cy: 0, age: 0, hold: 5 + sp.need * 2.6, phase: Math.random() * 6.28, shot: false, prog: 0, heading: 0 });
     hint();
   }
-  /* how each kind moves: sets every member's position and pose */
+  /* how each kind moves: sets every member's position and pose, its tail and wings, its wake and its splashes */
   function pose(a, t) {
-    const mv = a.sp.move, S = a.S; let sumY = 0;
+    const mv = a.sp.move, S = a.S, id = a.sp.id; let sumY = 0;
     for (const m of a.members) {
-      const o = m.userData.off, ph = t * (mv === 'leap' ? 2.6 : 1.4) + m.userData.ph, x = a.x + o[0], z = a.z + o[1], w = waveHeight(x, z, t);
-      let y = w, rx = 0, flap = 0;
-      if (mv === 'leap') { const s = Math.sin(ph), hi = a.sp.id === 'ray' ? 4.2 : a.sp.id === 'flyingfish' ? 3.6 : 3.2;
-        y = w + (a.peak ? 2.6 : Math.max(-1.4, s * hi) - 0.5) * S; rx = a.peak ? -0.3 : -Math.cos(ph) * 0.6;
-        flap = a.sp.id === 'ray' ? Math.sin(t * 9 + m.userData.ph) * 0.55 : Math.sin(t * 30 + m.userData.ph) * 0.12 + 0.15; }
-      else if (mv === 'float') { const seal = a.sp.id === 'seal'; y = w + ((seal ? 0.9 : 0.3) + Math.sin(ph) * (seal ? 0.45 : 0.2) + (a.peak && seal ? 0.5 : 0)) * S; rx = Math.sin(ph * 0.7) * 0.06;
-        if (m.userData.f1) { const f = Math.sin(t * 2.2) * 0.4; m.userData.f1.rotation.z = -f; m.userData['f-1'].rotation.z = f; } }
-      else if (mv === 'fly') { const dive = a.sp.id === 'falcon'; y = w + ((dive ? 5.5 : 4.2) + Math.sin(ph * (dive ? 0.9 : 0.6)) * (dive ? 2.2 : 0.7)) * S; rx = dive ? -Math.cos(ph * 0.9) * 0.25 : 0;
-        flap = a.peak ? 0.45 : Math.sin(t * (dive ? 7 : 5) + m.userData.ph) * (dive ? 0.45 : 0.6); }
-      else if (mv === 'whale') { const s = Math.sin(t * 0.9 + m.userData.ph); y = w + (a.peak ? 0.2 : -2.2 + s * 1.6) * S; rx = -Math.cos(t * 0.9 + m.userData.ph) * 0.07;
-        const sp = m.userData.spout, blow = Math.max(0, Math.sin(t * 0.9 + m.userData.ph - 0.3)); sp.visible = blow > 0.55 || !!a.peak; sp.scale.setScalar(0.6 + blow * 0.7); }
-      if (m.userData.w1) { m.userData.w1.rotation.z = flap; m.userData['w-1'].rotation.z = -flap; }
-      m.scale.setScalar(S); m.position.set(x, y + (a.sink || 0), z); m.rotation.set(rx, a.heading, 0); sumY += y;
+      const U = m.userData, o = U.off, ph = t * (mv === 'leap' ? 2.6 : 1.4) + U.ph, x = a.x + o[0], z = a.z + o[1], w = waveHeight(x, z, t);
+      let y = w, rx = 0, rz = 0, ry = a.heading, flap = 0, wet = 1;                            // wet: 1 = in the water (leaves a wake), 0 = airborne
+      if (mv === 'leap') { const s = Math.sin(ph), hi = id === 'ray' ? 4.2 : id === 'flyingfish' ? 3.6 : id === 'orca' ? 2.6 : 3.2;
+        const rel = a.peak ? 2.6 : Math.max(-1.4, s * hi) - 0.5; y = w + rel * S;
+        rx = a.peak ? 0.28 : Math.cos(ph) * (s > -0.3 ? 0.6 : 0.15);                           // nose up on the way out, down on the way back in
+        wet = rel < 0.7 ? 1 : 0; rz = Math.sin(ph * 0.5) * 0.1;
+        flap = id === 'ray' ? Math.sin(t * 9 + U.ph) * 0.55 : Math.sin(t * 30 + U.ph) * 0.12 + 0.15; }
+      else if (mv === 'float') { const seal = id === 'seal'; y = w + ((seal ? 0.9 : 0.3) + Math.sin(ph) * (seal ? 0.45 : 0.2) + (a.peak && seal ? 0.5 : 0)) * S; rx = Math.sin(ph * 0.7) * 0.07; rz = Math.sin(ph * 0.9) * 0.08; ry += Math.sin(ph * 0.5) * 0.12;
+        if (U.f1) { const f = Math.sin(t * 3.2 + U.ph) * 0.5; U.f1.rotation.y = f * 0.8; U['f-1'].rotation.y = -f * 0.8; U.f1.rotation.z = -f * 0.3; U['f-1'].rotation.z = f * 0.3; } }   // the paddling stroke
+      else if (mv === 'cruise') { y = w - 0.62 * S + Math.sin(ph * 0.8) * 0.12 * S; ry += Math.sin(t * 1.5 + U.ph) * 0.14; rz = Math.sin(t * 1.5 + U.ph + 1) * 0.06; }   // only the fin and back show
+      else if (mv === 'fly' || mv === 'skim') { const dive = id === 'falcon', low = mv === 'skim', glide = id === 'gull' ? 0.45 + 0.55 * Math.max(0, Math.sin(t * 0.8 + U.ph)) : 1;
+        y = w + ((low ? 1.5 : dive ? 5.5 : 4.2) + Math.sin(ph * (dive ? 0.9 : 0.6)) * (low ? 0.35 : dive ? 2.2 : 0.7)) * S; rx = dive ? Math.cos(ph * 0.9) * 0.25 : 0; rz = Math.sin(t * 0.9 + U.ph) * 0.14;
+        flap = a.peak ? 0.45 : Math.sin(t * (low ? 11 : dive ? 7 : 5) + U.ph) * (dive ? 0.45 : 0.6) * glide + (1 - glide) * 0.2; wet = 0; }
+      else if (mv === 'whale') { const s = Math.sin(t * 0.9 + U.ph); y = w + (a.peak ? 0.2 : -2.2 + s * 1.6) * S; rx = Math.cos(t * 0.9 + U.ph) * 0.07 - (a.dive || 0) * 0.55;   // a.dive: nose down, flukes up
+        const sp = U.spout, blow = Math.max(0, Math.sin(t * 0.9 + U.ph - 0.3)), on = blow > 0.55 || !!a.peak;
+        if (on && !sp.visible && !a.peak) { const p = sp.getWorldPosition(v3); spray(p.x, p.y, p.z, S * 1.3, a.vz, 8, 1.5); }
+        sp.visible = on && !(a.dive > 0.3); sp.scale.setScalar(0.6 + blow * 0.7); }
+      if (U.w1) { U.w1.rotation.z = flap; U['w-1'].rotation.z = -flap; }
+      if (U.tail) { const T = U.tail; T.g.rotation[T.axis] = Math.sin(t * T.speed + U.ph) * T.amp + (T.axis === 'x' && a.dive ? a.dive * 0.5 : 0); }
+      const yy = y + (a.sink || 0);
+      rz -= a.bank || 0;                                                                     // leans into its turns
+      m.scale.setScalar(S); m.position.set(x, yy, z); m.rotation.set(rx, ry, rz); sumY += y;
+      if (!a.peak) {
+        const above = yy - w > 0.2 * S;                                                        // breaking the surface, either way: spray
+        if (mv === 'leap' && U.above !== undefined && above !== U.above) spray(x, w + 0.3, z - (above ? a.sp.size * 0.3 * S : 0), S, a.vz, id === 'orca' ? 12 : 6, id === 'orca' ? 1.3 : 1);
+        U.above = above;
+      }
+      if (U.wake) { const k = S * a.sp.wake, show = wet && !(a.sink < -1.5 * S); U.wake.visible = !!show; if (show) { U.wake.position.set(x, w - 0.3, z + a.sp.tail * S); U.wake.scale.set(k, k * (mv === 'leap' ? 0.8 : 1), k); } }
     }
     a.cy = sumY / a.members.length;
   }
@@ -7445,18 +7575,17 @@ const Photos = (() => {
   function setTarget(a) { target = a; if (!a) el.finder.classList.remove('show', 'ok'); }
   function hint() {
     if (pStats.storySeen.tut_photo) return; pStats.storySeen.tut_photo = true; Save.queue();
-    showToast('📷 Get alongside it and <b>hold the wheel steady</b> to take its photo!', 4500);
+    showToast('📷 Steer to <b>keep it inside your viewfinder</b> until the ring is full!', 4500);
   }
-  function drawFinder(a, view) {
-    const d = Math.max(20, camera.position.distanceTo(v3.set(a.x, a.cy + a.R * 0.15, a.z)));
-    v3.project(camera);
-    if (v3.z > 1 || Math.abs(v3.x) > 1.25 || Math.abs(v3.y) > 1.25) { el.finder.classList.remove('show'); return; }
-    const c = renderer.domElement, W = c.clientWidth, H = c.clientHeight;
-    const px = Math.max(78, Math.min(210, a.R * 2.3 / d * H * 0.95)), x = (v3.x * 0.5 + 0.5) * W, y = (-v3.y * 0.5 + 0.5) * H;
-    el.finder.style.transform = `translate(${(x - px / 2).toFixed(1)}px, ${(y - px / 2).toFixed(1)}px)`; el.finder.style.width = el.finder.style.height = px.toFixed(0) + 'px';
-    el.finder.classList.add('show'); el.finder.classList.toggle('ok', view === 'focus');
+  function drawFinder(a, inFrame) {
+    const y0 = a.cy + a.R * 0.1, c = renderer.domElement, W = c.clientWidth, H = c.clientHeight, F = a.sp.frame;
+    v3.set(boat.x, y0, a.z).project(camera); const cx = (v3.x * 0.5 + 0.5) * W, cy = (-v3.y * 0.5 + 0.5) * H, behind = v3.z > 1;
+    v3.set(boat.x + F, y0, a.z).project(camera); const px = Math.max(70, Math.min(230, Math.abs((v3.x * 0.5 + 0.5) * W - cx) * 2));   // as wide on screen as the frame is in the water
+    if (behind) { el.finder.classList.remove('show'); return; }
+    el.finder.style.transform = `translate(${(cx - px / 2).toFixed(1)}px, ${(cy - px / 2).toFixed(1)}px)`; el.finder.style.width = el.finder.style.height = px.toFixed(0) + 'px';
+    el.finder.classList.add('show'); el.finder.classList.toggle('ok', inFrame);
     el.ring.style.strokeDashoffset = (113 * (1 - Math.min(1, a.prog))).toFixed(1);
-    el.label.textContent = view === 'focus' ? '📷 Hold steady…' : view === 'steer' ? '✋ Hold the wheel steady' : '📷 Get closer';
+    el.label.textContent = inFrame ? '📷 Keep it in frame…' : a.x < boat.x ? '◀ Follow it' : 'Follow it ▶';
   }
   function playShutterSound() { if (!sfxOk()) return; burst(noiseBuf, 'highpass', 3200, 0.03, 0.3); burst(noiseBuf, 'bandpass', 1800, 0.05, 0.22, 3, 0.09); tone('triangle', 1568, 2093, 0.16, 0.05, 0.16); }
 
@@ -7466,20 +7595,24 @@ const Photos = (() => {
   const snapCv = document.createElement('canvas'); snapCv.width = snapCv.height = 320;
   function snapshot(a) {
     try {
-      const keep = { p: camera.position.clone(), q: camera.quaternion.clone(), fov: camera.fov };
+      const keep = { p: camera.position.clone(), q: camera.quaternion.clone(), fov: camera.fov, aspect: camera.aspect };
       a.peak = true; pose(a, nowT); a.peak = false;                                           // caught at its best moment: mid-leap, wings up, or right at the surface
-      const mv = a.sp.move, R = a.R, cy = a.cy + R * (mv === 'whale' ? 0.12 : 0.05), D = R * 2.7;
+      const mv = a.sp.move, air = mv === 'fly' || mv === 'skim', R = a.R, cy = a.cy + R * (mv === 'whale' ? 0.12 : 0.05), D = R * 2.7;
+      let cz = 0; for (const m of a.members) cz += m.position.z; cz /= a.members.length;       // the middle of the group
       let sx = boat.x - a.x; if (Math.abs(sx) < 3) sx = a.x > 0 ? -1 : 1; sx = Math.sign(sx);  // which side of the animal you are on
       if (Math.abs(a.x + sx * 0.7 * D) > 52) sx = -sx;                                         // never from inside the bank at the side
       const dl = Math.hypot(0.8, 0.8);
-      camera.position.set(a.x + sx * 0.8 / dl * D, Math.max(waveHeight(a.x, a.z, nowT) + 3, cy + D * (mv === 'fly' ? 0.05 : 0.26)), a.z - 0.8 / dl * D);
-      camera.up.set(0, 1, 0); camera.lookAt(a.x, cy, a.z);
-      const d2 = camera.position.distanceTo(v3.set(a.x, cy, a.z));
-      camera.fov = Math.max(10, Math.min(60, 2 * Math.atan(R * 1.2 / d2 / Math.min(1, Math.max(0.35, camera.aspect))) * 180 / Math.PI)); camera.updateProjectionMatrix();   // the subject fills most of the frame
+      camera.position.set(a.x + sx * 0.8 / dl * D, Math.max(waveHeight(a.x, cz, nowT) + 3, cy + D * (air ? 0.05 : 0.26)), cz - 0.8 / dl * D);
+      camera.up.set(0, 1, 0); camera.lookAt(a.x, cy, cz);
+      const d2 = camera.position.distanceTo(v3.set(a.x, cy, cz));
+      camera.aspect = 1; camera.fov = Math.max(10, Math.min(65, 2 * Math.atan(R * 1.05 / d2) * 180 / Math.PI)); camera.updateProjectionMatrix();   // a square frame the subject just fills
+      const size = renderer.getSize(new THREE.Vector2()), q = Math.min(size.x, size.y);        // draw it into a square corner of the game canvas…
+      renderer.setViewport(0, 0, q, q); renderer.setScissor(0, 0, q, q); renderer.setScissorTest(true);
       renderer.render(scene, camera);
-      const c = renderer.domElement, s = Math.min(c.width, c.height), g2 = snapCv.getContext('2d');
-      g2.drawImage(c, (c.width - s) / 2, (c.height - s) / 2, s, s, 0, 0, 320, 320);
-      camera.position.copy(keep.p); camera.quaternion.copy(keep.q); camera.fov = keep.fov; camera.updateProjectionMatrix();
+      renderer.setScissorTest(false); renderer.setViewport(0, 0, size.x, size.y);
+      const c = renderer.domElement, s = Math.round(q * renderer.getPixelRatio()), g2 = snapCv.getContext('2d');
+      g2.drawImage(c, 0, c.height - s, s, s, 0, 0, 320, 320);                                  // …and copy that corner out (the next frame paints over it)
+      camera.position.copy(keep.p); camera.quaternion.copy(keep.q); camera.fov = keep.fov; camera.aspect = keep.aspect; camera.updateProjectionMatrix();
       return snapCv.toDataURL('image/jpeg', 0.82);
     } catch (e) { return null; }
   }
@@ -7505,7 +7638,7 @@ const Photos = (() => {
     nowT = t; const on = safariOn();
     if (on !== wasOn) { clearAll(); wasOn = on; if (on) { timer = rand(...PHOTO.first); shots = { n: 0, fresh: 0 }; } else el.card.classList.remove('show'); }
     if (!on) return;
-    timer -= dt;
+    updateFx(dt); timer -= dt;
     if (timer <= 0 && !active.length && mState.active) { spawn(); timer = rand(...PHOTO.every); }
     let best = null;
     for (const a of active.slice()) {
@@ -7513,19 +7646,53 @@ const Photos = (() => {
       const inT = 1.3, k = Math.min(1, a.age / inT), e = 1 - (1 - k) * (1 - k);                // comes up from ahead, cruises beside you, then dives or peels away
       const hold = Math.max(0, Math.min(a.hold, a.age - inT));
       a.rel = -230 + 182 * e + hold * 3;
-      const out = a.age - inT - a.hold;
-      if (out > 0) { a.sink = a.sp.move === 'fly' ? out * out * 22 : -out * out * 14; a.rel -= out * 30; if (out > 1.3) { remove(a); continue; } }
-      a.z = boat.z + a.rel; a.x = a.lane + Math.sin(t * 0.7 + a.lane) * 3;
+      const out = a.age - inT - a.hold, mv = a.sp.move, air = mv === 'fly' || mv === 'skim', big = mv === 'whale';
+      if (out > 0) {
+        if (big) { a.dive = Math.min(1, out * 0.9); a.sink = -Math.max(0, out - 0.5) * (out - 0.5) * 9 * a.S; if (out > 2.6) { remove(a); continue; } }   // the slow dive, tail last
+        else { a.sink = air ? out * out * 22 : -out * out * 14; a.rel -= out * 30; if (out > 1.3) { remove(a); continue; } }
+      }
+      const pz = a.z; a.z = boat.z + a.rel; a.vz = dt > 0 ? (a.z - pz) / dt : 0;
+      // it never sits still: where it wants to be (tx) depends on its kind, and it swims there at its own top speed
+      const sp_ = a.sp, lim = big ? 48 : 44;
+      if (k < 1 || out > 0) a.tx = a.lane;
+      else if (sp_.path === 'dart') { if (Math.abs(a.tx - a.lane) < 1.5) a.dartT -= dt; if (a.dartT <= 0) { /* rested in its lane: dash to another */ a.dartT = rand(...sp_.every); let nx, tries = 0; do { nx = rand(-lim, lim); } while (++tries < 30 && (Math.abs(nx - a.lane) < 20 || Math.abs(nx - boat.x) < 24)); a.tx = nx; } }   // never into your frame
+      else a.tx = Math.max(-lim, Math.min(lim, a.mid + Math.sin(a.age * 6.283 / sp_.per + a.phase) * sp_.amp));
+      const want = (a.tx - a.lane) / Math.max(dt, 0.001), ease = sp_.path === 'dart' ? Math.min(1, Math.abs(a.tx - a.lane) / 8 + 0.25) : 1;
+      a.vx += (Math.max(-sp_.v, Math.min(sp_.v, want)) * ease - a.vx) * Math.min(1, dt * 7); a.lane += a.vx * dt; a.x = a.lane;
+      a.heading = -Math.max(-0.5, Math.min(0.5, a.vx / 70)); a.bank = Math.max(-0.35, Math.min(0.35, a.vx / 110));   // turns and leans the way it is going
       pose(a, t);
       if (a.shot || out > 0) continue;
-      const dx = Math.abs(boat.x - a.x), near = dx < PHOTO.reach + (a.sp.move === 'whale' ? 18 : 0) && a.rel > -120;
-      const steady = Math.abs(steerAxis()) < PHOTO.steady;
-      if (near && steady && !(mState.jumpY > 2)) a.prog += dt / PHOTO.need; else a.prog = Math.max(0, a.prog - dt * 1.4);
-      a.view = near ? (steady ? 'focus' : 'steer') : 'far'; if (a.rel > -150) best = a;
+      const inFrame = k >= 1 && Math.abs(boat.x - a.x) < sp_.frame;                           // the frame points straight ahead of your boat; no focusing while it is still swimming up
+      if (inFrame) a.prog += dt / sp_.need; else a.prog = Math.max(0, a.prog - dt * PHOTO.drain);
+      a.view = inFrame; if (a.rel > -150) best = a;
       if (a.prog >= 1) shoot(a);
     }
     if (best && !best.shot) { target = best; drawFinder(best, best.view); } else setTarget(null);
   }
+
+  /* ---------- starting a safari: it costs a roll of film ---------- */
+  function refreshFilm() {
+    const n = Film.left(), wait = Film.nextIn();
+    $('filmSub').innerHTML = (n > 0 ? `You have <b>${n}</b> of ${Film.max} rolls. ` : 'Every safari uses one roll of film. ') + (wait ? `Next roll in <b>${clock(wait)}</b>.` : '');
+    $('filmKnots').textContent = `🪢 ${PHOTO.film.knotsRefill} · REFILL ALL ${Film.max}`; $('filmKnots').disabled = !Wallet.canAfford(PHOTO.film.knotsRefill, 'knots');
+    $('filmGo').style.display = n > 0 ? '' : 'none';
+  }
+  function openFilm() { refreshFilm(); $('filmOverlay').classList.add('open'); }
+  function tryStart() {
+    if (Film.left() <= 0 && !pStats.dev) { if (state !== 'mainmenu') openMainMenu(); openFilm(); return false; }
+    const go = () => { if (!Film.use()) { openMainMenu(); openFilm(); return; } startMistralRun('safari'); };
+    if (!pStats.storySeen.run_intro_safari) { pStats.storySeen.run_intro_safari = true; Save.queue(); playScene(SAFARI_INTRO, go); } else go();
+    return true;
+  }
+  let adBusy = false;
+  $('filmAd').addEventListener('click', async () => {
+    if (adBusy) return; adBusy = true; const ok = await watchAdFor(); adBusy = false;
+    if (ok) { Film.add(PHOTO.film.adRolls); showToast('🎞️ +' + PHOTO.film.adRolls + ' roll of film!'); refreshFilm(); refreshMenu(); } else showToast('📺 No ad available right now. Try again in a bit.');
+  });
+  $('filmKnots').addEventListener('click', () => { if (!Wallet.spend(PHOTO.film.knotsRefill, 'knots')) return; Film.add(Film.max); showToast('🎞️ Film refilled!'); refreshFilm(); refreshMenu(); });
+  $('filmGo').addEventListener('click', () => { $('filmOverlay').classList.remove('open'); tryStart(); });
+  $('filmBack').addEventListener('click', () => $('filmOverlay').classList.remove('open'));
+  setInterval(() => { if ($('filmOverlay').classList.contains('open')) refreshFilm(); if ($('photoOverlay').classList.contains('open')) refreshGo(); if ($('mainMenuOverlay').classList.contains('open')) refreshMenu(); }, 1000);   // the countdown ticks
 
   /* ---------- the book ---------- */
   const drawn = {};
@@ -7541,15 +7708,20 @@ const Photos = (() => {
     $('photoGrid').innerHTML = SPECIES.map(s => have[s.id]
       ? `<div class="polaroid"><div class="ph"><img alt="" src="${pics[s.id] || picture(s.id)}"></div><b>${s.name}</b><small>${s.fact}</small><i>×${have[s.id]}</i></div>`
       : `<div class="polaroid missing"><div class="ph"><img alt="" src="${picture(s.id)}"></div><b>???</b><small>${s.nm ? 'Photo Safari · past ' + s.nm + ' NM' : 'Photo Safari · seen early on'}</small></div>`).join('');
-    pStats.photoNew = false; refreshMenu(); $('photoOverlay').classList.add('open');
+    pStats.photoNew = false; refreshMenu(); refreshGo(); $('photoOverlay').classList.add('open');
   }
-  function refreshMenu() { const b = $('menuPhotos'); if (b) b.textContent = count() + '/' + SPECIES.length; const sb = $('menuSafariSub'); if (sb) sb.textContent = count() + '/' + SPECIES.length + ' animals'; const d = $('photoDot'); if (d) d.style.display = pStats.photoNew ? 'block' : 'none'; }
+  function refreshGo() { const n = Film.left(); $('photoGo').textContent = n > 0 ? `📷 START SAFARI · 🎞️ ${n}/${Film.max}` : `🎞️ Out of film · next roll ${clock(Film.nextIn())}`; }   // the book is the way into a safari
+  function refreshMenu() {
+    const b = $('menuPhotos'); if (b) b.textContent = count() + '/' + SPECIES.length;
+    const d = $('photoDot'); if (d) d.style.display = pStats.photoNew ? 'block' : 'none';
+    const sb = $('menuSafariSub'); if (sb) { const n = Film.left(); sb.textContent = n > 0 ? `🎞️ ${n}/${Film.max} rolls` : `⏳ next roll ${clock(Film.nextIn())}`; }
+  }
   function reset() { pics = {}; try { localStorage.removeItem(PICS_KEY); } catch (e) {} clearAll(); refreshMenu(); }
   $('btnPhotos').addEventListener('click', () => { if (typeof playMenuClick === 'function') playMenuClick(); openBook(); });
   $('photoClose').addEventListener('click', () => $('photoOverlay').classList.remove('open'));
-  $('photoGo').addEventListener('click', () => { $('photoOverlay').classList.remove('open'); $('btnSafari').click(); });
+  $('photoGo').addEventListener('click', () => { $('photoOverlay').classList.remove('open'); tryStart(); });
 
-  return { update, openBook, refreshMenu, clearAll, picture, reset, runShots: () => shots, _active: () => active, _spawn: spawn, _force: id => { forced = id; } };
+  return { update, openBook, refreshMenu, clearAll, picture, reset, tryStart, openFilm, Film, runShots: () => shots, _active: () => active, _spawn: spawn, _force: id => { forced = id; } };
 })();
 
 </script>
