@@ -2518,7 +2518,7 @@ const SteerSlider = (() => {
 ================================================================ */
 const scene = new THREE.Scene(); const SKY = 0x5bc0eb; scene.background = new THREE.Color(SKY); scene.fog = new THREE.Fog(SKY, 500, 2200);
 const camera = new THREE.PerspectiveCamera(60, innerWidth / innerHeight, 0.5, 4000);
-const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio, 2.5)); document.body.appendChild(renderer.domElement);
+const renderer = new THREE.WebGLRenderer({ antialias: true }); renderer.setSize(innerWidth, innerHeight); renderer.setPixelRatio(Math.min(devicePixelRatio, 3)); document.body.appendChild(renderer.domElement);
 renderer.domElement.id = 'gl'; renderer.domElement.style.width = renderer.domElement.style.height = '';
 /* Size from the canvas' CSS box (it is pinned to the full screen), not innerHeight:
    iOS home-screen apps report a short innerHeight at launch, which left a blue strip. */
@@ -2563,6 +2563,7 @@ function waveHeight(x, z, t) {
 }
 
 function updateSea(t, refZ) {
+  if (state !== 'mistral_run') { sea.position.y = 0; runSea.visible = runWake.visible = false; }
   const snapX = Math.round(boat.x / (SEA_SIZE/SEA_SEG)) * (SEA_SIZE/SEA_SEG);
   const snapZ = Math.round((refZ || boat.z) / (SEA_SIZE/SEA_SEG)) * (SEA_SIZE/SEA_SEG);
   sea.position.x = snapX; sea.position.z = snapZ;
@@ -2581,6 +2582,118 @@ function updateSea(t, refZ) {
     }
   }
   seaPos.needsUpdate = true; seaCol.needsUpdate = true;
+}
+
+/* ==============================================================
+   4b. RUN WATER — the same low-poly sea, with more triangles.
+   The open-world sheet has 64 m cells, so in the Mistral Run it read as one
+   flat blue floor. This is a strip of small cells under the track (6 m near
+   the boat, 12 m in the mist): each triangle gets ONE flat colour from the
+   same palette as before. No textures, no shine. The big sheet stays
+   underneath (sunk a little) for everything beyond the strip.
+================================================================ */
+const RUN_SEA = {
+  zones: [{ cell: 6, nx: 38, rows: 60, from: 8 },      // rows start 8 cells (48 m) behind the boat
+          { cell: 12, nx: 19, rows: 30, from: -26 }],   // and carry on where the fine zone stops (-312 m)
+  facet: 2.6,                                            // how strongly a triangle's tilt changes its shade
+};
+const rsTris = RUN_SEA.zones.reduce((n, z) => n + z.nx * z.rows * 2, 0);
+const runSeaGeo = new THREE.BufferGeometry();
+const rsPos = new Float32Array(rsTris * 9), rsCol = new Float32Array(rsTris * 9);
+runSeaGeo.setAttribute('position', new THREE.BufferAttribute(rsPos, 3)); runSeaGeo.setAttribute('color', new THREE.BufferAttribute(rsCol, 3));
+const runSea = new THREE.Mesh(runSeaGeo, new THREE.MeshBasicMaterial({ vertexColors: true }));
+runSea.frustumCulled = false; runSea.visible = false; scene.add(runSea);
+const rsH = new Float32Array(39 * 61), rsSun = sun.position.clone().normalize();
+function runChop(x, z, t) { return Math.sin(x * 0.37 + z * 0.21 + t * 2.2) * 0.2 + Math.sin(z * 0.41 - x * 0.13 - t * 1.7) * 0.18 + Math.sin(x * 0.19 + z * 0.11 + t * 2.0) * 0.16; }   // small ripples, so neighbouring triangles tilt differently
+function updateRunSea(t) {
+  if (!runSea.visible) resetRunWake();
+  sea.position.y = -3; runSea.visible = runWake.visible = true;
+  const sunI = sun.intensity, L0 = rsSun.y, F = RUN_SEA.facet, base12 = Math.round(boat.z / 12); let k = 0;
+  const tri = (ax, ay, az, bx, by, bz, cx, cy, cz, seed) => {
+    const ux = bx - ax, uy = by - ay, uz = bz - az, vx = cx - ax, vy = cy - ay, vz = cz - az;
+    const nX = uy * vz - uz * vy, nY = uz * vx - ux * vz, nZ = ux * vy - uy * vx, nl = Math.hypot(nX, nY, nZ) || 1;
+    const light = Math.max(0, L0 + ((nX * rsSun.x + nY * rsSun.y + nZ * rsSun.z) / nl - L0) * F);
+    const h = (ay + by + cy) / 3, f = Math.min(1, Math.max(0, (h + 1.4) / 2.8));
+    const wall = Math.min(1, Math.max(0, (Math.abs((ax + bx + cx) / 3) - 65) * 0.05));                        // bright frothy water under the wave walls
+    const s = (0.75 + sunI * light) * 0.94 * (0.98 + 0.04 * ((seed * 0.6180339887) % 1));
+    const r = (0.12 + f * 0.15 + wall * 0.7) * s, g = (0.45 + f * 0.20 + wall * 0.5) * s, b = (0.70 + f * 0.10 + wall * 0.3) * s;
+    rsPos[k] = ax; rsPos[k + 1] = ay; rsPos[k + 2] = az; rsPos[k + 3] = bx; rsPos[k + 4] = by; rsPos[k + 5] = bz; rsPos[k + 6] = cx; rsPos[k + 7] = cy; rsPos[k + 8] = cz;
+    for (let q = 0; q < 9; q += 3) { rsCol[k + q] = r; rsCol[k + q + 1] = g; rsCol[k + q + 2] = b; }
+    k += 9;
+  };
+  for (const Z of RUN_SEA.zones) {
+    const C = Z.cell, nx = Z.nx, W = nx + 1, row0 = base12 * (12 / C) + Z.from, x0 = -nx / 2 * C;   // world-anchored rows: the triangles stay put while you race over them
+    for (let j = 0; j <= Z.rows; j++) { const wz = (row0 - j) * C; for (let i = 0; i <= nx; i++) { const wx = x0 + i * C; rsH[j * W + i] = waveHeight(wx, wz, t) + runChop(wx, wz, t); } }
+    for (let j = 0; j < Z.rows; j++) {
+      const wr = row0 - j, z0 = wr * C, z1 = z0 - C;
+      for (let i = 0; i < nx; i++) {
+        const xa = x0 + i * C, xb = xa + C, a = rsH[j * W + i], b = rsH[j * W + i + 1], c = rsH[(j + 1) * W + i], d = rsH[(j + 1) * W + i + 1];
+        const seed = Math.abs(wr * 31 + i * 17) + C;
+        if ((i + wr) & 1) { tri(xa, a, z0, xb, b, z0, xa, c, z1, seed); tri(xa, c, z1, xb, b, z0, xb, d, z1, seed + 7); }       // the diagonal alternates, like folded paper
+        else { tri(xa, a, z0, xb, b, z0, xb, d, z1, seed); tri(xa, a, z0, xb, d, z1, xa, c, z1, seed + 7); }
+      }
+    }
+  }
+  runSeaGeo.attributes.position.needsUpdate = true; runSeaGeo.attributes.color.needsUpdate = true;
+  updateRunWake(t);
+}
+
+/* ---- The boat's wake in the run: chunky white foam, low-poly ----
+   Two bow waves peel off the hull and open into a V, and a churned ridge
+   boils up behind the propeller. All of it is built from where the boat has
+   actually been, so the wake bends when you swerve. Solid flat-coloured
+   triangles with ragged edges, like the rest of the world. */
+const RUN_WAKE = { n: 18, step: 6, bow: -3, stern: 7, len: 104 };
+const rwX = new Float32Array(RUN_WAKE.n + 1), rwZ = new Float32Array(RUN_WAKE.n + 1), rwOn = new Float32Array(RUN_WAKE.n + 1), rwJ = new Float32Array(RUN_WAKE.n + 1).fill(1);
+const rwTris = (RUN_WAKE.n + 1) * 8 + RUN_WAKE.n * 4, rwPos = new Float32Array(rwTris * 9), rwCol = new Float32Array(rwTris * 9);
+const runWakeGeo = new THREE.BufferGeometry();
+runWakeGeo.setAttribute('position', new THREE.BufferAttribute(rwPos, 3)); runWakeGeo.setAttribute('color', new THREE.BufferAttribute(rwCol, 3));
+const runWake = new THREE.Mesh(runWakeGeo, new THREE.MeshBasicMaterial({ vertexColors: true, side: THREE.DoubleSide }));
+runWake.frustumCulled = false; runWake.visible = false; scene.add(runWake);
+let rwLastZ = 0; const rwTint = new THREE.Color();
+function resetRunWake() { for (let i = 0; i <= RUN_WAKE.n; i++) { rwX[i] = boat.x; rwZ[i] = boat.z + RUN_WAKE.stern; rwOn[i] = 0; } rwLastZ = boat.z; }
+function updateRunWake(t) {
+  const R = RUN_WAKE, n = R.n, sz = boat.z + R.stern, bz = boat.z + R.bow;
+  if (Math.abs(boat.z - rwLastZ) > R.len) resetRunWake();
+  const afloat = (typeof mState !== 'undefined' && mState.jumpY > 1.2) ? 0 : Math.min(1, Math.abs(boat.speed) / 60);   // no wake while airborne
+  while (rwLastZ - boat.z >= R.step) {
+    rwX.copyWithin(2, 1); rwZ.copyWithin(2, 1); rwOn.copyWithin(2, 1); rwJ.copyWithin(2, 1);
+    rwX[1] = boat.x; rwZ[1] = sz; rwOn[1] = afloat; rwJ[1] = 0.6 + Math.random() * 0.8; rwLastZ -= R.step;      // each chunk gets its own raggedness
+  }
+  rwX[0] = boat.x; rwZ[0] = sz; rwOn[0] = afloat;
+  const rainbow = typeof hasAddon === 'function' && hasAddon('addon_rainbow');
+  const arm = (x, z, on, jag) => {                       // one cross-section of the V
+    const d = Math.max(0, z - bz), tp = Math.max(0, 1 - d / R.len), lift = Math.min(1, tp * 5) * on;
+    return { x, z, yb: waveHeight(x, z, t) - 0.75, w: 3.1 + d * 0.19, hi: 0.9 + d * 0.025, ho: (1.5 + d * 0.06) * jag,
+             h: (0.75 + (0.55 + 0.6 * jag) * Math.pow(tp, 0.8) * Math.min(1, 0.3 + d / 9)) * lift };
+  };
+  const A = [arm(boat.x, bz, afloat, 0.7)]; for (let i = 0; i <= n; i++) A.push(arm(rwX[i], rwZ[i], rwOn[i], rwJ[i]));
+  let k = 0;
+  const quad = (a, b, c, d, col, sh) => {                // a-b on this point, d-c on the next
+    const v = [a, b, c, a, c, d];
+    for (let q = 0; q < 6; q++) { rwPos[k] = v[q][0]; rwPos[k + 1] = v[q][1]; rwPos[k + 2] = v[q][2]; rwCol[k] = col[0] * sh; rwCol[k + 1] = col[1] * sh; rwCol[k + 2] = col[2] * sh; k += 3; }
+  };
+  const tones = i => {                                    // [outer slope, inner slope]: white and pale blue, or the Rainbow Wake colours
+    if (!rainbow) return [[1, 1, 1], [0.78, 0.93, 1.0]];
+    const hue = ((t * 0.4 + (rwLastZ + i * R.step) * 0.012) % 1 + 1) % 1; rwTint.setHSL(hue, 1, 0.72); const c1 = [rwTint.r, rwTint.g, rwTint.b]; rwTint.setHSL(hue, 1, 0.6);
+    return [c1, [rwTint.r, rwTint.g, rwTint.b]];
+  };
+  for (let i = 0; i < A.length - 1; i++) {                // the two bow waves
+    const a = A[i], b = A[i + 1], sh = (i & 1) ? 0.95 : 1, [c1, c2] = tones(i);   // every other chunk a touch darker
+    for (const s of [-1, 1]) {
+      const ai = [a.x + s * (a.w - a.hi), a.yb, a.z], ac = [a.x + s * a.w, a.yb + a.h, a.z], ao = [a.x + s * (a.w + a.ho), a.yb, a.z];
+      const bi = [b.x + s * (b.w - b.hi), b.yb, b.z], bc = [b.x + s * b.w, b.yb + b.h, b.z], bo = [b.x + s * (b.w + b.ho), b.yb, b.z];
+      quad(ai, ac, bc, bi, c2, sh); quad(ac, ao, bo, bc, c1, sh);
+    }
+  }
+  for (let i = 0; i < n; i++) {                           // the churned ridge behind the propeller
+    const ridge = j => { const x = rwX[j], z = rwZ[j], d = Math.max(0, z - sz), f = Math.max(0, 1 - d / 40), jag = j ? rwJ[j] : 1;
+      return { x, z, yb: waveHeight(x, z, t) - 0.75, cw: (1.7 + d * 0.1) * (0.7 + 0.3 * jag), ch: (0.75 + 1.25 * f * jag * Math.min(1, 0.45 + d / 5)) * Math.min(1, f * 4) * rwOn[j] }; };
+    const a = ridge(i), b = ridge(i + 1), sh = (i & 1) ? 1 : 0.95, [c1, c2] = tones(i);
+    quad([a.x - a.cw, a.yb, a.z], [a.x, a.yb + a.ch, a.z], [b.x, b.yb + b.ch, b.z], [b.x - b.cw, b.yb, b.z], c2, sh);
+    quad([a.x, a.yb + a.ch, a.z], [a.x + a.cw, a.yb, a.z], [b.x + b.cw, b.yb, b.z], [b.x, b.yb + b.ch, b.z], c1, sh);
+  }
+  runWakeGeo.attributes.position.needsUpdate = true; runWakeGeo.attributes.color.needsUpdate = true;
 }
 
 </script>
@@ -3329,12 +3442,12 @@ function equipSkin(type, id) {
    wearing a sail, flag or add-on) with a second small WebGL canvas.
 ================================================================ */
 const Thumbs = (() => {
-  let r = null, sc = null, cam = null, rt = null, px = null, cv = null, c2d = null; const cache = new Map(); const W = 360, H = 240;
+  let r = null, sc = null, cam = null, rt = null, px = null, cv = null, c2d = null; const cache = new Map(); const W = 720, H = 480;   // drawn at 2× the old size: crisp on 3× phone screens
   function init() {
     rt = new THREE.WebGLRenderTarget(W, H); px = new Uint8Array(W * H * 4);
     cv = document.createElement('canvas'); cv.width = W; cv.height = H; c2d = cv.getContext('2d');
     r = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-    r.setPixelRatio(1); r.setSize(360, 240);
+    r.setPixelRatio(1); r.setSize(W, H);
     sc = new THREE.Scene(); sc.add(new THREE.HemisphereLight(0xffffff, 0x3a2a7a, 0.95));
     const d = new THREE.DirectionalLight(0xffffff, 0.85); d.position.set(6, 10, 8); sc.add(d);
     cam = new THREE.PerspectiveCamera(32, 360 / 240, 0.1, 800);
@@ -4467,7 +4580,7 @@ let puffAcc = 0, puffIdx = 0;
 function clearTrail() { for (const p of puffs) { p.life = 0; p.s.visible = false; } }
 
 function updateBoatTrail(dt, t) {
-  const moving = (state === 'sailing' || state === 'mistral_run' || state === 'docking') && Math.abs(boat.speed) > 4;
+  const moving = (state === 'sailing' || state === 'docking') && Math.abs(boat.speed) > 4;   // the Mistral Run draws its own wake (scene.js)
   puffAcc += dt;
   const interval = Math.max(0.05, 8 / Math.max(8, Math.abs(boat.speed))); // roughly constant world spacing at any speed
   if (moving && puffAcc >= interval) {
@@ -5718,7 +5831,7 @@ function updateStormBackdrop(g, dt, t, flash) {
 
 const PropRender = (() => {
   let r = null, sc = null, cam = null, rt = null, px = null, cv = null, c2d = null;
-  const cache = {}; const S = 320;
+  const cache = {}; const S = 640;
   function init() {
     r = new THREE.WebGLRenderer({ antialias: true, alpha: true }); r.setPixelRatio(1); r.setSize(S, S);
     rt = new THREE.WebGLRenderTarget(S, S); px = new Uint8Array(S * S * 4);
@@ -6227,16 +6340,27 @@ function refreshMainMenu() {
 /* ==============================================================
    SETTINGS
 ================================================================ */
-/* Sharpness: HIGH renders at up to 2.5× (phones have 3× screens), LOW at 1×.
-   If a phone can't keep up, autoRes() steps the resolution down by itself. */
-let resScale = 1, slowTime = 0, fastTime = 0;
+/* Sharpness: HIGH draws at the phone's own pixel grid (up to 3×), LOW at 1.5×.
+   If a phone can't keep up, autoRes() steps the resolution down by itself, but
+   never below ~60% of the screen's grid (that is where you start counting
+   pixels), and it climbs back up once the phone has caught its breath. */
+let resScale = 1, resMax = 1, resMin = 1, slowTime = 0, fastTime = 0, resRaised = false, resBounces = 0;
 function autoRes(frameMs, dt) {
-  if (settings.quality !== 'high' || document.hidden) return;
+  if (settings.quality !== 'high' || document.hidden || Game.paused) return;
+  if (frameMs > 250) return;                                  // a one-off hitch (ad closing, app switch, loading): not the phone's real speed
   if (frameMs > 45) { slowTime += dt; fastTime = 0; } else { fastTime += dt; slowTime = Math.max(0, slowTime - dt * 0.5); }
-  if (slowTime > 2.5 && resScale > 1.25) { resScale = Math.max(1.25, resScale - 0.25); renderer.setPixelRatio(resScale); slowTime = 0; }   // struggling → a bit softer
+  if (slowTime > 2.5 && resScale > resMin) {                  // struggling → a bit softer
+    resScale = Math.max(resMin, resScale - 0.25); renderer.setPixelRatio(resScale); slowTime = fastTime = 0;
+    if (resRaised) resBounces++; resRaised = false;
+  } else if (fastTime > 12 && resScale < resMax && resBounces < 2) {   // smooth for a while → sharpen again (gives up after bouncing twice)
+    resScale = Math.min(resMax, resScale + 0.25); renderer.setPixelRatio(resScale); slowTime = fastTime = 0; resRaised = true;
+  }
 }
 function applyQuality() {
-  resScale = settings.quality === 'high' ? Math.min(devicePixelRatio, 2.5) : 1; slowTime = fastTime = 0;
+  const dpr = window.devicePixelRatio || 1;
+  resMax = Math.min(dpr, settings.quality === 'high' ? 3 : 1.5);
+  resMin = Math.min(resMax, Math.max(1.5, dpr * 0.6));
+  resScale = resMax; slowTime = fastTime = 0; resRaised = false; resBounces = 0;
   renderer.setPixelRatio(resScale);
   rainGeo.setDrawRange(0, (settings.quality === 'high' ? RAIN_COUNT : Math.floor(RAIN_COUNT * 0.35)) * 2);
 }
@@ -7065,7 +7189,7 @@ function loop(now) {
 
   if (state === 'mistral_run') {
     updateMistral(dt, t);
-    updateClouds(dt); updateSea(t, mState.nextZ + 500); updateGulls(dt, t);
+    updateClouds(dt); updateSea(t, mState.nextZ + 500); updateRunSea(t); updateGulls(dt, t);
   } else {
     updateNormal(dt, t); TourEvents.update(dt, t); updateClouds(dt); updateSea(t); updateAmbientBoats(dt, t); updateGulls(dt, t);
     if (state === 'sailing' || state === 'docking' || state === 'viewing') { drawMap(miniCtx, mini.width, mini.height, t, false); if (bigWrap.classList.contains('open')) drawMap(bigCtx, big.width, big.height, t, true); }
