@@ -1136,6 +1136,15 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
   </div>
 </div>
 
+<div class="overlay" id="resumeOverlay">
+  <div class="panel small-panel film-panel">
+    <h2 id="resumeTitle">⏸ Unfinished run</h2>
+    <div class="sub" id="resumeSub"></div>
+    <button class="go-btn" id="resumeGo">▶ CONTINUE</button>
+    <button class="btn wide" id="resumeQuit">🏁 End run (keep loot)</button>
+  </div>
+</div>
+
 <div class="overlay" id="missionsOverlay">
   <div class="panel missions-panel">
     <h2>🎯 Missions</h2>
@@ -4112,7 +4121,7 @@ function rollGroup() {
 /* ---- SINKING ---- */
 function startSinking() {
   if (state === 'mistral_run') { if (!(typeof offerRevive === 'function' && offerRevive())) endMistralRun(true); return; }
-  playSplashSound(); Platform.haptics.impact('HEAVY'); state = 'sinking'; sinkTimer = 3; boat.speed = 0;
+  RunSave.clear(); playSplashSound(); Platform.haptics.impact('HEAVY'); state = 'sinking'; sinkTimer = 3; boat.speed = 0;
   if (mgActive) { mgActive = false; $('minigameUI').style.display = 'none'; }
   $('speedLever').style.display = 'none'; showToast("🕳️ HULL BREACH! She's going down…", 0);
 }
@@ -4181,7 +4190,7 @@ function endWakeMinigame() {
 
 /* ---- DOLPHINS ---- */
 /* ---- RETURN TO PORT & SUMMARY ---- */
-function dockAtPort() { boat.speed = 0; clearTourists(); if (tour && tour.visited > 0) { pStats.totalTours++; state = 'summary'; showSummary(); } else { applyRepairs(true); openStoryHub(); } }
+function dockAtPort() { RunSave.clear(); boat.speed = 0; clearTourists(); if (tour && tour.visited > 0) { pStats.totalTours++; state = 'summary'; showSummary(); } else { applyRepairs(true); openStoryHub(); } }
 function applyRepairs(announce) {
   const cost = Math.round(Hull.missing() * CONFIG.hull.repairCostPerHp);
   if (cost > 0) { Wallet.charge(cost); Hull.restore(); if (announce) showToast(`🛠️ Repairs: −${cost} €`); }
@@ -4228,7 +4237,7 @@ function castOff() {
 }
 /* Leave a tour early from the pause menu: tourists get nothing, repairs still apply. */
 function abandonTour() {
-  hideTourHud(); clearTourists(); tour = null; sinkDepth = 0; hideToast();
+  RunSave.clear(); hideTourHud(); clearTourists(); tour = null; sinkDepth = 0; hideToast();
   boat.x = port.x; boat.z = port.z - 85; boat.speed = 0; boat.heading = 0;
   applyRepairs(true); openStoryHub();
 }
@@ -5658,6 +5667,7 @@ function offerRevive() {
   const kb = $('reviveKnots'); kb.textContent = '🪢 ' + cost + ' · REVIVE'; kb.disabled = !Wallet.canAfford(cost, 'knots');
   $('reviveInfo').innerHTML = `Back with ${Math.round(R.hullFrac * 100)}% hull and a ${R.shield} s shield. You have <b>${Wallet.knots.toLocaleString()} 🪢</b>`;
   $('reviveOverlay').classList.add('open'); Platform.haptics.impact('HEAVY');
+  RunSave.capture(true); Save.write();                 // closing the app now ends the run (loot kept), it can't undo the crash
   let left = R.seconds; const ring = $('reviveRing'), tick = () => { $('reviveCount').textContent = Math.max(0, Math.ceil(left)); ring.style.strokeDashoffset = (119.4 * (1 - left / R.seconds)).toFixed(1); };
   tick(); clearInterval(reviveTimer);
   reviveTimer = setInterval(() => { if (reviveBusy) return; left -= 0.25; tick(); if (left <= 0) declineRevive(); }, 250);
@@ -5668,7 +5678,7 @@ function doRevive(paidWith) {
   const R = MC.revive; closeRevive();
   mState.revives = (mState.revives || 0) + 1; pStats.revives = (pStats.revives || 0) + 1;
   Hull.heal(Hull.max() * R.hullFrac); mState.shieldT = Math.max(mState.shieldT || 0, R.shield);
-  Game.paused = false; lastTime = performance.now(); frameAcc = 0; Save.queue && Save.queue();
+  Game.paused = false; lastTime = performance.now(); frameAcc = 0; RunSave.capture(); Save.queue();
   showBanner(paidWith === 'ad' ? '💖 REVIVED! Thanks for watching' : '💖 REVIVED!', 'boost', 1400); Platform.haptics.success();
 }
 function declineRevive() { closeRevive(); Game.paused = false; lastTime = performance.now(); frameAcc = 0; endMistralRun(true); }
@@ -5689,6 +5699,7 @@ function initReviveUI() {
 function endMistralRun(sank) {
   $('cometBtn').classList.remove('show');
   if (!mState.active) return;
+  RunSave.clear();                                     // finished: nothing left to continue
   mState.active = false; boatGroup.scale.setScalar(1);
   SteerSlider.show(false); $('btnPause').classList.remove('show');
   $('mistralHUD').style.display = 'none'; input.left = input.right = false;
@@ -5736,7 +5747,7 @@ function endMistralRun(sank) {
 
 /* Put the calm open world back after a run (storm off, fog out, boat home). */
 function leaveMistralWorld() {
-  hideMissionNote();
+  hideMissionNote(); RunSave.clear();
   camera.fov = 60; camera.updateProjectionMatrix();
   hideRunBackdrop(); shieldBubble.visible = false; mState.shieldT = mState.magnetT = mState.doubleT = 0; Game.emit('hull', { delta: 0 });
   mState.active = false; boatGroup.scale.setScalar(1);
@@ -7508,7 +7519,7 @@ const Photos = (() => {
 
   /* ---------- the animals ---------- */
   const group = new THREE.Group(); scene.add(group);
-  let active = [], timer = 0, wasOn = false, shots = { n: 0, fresh: 0 }, forced = null;     // forced: tests can pick the species
+  let active = [], timer = 0, wasOn = false, shots = { n: 0, fresh: 0 }, forced = null, keepShots = null;     // forced: tests can pick the species
   const safariOn = () => state === 'mistral_run' && mState.theme && mState.theme.photos;
   function pick(nm) {
     if (forced) return spOf(forced);
@@ -7636,7 +7647,7 @@ const Photos = (() => {
   /* ---------- per-frame ---------- */
   function update(dt, t) {
     nowT = t; const on = safariOn();
-    if (on !== wasOn) { clearAll(); wasOn = on; if (on) { timer = rand(...PHOTO.first); shots = { n: 0, fresh: 0 }; } else el.card.classList.remove('show'); }
+    if (on !== wasOn) { clearAll(); wasOn = on; if (on) { timer = rand(...PHOTO.first); shots = keepShots || { n: 0, fresh: 0 }; keepShots = null; } else el.card.classList.remove('show'); }
     if (!on) return;
     updateFx(dt); timer -= dt;
     if (timer <= 0 && !active.length && mState.active) { spawn(); timer = rand(...PHOTO.every); }
@@ -7721,7 +7732,145 @@ const Photos = (() => {
   $('photoClose').addEventListener('click', () => $('photoOverlay').classList.remove('open'));
   $('photoGo').addEventListener('click', () => { $('photoOverlay').classList.remove('open'); tryStart(); });
 
-  return { update, openBook, refreshMenu, clearAll, picture, reset, tryStart, openFilm, Film, runShots: () => shots, _active: () => active, _spawn: spawn, _force: id => { forced = id; } };
+  return { update, openBook, refreshMenu, clearAll, picture, reset, tryStart, openFilm, Film, runShots: () => shots, restoreShots: o => { shots = keepShots = { n: o.n || 0, fresh: o.fresh || 0 }; if (wasOn) keepShots = null; }, _active: () => active, _spawn: spawn, _force: id => { forced = id; } };
+})();
+
+</script>
+<script>
+/* ==============================================================
+   RUN SAVE: keeps the Mistral run, Photo Safari or story tour in progress
+   when the app is closed, sent to the background, or killed by the phone.
+   - captured every few seconds while playing, and right when the app is hidden
+   - stored inside the normal (encrypted) save as pStats.runSave
+   - next launch: "Continue your run?" → back where you were, paused
+   What comes back: distance, score, speed, loot, multiplier, streak, power-ups,
+   hull, revives, comet, mission progress, photos taken (runs); the day, group,
+   earnings, tips, sights visited, position and hull (tours).
+   What doesn't: the exact obstacles and waves around you are new ones, and you
+   get a short shield so the fresh water can't hit you before you've reacted.
+================================================================ */
+const RunSave = (() => {
+  const V = 1, EVERY = 3, MAX_AGE = 7 * 24 * 3600e3, GRACE_SHIELD = 3;
+  const RUN_KEYS = ['dist', 'score', 'speed', 'runTime', 'clock', 'coins', 'coinsF', 'knots', 'tourists', 'mult', 'streak', 'precision', 'maxMult', 'chains', 'repairs', 'closeCalls', 'revives', 'cometUsed', 'shieldT', 'magnetT', 'doubleT', 'boostTimer'];
+  const TOUR_STATES = ['sailing', 'viewing', 'docking'];
+  let acc = 0, restoring = false;
+
+  const num = v => (typeof v === 'number' && isFinite(v) ? v : 0);
+  function get() {
+    const s = pStats.runSave;
+    if (!s || s.v !== V || !(Date.now() - s.at < MAX_AGE)) return null;
+    if (s.kind !== 'run' && s.kind !== 'tour') return null;
+    return s;
+  }
+
+  /** Writes the current run/tour into pStats (call Save.queue/write after). */
+  function capture(dying) {
+    if (restoring) return;
+    const base = { v: V, at: Date.now(), boat: currentBoat ? currentBoat.id : null, hp: Hull.hp };
+    if (state === 'mistral_run' && mState.active) {
+      const m = {}; for (const k of RUN_KEYS) m[k] = mState[k];
+      const missions = ((pStats.missions && pStats.missions.active) || []).map(x => ({ fresh: !!x.fresh, base: x.base }));
+      pStats.runSave = Object.assign(base, {
+        kind: 'run', theme: runThemeId, x: boat.x, m, missions, shots: Photos.runShots(),
+        dying: !!(dying || $('reviveOverlay').classList.contains('open')),
+      });
+    } else if (tour && selectedGroup && TOUR_STATES.includes(state)) {
+      pStats.runSave = Object.assign(base, {
+        kind: 'tour', day: pStats.day, group: selectedGroup.id, tour: JSON.parse(JSON.stringify(tour)),
+        visited: destinations.filter(d => d.visited).map(d => d.name),
+        x: boat.x, z: boat.z, heading: boat.heading,
+      });
+    }
+  }
+  function clear() { if (pStats.runSave) { pStats.runSave = null; Save.queue(); } }
+
+  /** Called every frame from the main loop: a fresh capture every few seconds. */
+  function tick() {
+    const live = (state === 'mistral_run' && mState.active) || (tour && TOUR_STATES.includes(state));
+    if (!live || Game.paused) return;
+    const now = performance.now(); if (now - acc < EVERY * 1000) return; acc = now;   // real seconds, so slow phones save just as often
+    capture(); Save.queue();
+  }
+
+  function useBoat(id) {
+    const b = id && owned.has(id) && FLEET.find(f => f.id === id);
+    if (b && (!currentBoat || currentBoat.id !== b.id)) selectBoat(b);
+  }
+
+  /* ---- continue a Mistral run / Photo Safari ---- */
+  function resumeRun(s) {
+    restoring = true; acc = performance.now();
+    useBoat(s.boat);
+    const hs = pStats.headStart; pStats.headStart = 0;                // don't spend a saved head start
+    startMistralRun(s.theme === 'safari' ? 'safari' : 'storm');    // no film is used: this is the same safari
+    pStats.headStart = hs; pStats.runs = Math.max(0, (pStats.runs || 1) - 1);
+    const ms = (pStats.missions && pStats.missions.active) || [];   // mission counters pick up where they were
+    if (s.missions && s.missions.length === ms.length) ms.forEach((x, i) => { const o = s.missions[i]; if (o.fresh) x.fresh = true; if (typeof o.base === 'number') x.base = o.base; });
+    for (const k of RUN_KEYS) if (k in (s.m || {})) mState[k] = k === 'cometUsed' ? !!s.m[k] : num(s.m[k]);
+    mState.mult = Math.max(1, mState.mult); mState.maxMult = Math.max(mState.mult, mState.maxMult); mState.speed = Math.max(50, mState.speed);
+    mState.clockShown = -1; boat.speed = mState.speed;
+    mState.shieldT = Math.max(mState.shieldT, GRACE_SHIELD);
+    boat.x = Math.max(-40, Math.min(40, num(s.x)));
+    Hull.hp = Math.max(1, Math.min(Hull.max(), Math.round(num(s.hp) || Hull.max()))); Game.emit('hull', { delta: 0 });
+    const cb = $('cometBtn'); cb.classList.toggle('show', pStats.comets > 0 && !mState.cometUsed);
+    if (s.shots) Photos.restoreShots(s.shots);
+    updateMistralHUD();                                              // paint the HUD now (it normally updates while sailing)
+    $('mScore').textContent = Math.floor(mState.score); $('mDist').textContent = mState.dist.toFixed(1);
+    const tEl = $('mTime'); if (tEl) tEl.textContent = fmtTime(Math.floor(mState.clock || 0));
+    restoring = false;
+    capture(); Save.queue();
+  }
+
+  /* ---- continue a story tour ---- */
+  function resumeTour(s) {
+    restoring = true; acc = performance.now();
+    useBoat(s.boat);
+    if (s.day >= 1 && s.day <= pStats.maxDay) pStats.day = s.day;
+    ensureWorld(); refreshTourists();
+    selectedGroup = GROUP_POOL.find(g => g.id === s.group) || GROUP_POOL[0];
+    castOff();
+    tour = Object.assign({}, tour, s.tour || {});
+    const seen = new Set(s.visited || []);
+    for (const d of destinations) if (seen.has(d.name)) { d.visited = true; d.mesh.visible = false; }
+    boat.x = num(s.x); boat.z = num(s.z); boat.heading = num(s.heading); boat.speed = 0;
+    Hull.hp = Math.max(1, Math.min(Hull.max(), Math.round(num(s.hp) || Hull.max()))); Game.emit('hull', { delta: 0 });
+    restoring = false;
+    capture(); Save.queue();
+  }
+
+  /* ---- the dialog at launch ---- */
+  function describe(s) {
+    if (s.kind === 'tour') {
+      const g = GROUP_POOL.find(x => x.id === s.group), t = s.tour || {};
+      return `Day ${s.day} · ${g ? g.emoji + ' ' + g.name : 'Tour'}<br>${t.visited || 0} sight${t.visited === 1 ? '' : 's'} visited · +${(t.earnings || 0) + (t.tips || 0)} € earned`;
+    }
+    const m = s.m || {}, safari = s.theme === 'safari', lm = safari ? (RUN_THEMES.safari.loot || 1) : 1;
+    const parts = [`${num(m.dist).toFixed(1)} nm`, `💶 ${Math.round(num(m.coins) * lm)}`, `🪢 ${Math.ceil(num(m.knots) * lm)}`];
+    if (safari && s.shots) parts.push(`📷 ${s.shots.n || 0}`);
+    return (safari ? '📷 Photo Safari' : '🌪️ Mistral Run') + '<br>' + parts.join(' · ');
+  }
+  function offerAtLaunch() {
+    const s = get();
+    if (!s) { if (pStats.runSave) clear(); return false; }
+    const ov = $('resumeOverlay'), run = s.kind === 'run';
+    const close = () => ov.classList.remove('open');
+    $('resumeTitle').textContent = s.dying ? '💥 Your boat went down' : run ? '⏸ Unfinished run' : '⏸ Unfinished tour';
+    $('resumeSub').innerHTML = describe(s) + (s.dying ? '<br><br>The app closed while she was sinking.<br>Your loot is safe.' : '<br><br>Pick up right where you left off.');
+    const go = $('resumeGo'), quit = $('resumeQuit');
+    go.style.display = s.dying ? 'none' : '';
+    quit.textContent = s.dying ? '💶 COLLECT LOOT' : run ? '🏁 End run (keep loot)' : '🏳️ Abandon tour';
+    quit.className = s.dying ? 'go-btn' : 'btn wide';
+    go.onclick = () => { playMenuClick(); close(); if (run) resumeRun(s); else resumeTour(s); pauseGame(); showToast(run ? '▶ Run restored. Tap resume when you\'re ready.' : '▶ Tour restored. Tap resume when you\'re ready.', 3500); };
+    quit.onclick = () => {
+      playMenuClick(); close();
+      if (run) { resumeRun(s); endMistralRun(!!s.dying); }        // the normal summary pays the loot
+      else { clear(); Hull.hp = Math.max(1, Math.min(Hull.max(), num(s.hp) || Hull.max())); applyRepairs(true); Save.queue(); }
+    };
+    ov.classList.add('open');
+    return true;
+  }
+
+  return { capture, clear, tick, offerAtLaunch, get, _resumeRun: resumeRun, _resumeTour: resumeTour };
 })();
 
 </script>
@@ -7819,9 +7968,9 @@ function loop(now) {
   if (state === 'mistral_run') {
     updateMistral(dt, t);
     updateClouds(dt); updateSea(t, mState.nextZ + 500); updateRunSea(t); updateGulls(dt, t);
-    Photos.update(dt, t);
+    Photos.update(dt, t); RunSave.tick(dt);
   } else {
-    updateNormal(dt, t); TourEvents.update(dt, t); Photos.update(dt, t); updateClouds(dt); updateSea(t); updateAmbientBoats(dt, t); updateGulls(dt, t);
+    updateNormal(dt, t); TourEvents.update(dt, t); Photos.update(dt, t); RunSave.tick(dt); updateClouds(dt); updateSea(t); updateAmbientBoats(dt, t); updateGulls(dt, t);
     if (state === 'sailing' || state === 'docking' || state === 'viewing') { drawMap(miniCtx, mini.width, mini.height, t, false); if (bigWrap.classList.contains('open')) drawMap(bigCtx, big.width, big.height, t, true); }
   }
   if (boatGroup.userData.props) for (const p of boatGroup.userData.props) p.rotation.z += (1.5 + Math.abs(boat.speed) * 0.3) * 5 * dt;
@@ -7878,13 +8027,15 @@ async function boot() {
 
   Platform.app.onBack(onBackButton);
   Reminders.init();
-  Platform.app.onPause(() => { pauseGame(); Save.write(); if (audioCtx && audioCtx.state === 'running') audioCtx.suspend(); });
+  Platform.app.onPause(() => { pauseGame(); RunSave.capture(); Save.write(); if (audioCtx && audioCtx.state === 'running') audioCtx.suspend(); });
   Platform.app.onResume(() => { lastTime = performance.now(); frameAcc = 0; if (!Game.paused && audioCtx && settings.audioEnabled) audioCtx.resume(); });
 
   openMainMenu();
   $('mainMenuOverlay').classList.add('open');
   $('loading').remove();
   if (!loaded) showToast('⛵ Welcome aboard, skipper!<br>Tap PLAY to brave the Mistral.', 4000);
+  // A run or tour that was going when the app closed: offer to continue it (never over the web lock)
+  if (loaded && !$('webLock').classList.contains('show')) RunSave.offerAtLaunch();
   // Returning players: today's daily gift opens by itself, once per launch (never over the web lock, a scene or another screen)
   if (loaded && (pStats.runs || 0) >= 1) setTimeout(() => {
     const busy = document.querySelector('.overlay.open:not(#mainMenuOverlay)') || $('webLock').classList.contains('show') || $('sceneOverlay').classList.contains('open');
