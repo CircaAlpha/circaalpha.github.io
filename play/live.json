@@ -1,0 +1,21 @@
+{
+  "v": 1,
+  "news": {
+    "id": "test-week-1",
+    "text": "Test Week is on! Double euros in every run until Sunday.",
+    "until": "2026-10-26T00:00:00+02:00"
+  },
+  "events": [
+    {
+      "id": "test-week-1",
+      "title": "TEST WEEK",
+      "sub": "x2 euros",
+      "from": "2026-10-18T00:00:00+02:00",
+      "to": "2026-10-26T00:00:00+02:00",
+      "coins": 2,
+      "knots": 1,
+      "gold": 1
+    }
+  ],
+  "tuning": {}
+}
