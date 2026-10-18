@@ -1033,6 +1033,7 @@ body:not(.mistral) #speedLever { bottom: calc(96px + env(safe-area-inset-bottom)
 .ic-play { width: .9em; height: .9em; vertical-align: -0.08em; }
 .set-row > span:first-child .ic { margin-right: 3px; }
 .mm-daily > span { white-space: nowrap; }
+.hero-subtitle.live-event { background: linear-gradient(180deg, #fff1a8, var(--sun)); color: #5a3000; text-shadow: none; box-shadow: 0 0 22px rgba(255,210,63,0.6); }
 
 </style>
 
@@ -5929,7 +5930,7 @@ function endMistralRun(sank) {
   SteerSlider.show(false); $('btnPause').classList.remove('show');
   $('mistralHUD').style.display = 'none'; input.left = input.right = false;
   const theme = mState.theme || RUN_THEMES.storm, lm = theme.loot || 1;          // a Photo Safari pays more: you only get a few a day
-  const totE = Math.round(mState.coins * lm), totK = Math.ceil(mState.knots * lm);
+  const totE = Math.round(mState.coins * lm * Live.coinMult()), totK = Math.ceil(mState.knots * lm * Live.knotMult());   // live event bonus (same for everyone)
   Wallet.earn(totE, true); Wallet.addKnots(totK);
   const prevBest = mBestScore;
   const newRecord = mState.score > mBestScore; if (newRecord) mBestScore = mState.score;
@@ -5966,6 +5967,7 @@ function endMistralRun(sank) {
     </div>
     ${lm > 1 ? `<div class="best-line">📷 Safari bonus: <b>×${lm}</b> euros and knots</div>` : ''}
     ${dailyHtml}
+    ${Live.summaryLine()}
     ${totE >= Growth.DOUBLE_MIN ? `<button class="go-btn gold dbl-loot" id="mDouble">📺 DOUBLE YOUR EUROS · +${totE} €<small>watch a short video</small></button>` : ''}
     ${done.length ? `<div class="mission-done"><h4>✅ MISSIONS COMPLETE</h4>${done.map(m => `<div class="md-row"><span>${m.text}</span><span class="pos">${Retention.rewardText(m.reward)}</span></div>`).join('')}</div>` : ''}
     ${Retention.missionsHtml(true)}
@@ -6759,6 +6761,7 @@ function refreshMainMenu() {
   Retention.renderMenu(); refreshStoreButton(); refreshShopDot();
   if (typeof Photos !== 'undefined') Photos.refreshMenu();
   if (typeof Growth !== 'undefined') Growth.refreshDailyButton();
+  if (typeof Live !== 'undefined') Live.refreshMenu();
   $('menuDist').textContent = (pStats.bestDist || 0).toFixed(1) + ' NM';
   $('menuWallet').innerHTML = walletPill();
   $('menuBoat').textContent = currentBoat ? currentBoat.name : '—';
@@ -7790,7 +7793,7 @@ const Photos = (() => {
   }
   function spawn() {
     const sp = pick(mState.dist); if (!sp) return;
-    const gold = forcedGold || Math.random() < PHOTO.gold.chance;
+    const gold = forcedGold || Math.random() < Math.min(0.5, PHOTO.gold.chance * Live.goldMult());   // golden-animal events raise the odds for everyone
     const g = new THREE.Group(), members = [], S = sp.scale * PHOTO.scale, edge = sp.move === 'whale';
     for (let i = 0; i < sp.n; i++) {
       const m = makeAnimal(sp.id); m.userData.ph = i * 1.7 + Math.random(); m.userData.off = sp.n === 1 ? [0, 0] : [(i - (sp.n - 1) / 2) * sp.size * S * 0.95, (i % 2) * sp.size * S * 0.7];
@@ -7983,7 +7986,7 @@ const Photos = (() => {
   }
   function openBook() {
     const have = taken(), n = count();
-    const gt = goldTaken(), odds = Math.round(1 / PHOTO.gold.chance);
+    const gt = goldTaken(), odds = Math.max(1, Math.round(1 / Math.min(0.5, PHOTO.gold.chance * Live.goldMult())));   // honest odds, events included
     $('photoSub').innerHTML = `<b>${n} / ${SPECIES.length}</b> animals photographed` + (n === SPECIES.length ? ' · complete! 🏆' : ` · finish the book for <b>${PHOTO.reward.bookKnots} 🪢</b>`)
       + `<br>✨ <b>${goldCount()} / ${SPECIES.length}</b> golden · 1 in ${odds} animals is golden · tap a photo to share it`;
     $('photoGrid').innerHTML = SPECIES.map(s => have[s.id]
@@ -8397,6 +8400,99 @@ const Growth = (() => {
 })();
 
 $('btnDaily').addEventListener('click', () => { playMenuClick(); Growth.startDaily(); });
+
+</script>
+<script>
+/* ==============================================================
+   LIVE OPS: change the game without an app update.
+   A small public file, live.json, on the game's website holds:
+     • events   – "Weekend Storm Bonus: ×2 euros", golden-animal weeks…
+     • news     – one message shown once on the menu
+     • tuning   – reward sizes, ad-break spacing, golden odds
+   It is the SAME for every player (no profiles, no per-player prices),
+   every value is clamped to a safe range, and the last good copy is kept
+   so the game works offline. Edit live.json on GitHub to run an event.
+================================================================ */
+const LIVE_URL = 'https://circaalpha.github.io/play/live.json';
+const Live = (() => {
+  const KEY = 'sardiniaSkipper_live_v1';
+  const clamp = (v, lo, hi, d) => (typeof v === 'number' && isFinite(v) ? Math.max(lo, Math.min(hi, v)) : d);
+  const str = (v, n) => (typeof v === 'string' ? v.replace(/[<>]/g, '').slice(0, n) : '');
+  const time = v => { const t = Date.parse(v); return isFinite(t) ? t : NaN; };
+  // remember the shipped values, so removing a key from live.json puts the default back
+  const BASE = {
+    adBreakRuns: AD_BREAKS.everyRuns, goldChance: PHOTO.gold.chance, dailyPlay: GROWTH.daily.playKnots, dailyBeat: GROWTH.daily.beatKnots,
+    inviteFriend: GROWTH.invite.friendKnots, inviteInviter: GROWTH.invite.inviterKnots, freezePrice: FREEZE.price,
+  };
+  let data = { events: [], news: null };
+
+  function clean(raw) {
+    const out = { events: [], news: null, tuning: {} };
+    if (!raw || typeof raw !== 'object') return out;
+    for (const e of (Array.isArray(raw.events) ? raw.events : []).slice(0, 10)) {
+      const from = time(e.from), to = time(e.to);
+      if (!isFinite(from) || !isFinite(to) || to <= from) continue;
+      out.events.push({ id: str(e.id, 40) || String(from), title: str(e.title, 40) || 'Event', sub: str(e.sub, 80), from, to,
+        coins: clamp(e.coins, 1, 3, 1), knots: clamp(e.knots, 1, 3, 1), gold: clamp(e.gold, 1, 4, 1) });
+    }
+    if (raw.news && raw.news.text) { const until = time(raw.news.until); out.news = { id: str(raw.news.id, 40) || str(raw.news.text, 40), text: str(raw.news.text, 160), until: isFinite(until) ? until : Infinity }; }
+    const t = raw.tuning || {};
+    out.tuning = {
+      adBreakRuns: Math.round(clamp(t.adBreakRuns, 3, 10, BASE.adBreakRuns)), goldChance: clamp(t.goldChance, 0.02, 0.25, BASE.goldChance),
+      dailyPlay: Math.round(clamp(t.dailyPlay, 0, 100, BASE.dailyPlay)), dailyBeat: Math.round(clamp(t.dailyBeat, 0, 100, BASE.dailyBeat)),
+      inviteFriend: Math.round(clamp(t.inviteFriend, 0, 200, BASE.inviteFriend)), inviteInviter: Math.round(clamp(t.inviteInviter, 0, 200, BASE.inviteInviter)),
+      freezePrice: Math.round(clamp(t.freezePrice, 5, 50, BASE.freezePrice)),
+    };
+    return out;
+  }
+  function apply(d) {
+    data = d; const t = d.tuning || {};
+    AD_BREAKS.everyRuns = t.adBreakRuns ?? BASE.adBreakRuns; PHOTO.gold.chance = t.goldChance ?? BASE.goldChance;
+    GROWTH.daily.playKnots = t.dailyPlay ?? BASE.dailyPlay; GROWTH.daily.beatKnots = t.dailyBeat ?? BASE.dailyBeat;
+    GROWTH.invite.friendKnots = t.inviteFriend ?? BASE.inviteFriend; GROWTH.invite.inviterKnots = t.inviteInviter ?? BASE.inviteInviter;
+    FREEZE.price = t.freezePrice ?? BASE.freezePrice;
+  }
+
+  /* ---- the event running right now (the first one, if two overlap) ---- */
+  function event() { const now = Date.now(); return data.events.find(e => now >= e.from && now < e.to) || null; }
+  const coinMult = () => (event() || {}).coins || 1;
+  const knotMult = () => (event() || {}).knots || 1;
+  const goldMult = () => (event() || {}).gold || 1;
+  function left(e) { const s = Math.max(0, (e.to - Date.now()) / 1000), d = Math.floor(s / 86400), h = Math.floor(s % 86400 / 3600), m = Math.floor(s % 3600 / 60); return d ? `${d}d ${h}h` : h ? `${h}h ${m}m` : `${m}m`; }
+
+  /* ---- menu: the hero subtitle turns into the event ribbon; news shows once ---- */
+  function refreshMenu() {
+    const el = document.querySelector('#mainMenuOverlay .hero-subtitle'); if (!el) return;
+    const e = event();
+    el.classList.toggle('live-event', !!e);
+    setTxt(el, e ? `${e.title} · ${e.sub ? e.sub + ' · ' : ''}${left(e)} left` : 'The Mistral is blowing');
+    const n = data.news;
+    if (n && n.text && Date.now() < n.until && pStats.newsSeen !== n.id && state === 'mainmenu' && !document.querySelector('.overlay.open:not(#mainMenuOverlay)')) {
+      pStats.newsSeen = n.id; Save.queue(); setTimeout(() => showToast(n.text, 5000), 900);
+    }
+  }
+  /** One line for the run summary when an event paid extra. */
+  function summaryLine() {
+    const e = event(); if (!e || (e.coins === 1 && e.knots === 1)) return '';
+    const parts = []; if (e.coins > 1) parts.push(`×${e.coins} euros`); if (e.knots > 1) parts.push(`×${e.knots} knots`);
+    return `<div class="best-line">${e.title}: <b>${parts.join(' · ')}</b></div>`;
+  }
+
+  /* ---- load: the last good copy right away, then a fresh one in the background ---- */
+  try { const c = JSON.parse(localStorage.getItem(KEY) || 'null'); if (c) apply(clean(c)); } catch (e) {}
+  async function refresh() {
+    try {
+      const ctl = typeof AbortController !== 'undefined' ? new AbortController() : null; const to = setTimeout(() => ctl && ctl.abort(), 6000);
+      const res = await fetch(LIVE_URL + '?t=' + Math.floor(Date.now() / 60000), { cache: 'no-store', signal: ctl && ctl.signal }); clearTimeout(to);
+      if (!res.ok) return; const raw = await res.json();
+      try { localStorage.setItem(KEY, JSON.stringify(raw)); } catch (e) {}
+      apply(clean(raw)); if (state === 'mainmenu') { refreshMenu(); refreshMainMenu(); }
+    } catch (e) { /* offline: keep the saved copy */ }
+  }
+  refresh(); setInterval(() => { if (state === 'mainmenu') refreshMenu(); }, 30000); setInterval(refresh, 30 * 60000);
+
+  return { event, coinMult, knotMult, goldMult, refreshMenu, summaryLine, refresh, _apply: raw => apply(clean(raw)), _data: () => data };
+})();
 
 </script>
 <script>
